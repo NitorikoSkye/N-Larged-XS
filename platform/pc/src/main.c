@@ -84,6 +84,8 @@ static void Usage(const char *argv0)
         "  --hd-check            draw each checkpoint again with the interpolation's HD PPU,\n"
         "                        nothing moved, and compare it with the PPU's picture\n"
         "  --ui-preview DIR      write each page of the settings menu to DIR as a PNG\n"
+        "  --stream              (built without SDL) pictures and sound to stdout, keys from stdin\n"
+        "                        (the Android app's way to run the game, stream.c)\n"
         "  --quiet               don't print the checkpoints or the sound's hash (the window's default)\n",
         argv0);
     exit(2);
@@ -115,6 +117,12 @@ int main(int argc, char **argv)
         }
         if (strcmp(arg, "--headless") == 0) {
             gHostOptions.headless = 1;
+            continue;
+        }
+        if (strcmp(arg, "--stream") == 0) {
+            extern int gHostStream;
+
+            gHostStream = 1;
             continue;
         }
         if (strcmp(arg, "--hd-check") == 0) {

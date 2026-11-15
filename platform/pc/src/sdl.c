@@ -52,29 +52,43 @@
 
 #ifndef HOST_SDL
 
+/* Without SDL the one front end is --stream's (stream.c, the Android
+ * app's): with it off, the run is headless. */
+extern int gHostStream;
+void HostStreamInit(void);
+void HostStreamVBlank(void);
+u16 HostStreamKeys(void);
+void HostStreamAudio(const s8 *buf, u32 n, u32 rate);
+
 int HostFrontendAvailable(void)
 {
-    return 0;
+    return gHostStream;
 }
 
 void HostFrontendInit(void)
 {
+    if (gHostStream) {
+        HostStreamInit();
+    }
 }
 
 void HostFrontendVBlank(void)
 {
+    if (gHostStream) {
+        HostStreamVBlank();
+    }
 }
 
 u16 HostFrontendKeys(void)
 {
-    return 0;
+    return gHostStream ? HostStreamKeys() : 0;
 }
 
 void HostFrontendAudio(const s8 *buf, u32 n, u32 rate)
 {
-    (void)buf;
-    (void)n;
-    (void)rate;
+    if (gHostStream) {
+        HostStreamAudio(buf, n, rate);
+    }
 }
 
 /* The menu's needs, for --ui-preview without SDL. */

@@ -26,7 +26,19 @@ HOST_OBJCOPY ?= objcopy
 # from the compiler's target.
 HOST_WINDOWS ?= $(if $(findstring mingw,$(shell $(HOST_CC) -dumpmachine 2>/dev/null)),1,0)
 
-ifeq ($(HOST_WINDOWS),1)
+# Android (platform/android/): the game's core for the app, which runs it
+# with --stream (src/stream.c). A static executable (an ARM64 or x86-64
+# Linux one: no SDL, no shared libraries, so Android's own C library isn't
+# needed), named as a native library so that the APK installs it where an
+# app may run it:
+#   make PLATFORM=pc HOST_ANDROID=1 HOST_SDL=0 OBJ_DIR=build/android-arm64/crashbandicootxs \
+#        HOST_CC=aarch64-linux-gnu-gcc HOST_CXX=aarch64-linux-gnu-g++ HOST_NM=aarch64-linux-gnu-nm \
+#        HOST_CXXFILT=aarch64-linux-gnu-c++filt HOST_OBJCOPY=aarch64-linux-gnu-objcopy
+HOST_ANDROID ?= 0
+
+ifeq ($(HOST_ANDROID),1)
+HOST_EXE := $(patsubst %/,%,$(dir $(OBJ_DIR)))/libcrashxs_core.so
+else ifeq ($(HOST_WINDOWS),1)
 HOST_EXE := $(patsubst %/,%,$(dir $(OBJ_DIR)))/CrashBandicootXS.exe
 else
 HOST_EXE := build/$(PLATFORM)/crashbandicootxs_$(PLATFORM)
@@ -281,6 +293,12 @@ HOST_LINK_FLAGS := -static -static-libgcc -static-libstdc++ -Wl,--disable-dynami
 ifeq ($(HOST_SDL),1)
 HOST_LINK_FLAGS += -mwindows
 endif
+endif
+
+ifeq ($(HOST_ANDROID),1)
+HOST_LINK_FLAGS := -static
+# A phone's CPU draws the picture: the PPU optimised.
+$(PLATFORM_BUILDDIR)/src/ppu.o: HOST_CFLAGS += -O2
 endif
 
 $(HOST_EXE): $(HOST_OBJS) $(HOST_LINK) $(HOST_LINK_EXTRA)
