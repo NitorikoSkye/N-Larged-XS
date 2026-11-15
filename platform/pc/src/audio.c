@@ -32,6 +32,10 @@ static s8 sBlock[MAX_BLOCK];
 static u32 sBlockLen;
 static u32 sRate;
 static int sMixed;
+/* The PC settings' music and sound effects volumes (sdl.c), applied in
+ * GaxChannelMix (units/lib/gax/src/gax_note_trigger.c): 256 is 100%. */
+u32 gHostGaxVolume[2] = { 256, 256 };
+
 static int sFresh; /* mixed since HostAudioTakeBlock */
 static u32 sBlocks;
 static struct HostSha1 sHash;

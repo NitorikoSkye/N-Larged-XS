@@ -27,6 +27,7 @@
 #include "gba/gba.h"
 #include <agb_syscall.h>
 #include "engine/sys/irq.h"
+#include "host_interp.h"
 #include "host_platform.h"
 
 #define LINES_PER_FRAME 228
@@ -104,6 +105,9 @@ static void NextScanline(void)
         /* The picture is finished: shown (the window), and the time a
          * frame takes waited for, before the game's VBlank handler. */
         HostPpuFrame();
+        if (gHostHdCheck || gHostInterpDumpDir != NULL) {
+            HostHdCheckFrame();
+        }
         HostAudioVBlank();
         HostSaveFlush();
         if (!gHostOptions.headless) {

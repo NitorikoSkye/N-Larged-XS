@@ -252,6 +252,54 @@ checkpoints' PICTURE and SCREEN hashes and the audio hash of boot.keys,
 intro.keys, bonus.keys and dingodile.keys (under Wine) are the Linux
 build's.
 
+**The settings menu** (v0.02; src/ui.c, src/config.c, src/host_ui.h). ~
+(or a controller's Guide button or right stick click) opens the PC
+port's own settings while the game waits in VBlankIntrWait. It is drawn
+by the platform in the game's own style from the game's own pieces
+(tools/ui_assets.py writes the HUD fonts and the pause screen's art as C):
+the categories in the pause screen's left box, a category's options in
+that box widened across the screen, the selected row in the pause
+menu's white, values as `<75%>`, what can't be used grey. Categories:
+General (portable mode, pause when unfocused, quit), Display (window
+mode and size, frame rate, vsync, scaling; widescreen greyed, below),
+Graphics (pixels, smooth, sharp smooth, Scale2x, Scale3x; scanlines; LCD
+grid; the GBA screen's colours; LCD ghosting), Interface (FPS counter,
+input display), Audio (master, music, sound effects: the last two in
+GAX2's mixer, gHostGaxVolume, on top of the pause menu's), Controls
+(keyboard and controller bindings, two per action, restore defaults;
+stick deadzone), and Gameplay and Extras (empty, grey). `--ui-preview
+DIR` writes every page as a PNG and reports a help text too long for its
+two lines.
+
+The files (settings.ini, the save, screenshots/) are in the user's
+application data folder (%APPDATA%\CrashBandicootXS), or next to the
+executable in portable mode (a settings.ini there with portable=1);
+switching moves them. v0.01's save next to the executable is copied to
+application data once. `--save FILE` still wins.
+
+**Frame interpolation** (src/interp.c, src/interp_tags.cpp, src/ppu_hd.c).
+The GBA shows 59.7275 frames a second; at 90, 120, 144 or 240 (rates
+above the display's refresh are grey) the window shows pictures between
+the game's last two frames, one frame behind, while the game keeps its
+own pace. Each frame's display state is kept at its VBlank, with the
+game object that drew each OAM entry (the sprite renderer's entry points
+and the OAM buffer's Add, Append and Commit are --wrap'ed): a BG moves
+by its scroll's change, an OAM entry by its object's change of place,
+fades by BLDY/BLDALPHA between their steps; ppu_hd.c draws that at 2-4
+times the GBA's resolution on worker threads, so positions between
+pixels show. With nothing moved it is ppu.c's picture pixel for pixel:
+`--hd-check` compares every frame at scales 1 and 2 (boot.keys: 6654
+frames, none differ). `--interp-dump DIR --interp-at N` writes frames N
+to N+2 at quarter steps.
+
+**Widescreen** is not in v0.02. A prototype built with
+`DISPLAY_WIDTH=288` runs (the HUD, camera, culling and activation follow
+screen.h), but BgLayer keeps the level map in a 256-pixel-wide BG
+(BG_SCREEN_BLOCK_TILES, "Platform-layer limits" in screen.md), so the
+left 32 pixels show stale columns. It needs BgLayer and the streamer on
+512x256 BGs, and the game built twice into the executable (one per
+width) to switch without a second program.
+
 **Controls.** Keyboard: the arrows are the D-pad, X is A, Z is B, A and
 S are L and R, Enter is Start, Backspace (or right Shift) is Select. A
 gamepad (SDL's game controller layout): the D-pad or the left stick, the

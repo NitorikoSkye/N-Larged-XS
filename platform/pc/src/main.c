@@ -25,7 +25,9 @@
 
 #include "gba/gba.h"
 #include "engine/sys/system.h"
+#include "host_interp.h"
 #include "host_platform.h"
+#include "host_ui.h"
 
 struct HostOptions gHostOptions = { 0, 0, 60, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
                                     3, 0, -1, -1,   0,    0,    0,    -1,   -1 };
@@ -37,6 +39,9 @@ void HostExit(int status, const char *how)
     HostGaxLogEnd();
     if (gHostOptions.ppuStats) {
         HostPpuPrintStats();
+    }
+    if (gHostHdCheck) {
+        HostHdCheckEnd();
     }
     printf("end %s at frame %u (VBlank %u)\n", how, HostFrame(), gHostVBlanks);
     fflush(stdout);
@@ -71,6 +76,9 @@ static void Usage(const char *argv0)
         "  --dump DIR            write each checkpoint's palette RAM, VRAM and OAM to DIR\n"
         "  --screens DIR         write each checkpoint's picture to DIR/FRAME.png\n"
         "  --ppu-stats           count the lines that use each PPU feature, print at the end\n"
+        "  --hd-check            draw each checkpoint again with the interpolation's HD PPU,\n"
+        "                        nothing moved, and compare it with the PPU's picture\n"
+        "  --ui-preview DIR      write each page of the settings menu to DIR as a PNG\n"
         "  --quiet               don't print the checkpoints or the sound's hash (the window's default)\n",
         argv0);
     exit(2);
@@ -104,6 +112,10 @@ int main(int argc, char **argv)
             gHostOptions.headless = 1;
             continue;
         }
+        if (strcmp(arg, "--hd-check") == 0) {
+            gHostHdCheck = 1;
+            continue;
+        }
         if (strcmp(arg, "--ppu-stats") == 0) {
             gHostOptions.ppuStats = 1;
             continue;
@@ -128,6 +140,13 @@ int main(int argc, char **argv)
             gHostOptions.save = value;
         } else if (strcmp(arg, "--wav") == 0) {
             gHostOptions.wav = value;
+        } else if (strcmp(arg, "--interp-dump") == 0) {
+            gHostInterpDumpDir = value;
+        } else if (strcmp(arg, "--interp-at") == 0) {
+            gHostInterpDumpAt = Number(argv[0], value);
+        } else if (strcmp(arg, "--ui-preview") == 0) {
+            HostUiPreview(value);
+            return 0;
         } else if (strcmp(arg, "--gax-trace") == 0) {
             gHostOptions.gaxTrace = value;
         } else if (strcmp(arg, "--gax-log") == 0) {
@@ -179,11 +198,8 @@ int main(int argc, char **argv)
             gHostOptions.checkpointEvery = 0;
             gHostOptions.quiet = 1;
         }
-        /* A player's progress is kept: next to the executable unless
-         * --save says where. */
-        if (gHostOptions.save == NULL) {
-            gHostOptions.save = HostFrontendDefaultSave();
-        }
+        /* The settings and the save are in the data folder (config.c,
+         * called by HostFrontendInit), unless --save says where. */
         HostFrontendInit();
     }
 

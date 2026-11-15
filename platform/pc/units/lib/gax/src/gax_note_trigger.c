@@ -11,6 +11,8 @@
 #include "gax_host.h"
 
 /* The resampler copy's state that GAX_PATCH_MIXER changes. */
+extern u32 gHostGaxVolume[2];
+
 static int sStoreBackward;
 static int sMixBackward;
 
@@ -56,6 +58,10 @@ u32 GaxChannelMix(struct GaxChannelState *self, struct GaxInfoHandler *info, voi
         vol = vol * info->volume >> 8;
     if (flag == 0)
         vol = vol * info->type->data.song->volume >> 8;
+    /* The PC settings' music and sound effects volumes (sdl.c), 256 for
+     * 100%: the song's channels (flag 0) and the sound effects' voices. */
+    if (gHostGaxVolume[flag != 0] != 256)
+        vol = vol * gHostGaxVolume[flag != 0] >> 8;
     {
         s64 prod = (s32)period;
 

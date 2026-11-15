@@ -48,7 +48,9 @@ extern u32 gHostVBlanks;
 /* The PPU (ppu.c). irq.c's frame loop draws each visible line as the
  * display reaches it (HostPpuLine) and, at line 160, makes the frame the
  * finished picture (HostPpuFrame): gHostScreen, 8-bit XRGB. */
+#ifndef HOST_SCREEN_WIDTH
 #define HOST_SCREEN_WIDTH  240
+#endif
 #define HOST_SCREEN_HEIGHT 160
 
 extern u32 gHostScreen[HOST_SCREEN_WIDTH * HOST_SCREEN_HEIGHT];
@@ -94,10 +96,7 @@ int HostFrontendAvailable(void);
 void HostFrontendInit(void);
 /* The port's name and version, the window's title. */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.01"
-/* The save file used in the window when --save gives none: next to the
- * executable (NULL if its directory isn't known). */
-const char *HostFrontendDefaultSave(void);
+#define HOST_PORT_VERSION "v0.02"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);

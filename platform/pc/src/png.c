@@ -83,7 +83,7 @@ int HostWritePng(const char *path, const u32 *xrgb, u32 width, u32 height)
     u32 raw = rowBytes * height;
     /* One stored block per row (a row is at most 65535 bytes). */
     u32 idat = 2 + raw + 5 * height + 4;
-    u8 row[1 + 3 * 1024];
+    static u8 row[1 + 3 * 4096];
     u8 ihdr[13];
     u32 a = 1;
     u32 b = 0;
@@ -93,7 +93,7 @@ int HostWritePng(const char *path, const u32 *xrgb, u32 width, u32 height)
     u32 y;
     u32 i;
 
-    if (width > 1024) {
+    if (width > 4096) {
         return 0;
     }
     f = fopen(path, "wb");

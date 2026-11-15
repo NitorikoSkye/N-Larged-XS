@@ -153,8 +153,20 @@ PLATFORM_UNIT_OBJS := $(patsubst $(PLATFORM_DIR)/units/%.cpp,$(C_BUILDDIR)/%.o,$
 # routines in C, AgbEeprom's API (which replaces lib/agb_eeprom),
 # lib/libgcc's division helpers the game and GAX2 call by name (the rest
 # of libgcc is the host compiler's), and the sound blocks of games/xs/data/data.s.
-PLATFORM_SRCS := $(wildcard $(PLATFORM_DIR)/src/*.c $(PLATFORM_DIR)/src/*.S)
+PLATFORM_SRCS := $(wildcard $(PLATFORM_DIR)/src/*.c $(PLATFORM_DIR)/src/*.S $(PLATFORM_DIR)/src/*.cpp)
 PLATFORM_OBJS := $(patsubst $(PLATFORM_DIR)/src/%,$(PLATFORM_BUILDDIR)/src/%.o,$(basename $(PLATFORM_SRCS)))
+
+# The settings menu's art (src/ui.c): the game's HUD fonts and pause
+# screen, as C arrays (tools/ui_assets.py).
+HOST_UI_ASSETS := $(PLATFORM_BUILDDIR)/ui_assets.c
+$(HOST_UI_ASSETS): $(PLATFORM_DIR)/tools/ui_assets.py engine/src/game/ui/data/hud_font_tables.cpp \
+		games/xs/graphics/fonts/small.png games/xs/graphics/fonts/large.png games/xs/graphics/menus/pause.png
+	@mkdir -p $(dir $@)
+	python3 $(PLATFORM_DIR)/tools/ui_assets.py --fonts-cpp engine/src/game/ui/data/hud_font_tables.cpp \
+		--small games/xs/graphics/fonts/small.png --large games/xs/graphics/fonts/large.png \
+		--pause games/xs/graphics/menus/pause.png -o $@
+$(HOST_UI_ASSETS:.c=.o): $(HOST_UI_ASSETS)
+	$(HOST_CC) $(HOST_CFLAGS) -c -o $@ $<
 
 # GAX2 (lib/gax, docs/audio.md): its matched C, built for the host, with
 # a unit of platform/pc/units/lib/gax/ in place of each file that can't
@@ -193,7 +205,8 @@ $(HOST_INLINES:.cpp=.o): $(HOST_INLINES) $(HOST_RENAMES) | $(GENERATED_HEADERS)
 	$(HOST_CXX) $(HOST_CPPFLAGS) $(HOST_CXXFLAGS) $(DEPFLAGS) -c -o $@ $<
 	$(HOST_OBJCOPY) --redefine-syms=$(HOST_RENAMES) $@
 
-HOST_OBJS := $(C_OBJS) $(CXX_OBJS) $(PLATFORM_OBJS) $(HOST_GAX_OBJS) $(HOST_GAX_DATA:.c=.o) $(HOST_INLINES:.cpp=.o)
+HOST_OBJS := $(C_OBJS) $(CXX_OBJS) $(PLATFORM_OBJS) $(HOST_GAX_OBJS) $(HOST_GAX_DATA:.c=.o) $(HOST_INLINES:.cpp=.o) \
+	$(HOST_UI_ASSETS:.c=.o)
 
 $(PLATFORM_OBJS) $(HOST_GAX_OBJS): | $(GENERATED_HEADERS)
 
@@ -232,6 +245,14 @@ HOST_WRAPS += _ZN4Game5Level10LevelState16PlayBootCutsceneEv
 # --gax-log (src/gax_trace.c) wraps GAX2's API.
 HOST_WRAPS += GAX2_init GAX_fx_ex GAX_fx GAX_fx_note GAX_stop_fx GAX_set_music_volume GAX_set_fx_volume \
 	GAX_stop GAX_pause GAX_resume GAX_play GAX_irq GAX2_jingle
+# The frame interpolation (src/interp_tags.cpp) wraps the sprite renderer's
+# entry points and the OAM buffer's, to know whose each OAM entry is.
+HOST_WRAPS += _ZN6Engine3Gfx9OamBuffer3AddEPKv _ZN6Engine3Gfx9OamBuffer6AppendEPvi _ZN6Engine3Gfx9OamBuffer6CommitEv \
+	_ZN6Engine3Gfx14SpriteRenderer4DrawEPN4Game8Entities6SpriteE \
+	_ZN6Engine3Gfx14SpriteRenderer6DrawAtEPN4Game8Entities6SpriteEii \
+	_ZN6Engine3Gfx14SpriteRenderer10DrawPiecesEPN4Game8Entities6SpriteEPi \
+	_ZN6Engine3Gfx14SpriteRenderer16DrawAffinePiecesEPN4Game8Entities6SpriteEPi \
+	_ZN6Engine3Gfx14SpriteOamQueue3AddEjti _ZN6Engine3Gfx14SpriteOamQueue5FlushEv
 
 # Windows: everything static, one file; a GUI program; the icon and
 # version. The host memory's section (memory.S, .gbamem) must start on a
@@ -298,13 +319,21 @@ $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.c
 	@mkdir -p $(dir $@)
 	$(HOST_CC) $(HOST_CPPFLAGS) $(HOST_CFLAGS) $(DEPFLAGS) -c -o $@ $<
 
+$(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.cpp $(HOST_RENAMES)
+	@mkdir -p $(dir $@)
+	$(HOST_CXX) $(HOST_CPPFLAGS) -iquote $(PLATFORM_DIR)/src $(HOST_CXXFLAGS) $(DEPFLAGS) -c -o $@ $<
+	$(HOST_OBJCOPY) --redefine-syms=$(HOST_RENAMES) $@
+
 $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.S
 	@mkdir -p $(dir $@)
 	$(HOST_CC) $(HOST_CPPFLAGS) $(DEPFLAGS) -c -o $@ $<
 
+# The interpolation's PPU draws up to 240 pictures a second at 4x: optimised.
+$(PLATFORM_BUILDDIR)/src/ppu_hd.o: HOST_CFLAGS += -O2
+
 # sdl.o is rebuilt when HOST_SDL changes (the flags file).
-$(PLATFORM_BUILDDIR)/src/sdl.o: HOST_CFLAGS += $(HOST_SDL_CFLAGS)
-$(PLATFORM_BUILDDIR)/src/sdl.o: $(PLATFORM_BUILDDIR)/sdl_flags
+$(PLATFORM_BUILDDIR)/src/sdl.o $(PLATFORM_BUILDDIR)/src/config.o: HOST_CFLAGS += $(HOST_SDL_CFLAGS)
+$(PLATFORM_BUILDDIR)/src/sdl.o $(PLATFORM_BUILDDIR)/src/config.o: $(PLATFORM_BUILDDIR)/sdl_flags
 $(PLATFORM_BUILDDIR)/sdl_flags: FORCE
 	@mkdir -p $(dir $@)
 	@echo '$(HOST_SDL_CFLAGS) $(HOST_SDL_LIBS)' | cmp -s - $@ || echo '$(HOST_SDL_CFLAGS) $(HOST_SDL_LIBS)' > $@
