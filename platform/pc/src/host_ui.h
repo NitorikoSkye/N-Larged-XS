@@ -32,6 +32,13 @@ enum {
 };
 
 enum {
+    HOST_BORDERS_BLACK,
+    HOST_BORDERS_AMBIENT, /* the picture's own colours, blurred */
+    HOST_BORDERS_THEMED,  /* the world's art (borders.c) */
+    HOST_BORDERS_COUNT
+};
+
+enum {
     HOST_SCALING_FIT,
     HOST_SCALING_INTEGER,
     HOST_SCALING_STRETCH,
@@ -76,6 +83,7 @@ struct HostSettings {
     int frameRate;   /* HOST_FPS_* */
     int vsync;
     int scaling; /* HOST_SCALING_* */
+    int borders; /* HOST_BORDERS_*: what fills the window around the picture */
     int widescreen;
     /* Graphics */
     int filter;    /* HOST_FILTER_* */

@@ -101,6 +101,7 @@ void HostConfigDefaults(struct HostSettings *s)
     s->frameRate = HOST_FPS_60;
     s->vsync = 1;
     s->scaling = HOST_SCALING_FIT;
+    s->borders = HOST_BORDERS_AMBIENT;
     s->filter = HOST_FILTER_PIXELS;
     s->master = 100;
     s->music = 100;
@@ -124,6 +125,7 @@ static const struct {
     { "frame_rate_index", &gHostSettings.frameRate, 0, HOST_FPS_COUNT - 1 },
     { "vsync", &gHostSettings.vsync, 0, 1 },
     { "scaling", &gHostSettings.scaling, 0, HOST_SCALING_COUNT - 1 },
+    { "borders", &gHostSettings.borders, 0, HOST_BORDERS_COUNT - 1 },
     { "filter", &gHostSettings.filter, 0, HOST_FILTER_COUNT - 1 },
     { "scanlines", &gHostSettings.scanlines, 0, 2 },
     { "lcd_grid", &gHostSettings.lcdGrid, 0, 1 },

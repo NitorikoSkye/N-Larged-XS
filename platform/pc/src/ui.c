@@ -387,6 +387,7 @@ static const char *const sWindowModes[] = { "windowed", "fullscreen" };
 static const char *const sScales[] = { "", "1x", "2x", "3x", "4x", "5x", "6x", "7x", "8x" };
 static const char *const sFpsNames[] = { "60 fps", "90 fps", "120 fps", "144 fps", "240 fps" };
 static const char *const sScalings[] = { "fit", "integer", "stretch" };
+static const char *const sBorders[] = { "black", "ambient", "themed" };
 static const char *const sFilters[] = { "pixels", "smooth", "sharp smooth", "scale2x", "scale3x" };
 static const char *const sScanlines[] = { "off", "light", "dark" };
 static const char *const sColorModes[] = { "original", "gba screen" };
@@ -439,6 +440,11 @@ static int FilterAvailable(int choice)
 {
     return gHostSettings.frameRate == HOST_FPS_60 ||
            (choice != HOST_FILTER_SCALE2X && choice != HOST_FILTER_SCALE3X);
+}
+
+static int NotStretched(void)
+{
+    return gHostSettings.scaling != HOST_SCALING_STRETCH;
 }
 
 static int Never(void)
@@ -509,6 +515,8 @@ static const struct Option sDisplay[] = {
       HOST_APPLY_VSYNC },
     { "scaling", "fit keeps the shape, integer keeps pixels even.",
       OPT_CHOICE, &gHostSettings.scaling, sScalings, HOST_SCALING_COUNT, HOST_APPLY_VIDEO },
+    { "borders", "around the picture: black, its colours blurred, or the world's art.", OPT_CHOICE,
+      &gHostSettings.borders, sBorders, HOST_BORDERS_COUNT, HOST_APPLY_VIDEO, NULL, NotStretched },
     { "widescreen", "not available yet: the levels are built for the gba's 3:2 screen.",
       OPT_CHOICE, &gHostSettings.widescreen, sOffOn, 2, 0, NULL, Never },
 };

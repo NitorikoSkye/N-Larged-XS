@@ -96,7 +96,7 @@ int HostFrontendAvailable(void);
 void HostFrontendInit(void);
 /* The port's name and version, the window's title. */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.02"
+#define HOST_PORT_VERSION "v0.03"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);

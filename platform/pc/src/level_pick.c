@@ -73,3 +73,20 @@ _Bool __wrap__ZN4Game5Level13LevelProgress10SelectRoomEv(struct LevelProgressHea
     }
     return selected;
 }
+
+/* The level being played, for the themed borders (borders.c): set while
+ * LevelProgress::PlayRoom runs a room of it, -1 otherwise (the menus, the
+ * level select, the cutscenes). */
+s32 gHostPlayingLevel = -1;
+
+s32 __real__ZN4Game5Level13LevelProgress8PlayRoomEv(struct LevelProgressHead *self);
+
+s32 __wrap__ZN4Game5Level13LevelProgress8PlayRoomEv(struct LevelProgressHead *self)
+{
+    s32 result;
+
+    gHostPlayingLevel = self->level;
+    result = __real__ZN4Game5Level13LevelProgress8PlayRoomEv(self);
+    gHostPlayingLevel = -1;
+    return result;
+}

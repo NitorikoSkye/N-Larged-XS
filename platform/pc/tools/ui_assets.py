@@ -16,6 +16,8 @@ and the pause art's 240x160 indices and 256-colour palette.
 """
 
 import argparse
+import json
+import os
 import re
 
 from PIL import Image
@@ -83,6 +85,8 @@ def main():
     ap.add_argument("--small", required=True)
     ap.add_argument("--large", required=True)
     ap.add_argument("--pause", required=True)
+    ap.add_argument("--levels", help="levels.json: each level's name and theme, each theme's picture")
+    ap.add_argument("--graphics", help="the graphics folder the theme pictures are in")
     ap.add_argument("-o", "--output", required=True)
     args = ap.parse_args()
 
@@ -103,6 +107,36 @@ def main():
         out.append("    {" + ",".join(str(px[x, y]) for x in range(240)) + "},")
     out.append("};")
     out.append("const unsigned short gUiPausePalette[256] = {" + ",".join(str(c) for c in palette15(pause, 256)) + "};")
+    if args.levels:
+        # The themed borders (borders.c): each level's name and the porthole
+        # picture of its theme (the level select's), -1 for none.
+        data = json.load(open(args.levels))
+        themes = data["themes"]
+        pics = []
+        theme_pic = []
+        for t in themes:
+            if "picture" in t:
+                theme_pic.append(len(pics))
+                pics.append(Image.open(os.path.join(args.graphics, t["picture"])))
+            else:
+                theme_pic.append(-1)
+        levels = data["levels"]
+        out.append(f"const int gUiLevelCount = {len(levels)};")
+        out.append("const char *const gUiLevelNames[] = {" + ",".join(json.dumps(l["name"]) for l in levels) + "};")
+        out.append("const signed char gUiLevelPicture[] = {" +
+                   ",".join(str(theme_pic[l["theme"]]) for l in levels) + "};")
+        out.append(f"const int gUiPictureCount = {len(pics)};")
+        out.append(f"const unsigned char gUiPictures[{len(pics)}][64 * 64] = {{")
+        for im in pics:
+            if im.size != (64, 64) or im.mode != "P":
+                raise SystemExit("ui_assets.py: a theme picture isn't a 64x64 indexed picture")
+            px = im.load()
+            out.append("    {" + ",".join(str(px[x, y]) for y in range(64) for x in range(64)) + "},")
+        out.append("};")
+        out.append(f"const unsigned short gUiPicturePalettes[{len(pics)}][256] = {{")
+        for im in pics:
+            out.append("    {" + ",".join(str(c) for c in palette15(im, 256)) + "},")
+        out.append("};")
     with open(args.output, "w") as f:
         f.write("\n".join(out) + "\n")
 

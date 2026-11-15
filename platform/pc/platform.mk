@@ -160,11 +160,13 @@ PLATFORM_OBJS := $(patsubst $(PLATFORM_DIR)/src/%,$(PLATFORM_BUILDDIR)/src/%.o,$
 # screen, as C arrays (tools/ui_assets.py).
 HOST_UI_ASSETS := $(PLATFORM_BUILDDIR)/ui_assets.c
 $(HOST_UI_ASSETS): $(PLATFORM_DIR)/tools/ui_assets.py engine/src/game/ui/data/hud_font_tables.cpp \
-		games/xs/graphics/fonts/small.png games/xs/graphics/fonts/large.png games/xs/graphics/menus/pause.png
+		games/xs/graphics/fonts/small.png games/xs/graphics/fonts/large.png games/xs/graphics/menus/pause.png \
+		games/xs/data/levels/levels.json $(wildcard games/xs/graphics/level_select/pictures/*.png)
 	@mkdir -p $(dir $@)
 	python3 $(PLATFORM_DIR)/tools/ui_assets.py --fonts-cpp engine/src/game/ui/data/hud_font_tables.cpp \
 		--small games/xs/graphics/fonts/small.png --large games/xs/graphics/fonts/large.png \
-		--pause games/xs/graphics/menus/pause.png -o $@
+		--pause games/xs/graphics/menus/pause.png --levels games/xs/data/levels/levels.json \
+		--graphics games/xs/graphics -o $@
 $(HOST_UI_ASSETS:.c=.o): $(HOST_UI_ASSETS)
 	$(HOST_CC) $(HOST_CFLAGS) -c -o $@ $<
 
@@ -240,6 +242,8 @@ $(HOST_LINK): $(HOST_OBJS) $(CXX_SYMBOLS) $(SYM_IWRAM) $(SYM_EWRAM) $(HOST_RENAM
 # the level and its room.
 comma := ,
 HOST_WRAPS := _ZN4Game2Ui11LevelSelect3RunEPi _ZN4Game5Level13LevelProgress10SelectRoomEv
+# The themed borders (src/borders.c) know the level being played.
+HOST_WRAPS += _ZN4Game5Level13LevelProgress8PlayRoomEv
 # --cutscene (src/cutscene_pick.c) wraps the boot's cutscene.
 HOST_WRAPS += _ZN4Game5Level10LevelState16PlayBootCutsceneEv
 # --gax-log (src/gax_trace.c) wraps GAX2's API.
@@ -332,8 +336,8 @@ $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.S
 $(PLATFORM_BUILDDIR)/src/ppu_hd.o: HOST_CFLAGS += -O2
 
 # sdl.o is rebuilt when HOST_SDL changes (the flags file).
-$(PLATFORM_BUILDDIR)/src/sdl.o $(PLATFORM_BUILDDIR)/src/config.o: HOST_CFLAGS += $(HOST_SDL_CFLAGS)
-$(PLATFORM_BUILDDIR)/src/sdl.o $(PLATFORM_BUILDDIR)/src/config.o: $(PLATFORM_BUILDDIR)/sdl_flags
+$(PLATFORM_BUILDDIR)/src/sdl.o $(PLATFORM_BUILDDIR)/src/config.o $(PLATFORM_BUILDDIR)/src/borders.o: HOST_CFLAGS += $(HOST_SDL_CFLAGS)
+$(PLATFORM_BUILDDIR)/src/sdl.o $(PLATFORM_BUILDDIR)/src/config.o $(PLATFORM_BUILDDIR)/src/borders.o: $(PLATFORM_BUILDDIR)/sdl_flags
 $(PLATFORM_BUILDDIR)/sdl_flags: FORCE
 	@mkdir -p $(dir $@)
 	@echo '$(HOST_SDL_CFLAGS) $(HOST_SDL_LIBS)' | cmp -s - $@ || echo '$(HOST_SDL_CFLAGS) $(HOST_SDL_LIBS)' > $@

@@ -292,6 +292,19 @@ pixels show. With nothing moved it is ppu.c's picture pixel for pixel:
 frames, none differ). `--interp-dump DIR --interp-at N` writes frames N
 to N+2 at quarter steps.
 
+**Borders** (v0.03; Display's Borders, src/sdl.c and src/borders.c).
+When the window isn't the picture's 3:2 shape, what fills it beside (or
+above and below) the picture: black; ambient (the default: the latest
+frame averaged to 30x20, blurred, eased towards over a quarter of a
+second, stretched behind the picture and dimmed); or themed (a warp
+room's wall from the pause screen's metal and rivets, with a porthole of
+the level's theme picture and its name on the left and Crash's pause
+portrait on the right; the portrait on both sides outside a level). The
+level comes from LevelProgress::PlayRoom, --wrap'ed (src/level_pick.c,
+gHostPlayingLevel). The FPS counter and the input display go into the
+borders when they fit there, at a smaller size if need be, and over the
+picture's corners otherwise.
+
 **Widescreen** is not in v0.02. A prototype built with
 `DISPLAY_WIDTH=288` runs (the HUD, camera, culling and activation follow
 screen.h), but BgLayer keeps the level map in a 256-pixel-wide BG

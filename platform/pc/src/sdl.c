@@ -84,6 +84,7 @@ void HostConfigDefaults(struct HostSettings *s)
 {
     memset(s, 0, sizeof(*s));
     s->windowScale = 3;
+    s->borders = HOST_BORDERS_AMBIENT;
     s->master = s->music = s->sfx = 100;
     s->deadzone = 35;
 }
@@ -988,12 +989,14 @@ static void PutOverlay(SDL_Texture **tex, const u32 *canvas, int w, int h, int x
     SDL_RenderCopy(sRenderer, *tex, NULL, &r);
 }
 
+static void PlaceOverlay(SDL_Rect dst, int w, int h, int side, int bottom, int *scale, int *x, int *y);
+
 #define FPS_W 64
 #define FPS_H 12
 #define PAD_W 72
 #define PAD_H 30
 
-static void DrawFps(int scale)
+static void DrawFps(SDL_Rect dst, int scale)
 {
     static u32 canvas[FPS_W * FPS_H];
     char text[16];
@@ -1004,12 +1007,18 @@ static void DrawFps(int scale)
     memset(canvas, 0, sizeof(canvas));
     Fill(canvas, FPS_W, 0, 0, w, FPS_H, 0xB0000000);
     HostUiText(canvas, FPS_W, FPS_H, 0, 3, 2, text, HOST_UI_PAL_NORMAL);
-    PutOverlay(&sFpsTex, canvas, FPS_W, FPS_H, 4 * scale, 4 * scale, scale);
+    {
+        int x;
+        int y;
+
+        PlaceOverlay(dst, w, FPS_H, 0, 0, &scale, &x, &y);
+        PutOverlay(&sFpsTex, canvas, FPS_W, FPS_H, x, y, scale);
+    }
 }
 
 /* The GBA's buttons, lit while held: the D-pad, A and B (the font's
  * button icons), L and R, Select and Start. */
-static void DrawPad(int scale, int right)
+static void DrawPad(SDL_Rect dst, int scale, int right)
 {
     static u32 canvas[PAD_W * PAD_H];
     u16 k = sKeys;
@@ -1043,9 +1052,15 @@ static void DrawPad(int scale, int right)
     Fill(canvas, PAD_W, 26, 25, 32, 27, (k & SELECT_BUTTON) ? lit : dark);
     Fill(canvas, PAD_W, 25, 16, 33, 20, edge);
     Fill(canvas, PAD_W, 26, 17, 32, 19, (k & START_BUTTON) ? lit : dark);
-    SDL_GetRendererOutputSize(sRenderer, &ww, &wh);
-    PutOverlay(&sPadTex, canvas, PAD_W, PAD_H, right ? ww - (PAD_W + 4) * scale : 4 * scale,
-               wh - (PAD_H + 4) * scale, scale);
+    {
+        int x;
+        int y;
+
+        (void)ww;
+        (void)wh;
+        PlaceOverlay(dst, PAD_W, PAD_H, right, 1, &scale, &x, &y);
+        PutOverlay(&sPadTex, canvas, PAD_W, PAD_H, x, y, scale);
+    }
 }
 
 /* The menu's canvas over the game's place, or `banner` (a word on a
@@ -1082,6 +1097,176 @@ static void DrawMenu(SDL_Rect dst, const char *banner)
     SDL_RenderCopy(sRenderer, sMenuTex, NULL, &r);
 }
 
+/* --- Borders --------------------------------------------------------------- */
+
+void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh);
+
+/* Where an overlay `w` x `h` goes: in the border beside the picture
+ * (side 0 left, 1 right) when one is wide enough for it at `*scale` or
+ * smaller, centred across it at its top or bottom; otherwise in the
+ * window's corner, over the picture. */
+static void PlaceOverlay(SDL_Rect dst, int w, int h, int side, int bottom, int *scale, int *x, int *y)
+{
+    int ww;
+    int wh;
+    int bar;
+    int s;
+
+    SDL_GetRendererOutputSize(sRenderer, &ww, &wh);
+    bar = side == 0 ? dst.x : ww - (dst.x + dst.w);
+    for (s = *scale; s >= 1; s--) {
+        if (bar >= w * s + 2 * s) {
+            *scale = s;
+            *x = (side == 0 ? 0 : dst.x + dst.w) + (bar - w * s) / 2;
+            *y = bottom ? wh - (h + 4) * s : 4 * s;
+            return;
+        }
+    }
+    *x = side == 0 ? 4 * *scale : ww - (w + 4) * *scale;
+    *y = bottom ? wh - (h + 4) * *scale : 4 * *scale;
+}
+
+/* Ambient: the picture's own colours around it. The latest game frame,
+ * averaged down to 30x20 (8x8 pixel blocks), blurred, and eased towards
+ * over a quarter of a second so that a flash doesn't flicker the edges,
+ * is stretched to fill the window behind the picture (linear, so it is
+ * soft) and dimmed, so that the picture stays what the eye goes to. */
+#define AMB_W 30
+#define AMB_H 20
+
+static float sAmb[AMB_H][AMB_W][3];
+static int sAmbReady;
+static SDL_Texture *sAmbTex;
+
+static void BlurAmbient(float (*a)[AMB_W][3])
+{
+    static float t[AMB_H][AMB_W][3];
+    int pass;
+    int x;
+    int y;
+    int c;
+
+    for (pass = 0; pass < 2; pass++) {
+        for (y = 0; y < AMB_H; y++) {
+            for (x = 0; x < AMB_W; x++) {
+                int l = x > 0 ? x - 1 : x;
+                int r = x < AMB_W - 1 ? x + 1 : x;
+
+                for (c = 0; c < 3; c++) {
+                    t[y][x][c] = (a[y][l][c] + 2 * a[y][x][c] + a[y][r][c]) / 4;
+                }
+            }
+        }
+        for (y = 0; y < AMB_H; y++) {
+            int u = y > 0 ? y - 1 : y;
+            int d = y < AMB_H - 1 ? y + 1 : y;
+
+            for (x = 0; x < AMB_W; x++) {
+                for (c = 0; c < 3; c++) {
+                    a[y][x][c] = (t[u][x][c] + 2 * t[y][x][c] + t[d][x][c]) / 4;
+                }
+            }
+        }
+    }
+}
+
+static void UpdateAmbient(double dt)
+{
+    static float now[AMB_H][AMB_W][3];
+    static u32 px[AMB_H * AMB_W];
+    float keep = sAmbReady ? (float)pow(0.5, dt / 15.0) : 0.0f;
+    int x;
+    int y;
+    int c;
+
+    for (y = 0; y < AMB_H; y++) {
+        for (x = 0; x < AMB_W; x++) {
+            u32 sum[3] = { 0, 0, 0 };
+            int i;
+            int j;
+
+            for (j = 0; j < SH / AMB_H; j++) {
+                const u32 *row = &gHostScreen[(y * (SH / AMB_H) + j) * SW + x * (SW / AMB_W)];
+
+                for (i = 0; i < SW / AMB_W; i++) {
+                    sum[0] += (row[i] >> 16) & 0xFF;
+                    sum[1] += (row[i] >> 8) & 0xFF;
+                    sum[2] += row[i] & 0xFF;
+                }
+            }
+            for (c = 0; c < 3; c++) {
+                now[y][x][c] = sum[c] / (float)((SW / AMB_W) * (SH / AMB_H));
+            }
+        }
+    }
+    BlurAmbient(now);
+    for (y = 0; y < AMB_H; y++) {
+        for (x = 0; x < AMB_W; x++) {
+            u32 out = 0;
+
+            for (c = 0; c < 3; c++) {
+                sAmb[y][x][c] = sAmb[y][x][c] * keep + now[y][x][c] * (1 - keep);
+                out = out << 8 | (u32)(sAmb[y][x][c] + 0.5f);
+            }
+            if (gHostSettings.colors && sLut != NULL) {
+                out = sLut[(out >> 18 & 0x3F) << 12 | (out >> 10 & 0x3F) << 6 | (out >> 2 & 0x3F)];
+            }
+            px[y * AMB_W + x] = 0xFF000000 | out;
+        }
+    }
+    sAmbReady = 1;
+    if (sAmbTex == NULL) {
+        sAmbTex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, AMB_W, AMB_H);
+        if (sAmbTex == NULL) {
+            return;
+        }
+        SDL_SetTextureScaleMode(sAmbTex, SDL_ScaleModeLinear);
+        SDL_SetTextureColorMod(sAmbTex, 160, 160, 160);
+    }
+    SDL_UpdateTexture(sAmbTex, NULL, px, AMB_W * 4);
+}
+
+/* The picture's shape, zoomed to cover the whole window, centred on it. */
+static void DrawAmbient(int ww, int wh)
+{
+    SDL_Rect r;
+
+    if (sAmbTex == NULL || !sAmbReady) {
+        return;
+    }
+    if ((long)ww * SH > (long)wh * SW) {
+        r.w = ww;
+        r.h = ww * SH / SW;
+    } else {
+        r.h = wh;
+        r.w = wh * SW / SH;
+    }
+    r.x = (ww - r.w) / 2;
+    r.y = (wh - r.h) / 2;
+    SDL_RenderCopy(sRenderer, sAmbTex, NULL, &r);
+}
+
+static void DrawBorders(SDL_Rect dst)
+{
+    int ww;
+    int wh;
+
+    SDL_GetRendererOutputSize(sRenderer, &ww, &wh);
+    if (dst.w >= ww && dst.h >= wh) {
+        return; /* no borders */
+    }
+    switch (gHostSettings.borders) {
+    case HOST_BORDERS_AMBIENT:
+        DrawAmbient(ww, wh);
+        break;
+    case HOST_BORDERS_THEMED:
+        HostBordersDrawThemed(sRenderer, dst, ww, wh);
+        break;
+    default:
+        break;
+    }
+}
+
 static int sMenuPeek;
 
 /* One picture to the window: the game's (`src`, w x h, the game's own
@@ -1094,9 +1279,13 @@ static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int m
 
     if (src != NULL) {
         UploadPicture(src, w, h, ownFrame, dt);
+        if (gHostSettings.borders == HOST_BORDERS_AMBIENT) {
+            UpdateAmbient(dt);
+        }
     }
     SDL_SetRenderDrawColor(sRenderer, 0, 0, 0, 255);
     SDL_RenderClear(sRenderer);
+    DrawBorders(dst);
     if (sGameTex != NULL) {
         DrawGame(dst);
         DrawMasks(dst);
@@ -1108,10 +1297,10 @@ static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int m
             DrawMenu(dst, banner);
         }
         if (gHostSettings.showFps) {
-            DrawFps(scale);
+            DrawFps(dst, scale);
         }
         if (gHostSettings.inputDisplay) {
-            DrawPad(scale, gHostSettings.inputDisplay == 2);
+            DrawPad(dst, scale, gHostSettings.inputDisplay == 2);
         }
     }
     SDL_RenderPresent(sRenderer);
