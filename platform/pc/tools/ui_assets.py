@@ -79,6 +79,71 @@ def font(out, prefix, img, chars, mets):
     out.append(f"const unsigned char {prefix}Lookup[256] = {{" + ",".join(str(v) for v in lookup) + "};")
 
 
+# The themed borders' stats panel (borders.c): the pause menu's icons,
+# each an animation's first frame (or a power's front-facing one) in that
+# animation's palette (bank.json frames, the anims' paletteId in
+# sprite_banks_22_38.cpp: the pause pages' gPause*IconFrames pick the
+# animations), at half size as the pause pages draw the gems and relics
+# (affine 0.5): (name, bank, frame, palette, half).
+ICONS = [
+    ("CRYSTAL", 37, 0, 117, 1),
+    ("GEM_CLEAR", 32, 0, 50, 1),
+    ("GEM_RED", 32, 0, 52, 1),
+    ("GEM_GREEN", 32, 8, 51, 1),
+    ("GEM_BLUE", 32, 0, 53, 1),
+    ("GEM_YELLOW", 32, 0, 49, 1),
+    ("RELIC_PLATINUM", 33, 8, 55, 1),
+    ("RELIC_GOLD", 33, 8, 56, 1),
+    ("RELIC_SAPPHIRE", 33, 0, 54, 1),
+    ("POWER_SUPER_BODY_SLAM", 38, 45 + 7, 60, 1),
+    ("POWER_DOUBLE_JUMP", 38, 30 + 7, 60, 1),
+    ("POWER_TORNADO_SPIN", 38, 0 + 7, 60, 1),
+    ("POWER_TURBO_RUN", 38, 15 + 7, 60, 1),
+]
+
+
+def jasc(path):
+    lines = open(path).read().split("\n")
+    if lines[0].strip() != "JASC-PAL":
+        raise SystemExit(f"ui_assets.py: {path} isn't a JASC palette")
+    return [tuple(int(v) for v in l.split()) for l in lines[3:3 + int(lines[2])]]
+
+
+def icons(out, sprites):
+    import glob
+
+    names = []
+    for name, bank, frame, pal, half in ICONS:
+        png = glob.glob(os.path.join(sprites, f"bank{bank:02d}_*", f"f{frame:03d}.png"))
+        palf = glob.glob(os.path.join(sprites, "palettes", f"{pal:03d}_*.pal"))
+        if len(png) != 1 or len(palf) != 1:
+            raise SystemExit(f"ui_assets.py: no bank {bank} frame {frame} or palette {pal}")
+        im = Image.open(png[0])
+        colors = jasc(palf[0])
+        px = im.load()
+        w, h = im.size
+        step = 2 if half else 1
+        rows = [[px[x, y] for x in range(0, w - step + 1, step)] for y in range(0, h - step + 1, step)]
+        # cropped to what it draws
+        ys = [y for y, r in enumerate(rows) if any(r)]
+        xs = [x for x in range(len(rows[0])) if any(r[x] for r in rows)]
+        rows = [r[xs[0]:xs[-1] + 1] for r in rows[ys[0]:ys[-1] + 1]]
+        argb = []
+        for r in rows:
+            for i in r:
+                if i == 0:
+                    argb.append(0)
+                else:
+                    c = tuple((v >> 3) << 3 | (v >> 3) >> 2 for v in colors[i])
+                    argb.append(0xFF000000 | c[0] << 16 | c[1] << 8 | c[2])
+        out.append(f"static const unsigned int sIcon{len(names)}[] = {{" + ",".join(str(v) for v in argb) + "};")
+        names.append((name, len(rows[0]), len(rows)))
+    out.append("const struct UiIcon { int w; int h; const unsigned int *px; } gUiIcons[] = {")
+    for k, (name, w, h) in enumerate(names):
+        out.append(f"    {{ {w}, {h}, sIcon{k} }}, /* {name} */")
+    out.append("};")
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--fonts-cpp", required=True)
@@ -87,6 +152,7 @@ def main():
     ap.add_argument("--pause", required=True)
     ap.add_argument("--levels", help="levels.json: each level's name and theme, each theme's picture")
     ap.add_argument("--graphics", help="the graphics folder the theme pictures are in")
+    ap.add_argument("--sprites", help="the sprite banks' folder: the stats panel's icons")
     ap.add_argument("-o", "--output", required=True)
     args = ap.parse_args()
 
@@ -137,6 +203,8 @@ def main():
         for im in pics:
             out.append("    {" + ",".join(str(c) for c in palette15(im, 256)) + "},")
         out.append("};")
+    if args.sprites:
+        icons(out, args.sprites)
     with open(args.output, "w") as f:
         f.write("\n".join(out) + "\n")
 

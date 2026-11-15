@@ -161,12 +161,13 @@ PLATFORM_OBJS := $(patsubst $(PLATFORM_DIR)/src/%,$(PLATFORM_BUILDDIR)/src/%.o,$
 HOST_UI_ASSETS := $(PLATFORM_BUILDDIR)/ui_assets.c
 $(HOST_UI_ASSETS): $(PLATFORM_DIR)/tools/ui_assets.py engine/src/game/ui/data/hud_font_tables.cpp \
 		games/xs/graphics/fonts/small.png games/xs/graphics/fonts/large.png games/xs/graphics/menus/pause.png \
-		games/xs/data/levels/levels.json $(wildcard games/xs/graphics/level_select/pictures/*.png)
+		games/xs/data/levels/levels.json $(wildcard games/xs/graphics/level_select/pictures/*.png) \
+		$(wildcard games/xs/graphics/sprites/bank3[2378]_*/f*.png) $(wildcard games/xs/graphics/sprites/palettes/*.pal)
 	@mkdir -p $(dir $@)
 	python3 $(PLATFORM_DIR)/tools/ui_assets.py --fonts-cpp engine/src/game/ui/data/hud_font_tables.cpp \
 		--small games/xs/graphics/fonts/small.png --large games/xs/graphics/fonts/large.png \
 		--pause games/xs/graphics/menus/pause.png --levels games/xs/data/levels/levels.json \
-		--graphics games/xs/graphics -o $@
+		--graphics games/xs/graphics --sprites games/xs/graphics/sprites -o $@
 $(HOST_UI_ASSETS:.c=.o): $(HOST_UI_ASSETS)
 	$(HOST_CC) $(HOST_CFLAGS) -c -o $@ $<
 

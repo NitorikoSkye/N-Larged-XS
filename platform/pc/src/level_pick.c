@@ -1,3 +1,4 @@
+#include <stdio.h>
 /* --level N and --room R (main.c): the level select's choice is level N,
  * and the level starts in its room R, whatever the keys picked. The same
  * as tools/boottest.py's level scripts do on mGBA (setting
@@ -89,4 +90,22 @@ s32 __wrap__ZN4Game5Level13LevelProgress8PlayRoomEv(struct LevelProgressHead *se
     result = __real__ZN4Game5Level13LevelProgress8PlayRoomEv(self);
     gHostPlayingLevel = -1;
     return result;
+}
+
+/* HOST_PRINT_PROGRESS (tests): the progress the themed borders' stats
+ * panel shows, at the end of a run. */
+extern void *gLevelState;
+s32 CountCrystals(const void *progress);
+s32 CountGems(const void *progress);
+s32 CountRelics(const void *progress);
+s32 GetCompletionPercent(const void *progress);
+
+void HostPrintProgress(void)
+{
+    const u8 *p = gLevelState;
+
+    if (p != NULL) {
+        printf("progress: %d%% crystals %d gems %d relics %d flags 0x%02x\n", GetCompletionPercent(p),
+               CountCrystals(p), CountGems(p), CountRelics(p), p[2]);
+    }
 }

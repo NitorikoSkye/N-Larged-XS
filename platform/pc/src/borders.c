@@ -34,6 +34,77 @@ extern const unsigned char gUiPictures[][64 * 64];
 extern const unsigned short gUiPicturePalettes[][256];
 extern s32 gHostPlayingLevel;
 
+#include "constants/progress_flags.h"
+
+/* The pause menu's icons (ui_assets.c), in this order. */
+struct UiIcon {
+    int w;
+    int h;
+    const unsigned int *px;
+};
+extern const struct UiIcon gUiIcons[];
+enum {
+    ICON_CRYSTAL,
+    ICON_GEM_CLEAR,
+    ICON_GEM_RED,
+    ICON_GEM_GREEN,
+    ICON_GEM_BLUE,
+    ICON_GEM_YELLOW,
+    ICON_RELIC_PLATINUM,
+    ICON_RELIC_GOLD,
+    ICON_RELIC_SAPPHIRE,
+    ICON_POWER_SUPER_BODY_SLAM,
+    ICON_POWER_DOUBLE_JUMP,
+    ICON_POWER_TORNADO_SPIN,
+    ICON_POWER_TURBO_RUN,
+};
+
+/* The player's progress: the level state's progress block (its first
+ * field, game_progress.hpp), counted by the game's own functions, as the
+ * pause menu's pages count it (pause_menu_pages_init.cpp). */
+extern void *gLevelState;
+s32 CountCrystals(const void *progress);
+s32 CountGems(const void *progress);
+s32 CountClearGems(const void *progress);
+s32 CountRelics(const void *progress);
+s32 CountSapphireRelics(const void *progress);
+s32 CountGoldRelics(const void *progress);
+s32 CountPlatinumRelics(const void *progress);
+s32 GetCompletionPercent(const void *progress);
+
+struct Stats {
+    int valid;
+    int percent;
+    int crystals;
+    int gems;
+    int clearGems;
+    int relics;
+    int sapphire;
+    int gold;
+    int platinum;
+    int flags;
+};
+
+static void ReadStats(struct Stats *st)
+{
+    const u8 *progress = gLevelState;
+
+    memset(st, 0, sizeof(*st));
+    if (progress == NULL) {
+        return;
+    }
+    st->valid = 1;
+    st->percent = GetCompletionPercent(progress);
+    st->crystals = CountCrystals(progress);
+    st->gems = CountGems(progress);
+    st->clearGems = CountClearGems(progress);
+    st->relics = CountRelics(progress);
+    st->sapphire = CountSapphireRelics(progress);
+    st->gold = CountGoldRelics(progress);
+    st->platinum = CountPlatinumRelics(progress);
+    st->flags = progress[2];
+}
+
 /* A bar: its texture and what it was made for. */
 struct Bar {
     SDL_Texture *tex;
@@ -41,7 +112,10 @@ struct Bar {
     int h;
     int level;
     int side;
+    struct Stats stats;
 };
+
+static struct Stats sStats;
 
 static struct Bar sBars[2];
 
@@ -226,6 +300,143 @@ static void Name(u32 *c, int w, int h, int cx, int top, const char *s)
     }
 }
 
+/* An icon centred at (cx, cy); `dim` for what the player hasn't got. */
+static void Icon(u32 *c, int w, int h, int id, int cx, int cy, int dim)
+{
+    const struct UiIcon *ic = &gUiIcons[id];
+    int x;
+    int y;
+
+    for (y = 0; y < ic->h; y++) {
+        for (x = 0; x < ic->w; x++) {
+            u32 v = ic->px[y * ic->w + x];
+            int px = cx - ic->w / 2 + x;
+            int py = cy - ic->h / 2 + y;
+
+            if (v == 0 || px < 0 || py < 0 || px >= w || py >= h) {
+                continue;
+            }
+            if (dim) {
+                u32 l = (((v >> 16) & 0xFF) * 30 + ((v >> 8) & 0xFF) * 59 + (v & 0xFF) * 11) / 100;
+
+                l = 24 + l / 4;
+                v = 0xFF000000 | l << 16 | l << 8 | (l + 12);
+            }
+            c[py * w + px] = v;
+        }
+    }
+}
+
+/* A dark plate, as the pause screen's inset boxes, behind a section. */
+static void Plate(u32 *c, int w, int h, int x0, int y0, int x1, int y1)
+{
+    int x;
+    int y;
+
+    for (y = y0; y < y1; y++) {
+        for (x = x0; x < x1; x++) {
+            if (x < 0 || y < 0 || x >= w || y >= h) {
+                continue;
+            }
+            if (y == y0 || y == y1 - 1 || x == x0 || x == x1 - 1) {
+                c[y * w + x] = 0xFF384890;
+            } else {
+                c[y * w + x] = Dark(c[y * w + x], 1, 4);
+            }
+        }
+    }
+}
+
+static void Centered(u32 *c, int w, int h, int large, int cx, int y, const char *s)
+{
+    HostUiText(c, w, h, large, cx - HostUiTextWidth(large, s) / 2, y, s, HOST_UI_PAL_NORMAL);
+}
+
+/* The right bar's stats: the pause menu's pages at a glance. Completion,
+ * the crystals, the gems (the four coloured ones grey until found), the
+ * relics of each kind and the powers (grey until earned); the section
+ * titles in the small font as the pause pages' titles, the numbers in
+ * the large one as their counts. */
+static void StatsPanel(u32 *c, int w, int h, const struct Stats *st)
+{
+    int x0 = 9 + 2;
+    int x1 = w - 2;
+    int cx = (x0 + x1) / 2;
+    int y = h / 2 - 150;
+    char text[32];
+    static const struct {
+        int flag;
+        int icon;
+    } gems[4] = {
+        { PROGRESS_FLAG_RED_GEM, ICON_GEM_RED },
+        { PROGRESS_FLAG_GREEN_GEM, ICON_GEM_GREEN },
+        { PROGRESS_FLAG_BLUE_GEM, ICON_GEM_BLUE },
+        { PROGRESS_FLAG_YELLOW_GEM, ICON_GEM_YELLOW },
+    };
+    static const struct {
+        int flag;
+        int icon;
+    } powers[4] = {
+        { PROGRESS_FLAG_SUPER_BODY_SLAM, ICON_POWER_SUPER_BODY_SLAM },
+        { PROGRESS_FLAG_DOUBLE_JUMP, ICON_POWER_DOUBLE_JUMP },
+        { PROGRESS_FLAG_TORNADO_SPIN, ICON_POWER_TORNADO_SPIN },
+        { PROGRESS_FLAG_TURBO_RUN, ICON_POWER_TURBO_RUN },
+    };
+    int i;
+
+    if (y < 4) {
+        y = 4;
+    }
+    /* Completion */
+    Plate(c, w, h, x0, y, x1, y + 30);
+    Centered(c, w, h, 0, cx, y + 4, "complete");
+    snprintf(text, sizeof(text), "%d%%", st->percent);
+    Centered(c, w, h, 1, cx, y + 13, text);
+    y += 36;
+    /* Crystals */
+    Plate(c, w, h, x0, y, x1, y + 38);
+    Centered(c, w, h, 0, cx, y + 4, "crystals");
+    Icon(c, w, h, ICON_CRYSTAL, x0 + 10, y + 25, 0);
+    snprintf(text, sizeof(text), "%d/%d", st->crystals, 20);
+    Centered(c, w, h, 1, cx + 7, y + 17, text);
+    y += 44;
+    /* Gems */
+    Plate(c, w, h, x0, y, x1, y + 50);
+    Centered(c, w, h, 0, cx, y + 4, "gems");
+    Icon(c, w, h, ICON_GEM_CLEAR, x0 + 10, y + 22, 0);
+    snprintf(text, sizeof(text), "%d/%d", st->gems, 28);
+    Centered(c, w, h, 1, cx + 7, y + 15, text);
+    for (i = 0; i < 4; i++) {
+        Icon(c, w, h, gems[i].icon, cx - 24 + 16 * i, y + 41, !(st->flags & gems[i].flag));
+    }
+    y += 56;
+    /* Relics */
+    Plate(c, w, h, x0, y, x1, y + 72);
+    Centered(c, w, h, 0, cx, y + 4, "relics");
+    {
+        static const int icons[3] = { ICON_RELIC_SAPPHIRE, ICON_RELIC_GOLD, ICON_RELIC_PLATINUM };
+        int counts[3];
+
+        counts[0] = st->sapphire;
+        counts[1] = st->gold;
+        counts[2] = st->platinum;
+        for (i = 0; i < 3; i++) {
+            Icon(c, w, h, icons[i], cx - 20 + 20 * i, y + 26, 0);
+            snprintf(text, sizeof(text), "%d", counts[i]);
+            Centered(c, w, h, 0, cx - 20 + 20 * i, y + 40, text);
+        }
+        snprintf(text, sizeof(text), "%d/%d", st->relics, 20);
+        Centered(c, w, h, 1, cx, y + 51, text);
+    }
+    y += 78;
+    /* Powers */
+    Plate(c, w, h, x0, y, x1, y + 34);
+    Centered(c, w, h, 0, cx, y + 4, "powers");
+    for (i = 0; i < 4; i++) {
+        Icon(c, w, h, powers[i].icon, cx - 24 + 16 * i, y + 23, !(st->flags & powers[i].flag));
+    }
+}
+
 static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, int side)
 {
     u32 *c = malloc((size_t)w * h * 4);
@@ -252,6 +463,8 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
         } else if (side == 0 && level >= 0 && level < gUiLevelCount) {
             Portrait(c, w, h, cx, cy);
             Name(c, w, h, cx, cy + 44, gUiLevelNames[level]);
+        } else if (side == 1 && sStats.valid) {
+            StatsPanel(c, w, h, &sStats);
         } else {
             Portrait(c, w, h, cx, cy);
         }
@@ -269,6 +482,7 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
     bar->h = h;
     bar->level = level;
     bar->side = side;
+    bar->stats = sStats;
 }
 
 void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
@@ -301,6 +515,7 @@ void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
         }
         return;
     }
+    ReadStats(&sStats);
     for (side = 0; side < 2; side++) {
         int barW = side == 0 ? dst.x : ww - (dst.x + dst.w);
         int unit = barW / 75 > 1 ? barW / 75 : 1;
@@ -312,7 +527,8 @@ void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
             continue;
         }
         if (sBars[side].tex == NULL || sBars[side].w != w || sBars[side].h != h ||
-            sBars[side].level != gHostPlayingLevel || sBars[side].side != side) {
+            sBars[side].level != gHostPlayingLevel || sBars[side].side != side ||
+            (side == 1 && memcmp(&sBars[side].stats, &sStats, sizeof(sStats)) != 0)) {
             MakeBar(&sBars[side], r, w, h, gHostPlayingLevel, side);
         }
         /* Each bar meets the picture's edge with its whole pixels. */

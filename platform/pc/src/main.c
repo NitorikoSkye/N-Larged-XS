@@ -43,6 +43,11 @@ void HostExit(int status, const char *how)
     if (gHostHdCheck) {
         HostHdCheckEnd();
     }
+    if (getenv("HOST_PRINT_PROGRESS") != NULL) {
+        extern void HostPrintProgress(void);
+
+        HostPrintProgress();
+    }
     printf("end %s at frame %u (VBlank %u)\n", how, HostFrame(), gHostVBlanks);
     fflush(stdout);
     exit(status);
