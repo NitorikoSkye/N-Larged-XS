@@ -179,6 +179,11 @@ int main(int argc, char **argv)
             gHostOptions.checkpointEvery = 0;
             gHostOptions.quiet = 1;
         }
+        /* A player's progress is kept: next to the executable unless
+         * --save says where. */
+        if (gHostOptions.save == NULL) {
+            gHostOptions.save = HostFrontendDefaultSave();
+        }
         HostFrontendInit();
     }
 

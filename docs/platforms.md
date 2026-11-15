@@ -227,6 +227,31 @@ executable without a window, and that executable, started without
 built before SDL2 was installed keeps running headless: `make
 PLATFORM=pc` rebuilds `sdl.c` and relinks once pkg-config finds it.
 
+**Windows.** The same platform builds a single self-contained Windows
+executable with MinGW-w64 (cross from Linux, or on Windows) and SDL2's
+MinGW development files, linked statically:
+
+```
+make PLATFORM=pc OBJ_DIR=build/win/crashbandicootxs \
+    HOST_CC=x86_64-w64-mingw32-gcc HOST_CXX=x86_64-w64-mingw32-g++ \
+    HOST_NM=x86_64-w64-mingw32-nm HOST_CXXFILT=x86_64-w64-mingw32-c++filt \
+    HOST_OBJCOPY=x86_64-w64-mingw32-objcopy \
+    SDL2_PREFIX=path/to/SDL2-2.30.x/x86_64-w64-mingw32   # build/win/CrashBandicootXS.exe
+```
+
+It is a GUI program (no console) that imports only Windows' own DLLs,
+with an icon and version information (platform/pc/win/). What differs
+from the ELF build: `-mno-ms-bitfields` (MinGW's default lays bitfields
+out as MSVC does), the host memory in a section of its own (`.gbamem`,
+memory.S) with each region at a 1 MB offset and the image's sections
+1 MB aligned without ASLR, and `--allow-multiple-definition` for the
+ROM's out-of-line copies of inline methods, which PE's COMDAT rules
+reject. In the window, without `--save`, the EEPROM is kept in
+`crashbandicootxs.sav` next to the executable (on Linux too). The
+checkpoints' PICTURE and SCREEN hashes and the audio hash of boot.keys,
+intro.keys, bonus.keys and dingodile.keys (under Wine) are the Linux
+build's.
+
 **Controls.** Keyboard: the arrows are the D-pad, X is A, Z is B, A and
 S are L and R, Enter is Start, Backspace (or right Shift) is Select. A
 gamepad (SDL's game controller layout): the D-pad or the left stick, the

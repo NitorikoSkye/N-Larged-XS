@@ -17,15 +17,43 @@ HOST_NM      ?= nm
 HOST_CXXFILT ?= c++filt
 HOST_OBJCOPY ?= objcopy
 
+# Windows: a cross (or native) MinGW-w64 compiler, e.g.
+#   make PLATFORM=pc OBJ_DIR=build/win/crashbandicootxs HOST_CC=x86_64-w64-mingw32-gcc HOST_CXX=x86_64-w64-mingw32-g++ \
+#        HOST_NM=x86_64-w64-mingw32-nm HOST_CXXFILT=x86_64-w64-mingw32-c++filt \
+#        HOST_OBJCOPY=x86_64-w64-mingw32-objcopy SDL2_PREFIX=path/to/SDL2/x86_64-w64-mingw32
+# makes one self-contained .exe: SDL2, libgcc and libstdc++ linked in
+# statically, a GUI program (no console window). HOST_WINDOWS is found
+# from the compiler's target.
+HOST_WINDOWS ?= $(if $(findstring mingw,$(shell $(HOST_CC) -dumpmachine 2>/dev/null)),1,0)
+
+ifeq ($(HOST_WINDOWS),1)
+HOST_EXE := $(patsubst %/,%,$(dir $(OBJ_DIR)))/CrashBandicootXS.exe
+else
 HOST_EXE := build/$(PLATFORM)/crashbandicootxs_$(PLATFORM)
+endif
 
 # The window (src/sdl.c) needs SDL2, found by pkg-config; without it (or
 # with HOST_SDL=0) the executable runs headless only, which is all the
 # tests need. Not finding it is said (a warning), since the executable
 # then has no window; HOST_SDL=0 on the command line is taken as meant.
 HOST_PKG_CONFIG ?= pkg-config
+ifeq ($(HOST_WINDOWS),1)
+# SDL2's MinGW development files (SDL2-devel-*-mingw's x86_64-w64-mingw32/),
+# linked statically: libSDL2.a and the Windows libraries it uses.
+SDL2_PREFIX ?=
+ifneq ($(SDL2_PREFIX),)
+HOST_SDL ?= 1
+HOST_SDL_CFLAGS := -DHOST_SDL -I$(SDL2_PREFIX)/include/SDL2 -I$(SDL2_PREFIX)/include
+HOST_SDL_LIBS := $(SDL2_PREFIX)/lib/libSDL2.a -lkernel32 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
+	-loleaut32 -lversion -luuid -ladvapi32 -lsetupapi -lshell32 -ldinput8
+else
+HOST_SDL ?= 0
+endif
+else
 HOST_SDL ?= $(shell $(HOST_PKG_CONFIG) --exists sdl2 2>/dev/null && echo 1 || echo 0)
-ifeq ($(HOST_SDL),1)
+endif
+ifeq ($(HOST_WINDOWS),1)
+else ifeq ($(HOST_SDL),1)
 HOST_SDL_CFLAGS := -DHOST_SDL $(shell $(HOST_PKG_CONFIG) --cflags sdl2)
 HOST_SDL_LIBS := $(shell $(HOST_PKG_CONFIG) --libs sdl2)
 else ifneq ($(origin HOST_SDL),command line)
@@ -57,6 +85,12 @@ all: $(HOST_EXE)
 # warnings are checked on the GBA build).
 HOST_CPPFLAGS = $(subst -I tools/agbcc/include,,$(filter-out -nostdinc -undef,$(CPPFLAGS)))
 HOST_FLAGS := -g -femit-class-debug-always -O1 -funsigned-char -fno-strict-aliasing -fwrapv -fno-builtin -fno-toplevel-reorder
+# MinGW lays bitfields out as MSVC does by default (-mms-bitfields), not
+# as the GBA's (and Linux's) gcc does: the hardware structs (OAM's) need
+# the latter.
+ifeq ($(HOST_WINDOWS),1)
+HOST_FLAGS += -mno-ms-bitfields
+endif
 HOST_CXXFLAGS := $(HOST_FLAGS) -std=gnu++98 -fno-rtti -fno-exceptions
 HOST_CFLAGS := $(HOST_FLAGS) -std=gnu99
 
@@ -199,9 +233,34 @@ HOST_WRAPS += _ZN4Game5Level10LevelState16PlayBootCutsceneEv
 HOST_WRAPS += GAX2_init GAX_fx_ex GAX_fx GAX_fx_note GAX_stop_fx GAX_set_music_volume GAX_set_fx_volume \
 	GAX_stop GAX_pause GAX_resume GAX_play GAX_irq GAX2_jingle
 
-$(HOST_EXE): $(HOST_OBJS) $(HOST_LINK)
+# Windows: everything static, one file; a GUI program; the icon and
+# version. The host memory's section (memory.S, .gbamem) must start on a
+# 1 MB boundary, as the ELF build's .bss alignment puts it, so that its
+# regions, 1 MB apart inside it, are each on one: every section of the
+# image is aligned so (in memory only: the file's alignment is unchanged),
+# without ASLR, whose 64 KB steps would undo it. And a few methods are
+# defined both inline in a header and out of line in a .cpp (the ROM's
+# out-of-line copies, ActorSelf::~ActorSelf, Sprite::SetFlipX/Y), with the
+# same body: ELF links the strong one, PE's COMDAT rules call it a
+# duplicate.
+ifeq ($(HOST_WINDOWS),1)
+HOST_WINDRES ?= $(patsubst %gcc,%windres,$(HOST_CC))
+HOST_WIN_RES := $(PLATFORM_BUILDDIR)/win_resource.o
+$(HOST_WIN_RES): $(PLATFORM_DIR)/win/resource.rc $(wildcard $(PLATFORM_DIR)/win/*.ico)
 	@mkdir -p $(dir $@)
-	$(HOST_CXX) $(HOST_SANITIZE_FLAGS) -o $@ $(HOST_OBJS) $(HOST_LINK) $(addprefix -Wl$(comma)--wrap=,$(HOST_WRAPS)) $(HOST_SDL_LIBS) -lm
+	$(HOST_WINDRES) -I $(PLATFORM_DIR)/win -o $@ $<
+HOST_LINK_EXTRA := $(HOST_WIN_RES)
+HOST_LINK_FLAGS := -static -static-libgcc -static-libstdc++ -Wl,--disable-dynamicbase \
+	-Wl,--section-alignment,0x100000 -Wl,--allow-multiple-definition
+ifeq ($(HOST_SDL),1)
+HOST_LINK_FLAGS += -mwindows
+endif
+endif
+
+$(HOST_EXE): $(HOST_OBJS) $(HOST_LINK) $(HOST_LINK_EXTRA)
+	@mkdir -p $(dir $@)
+	$(HOST_CXX) $(HOST_SANITIZE_FLAGS) $(HOST_LINK_FLAGS) -o $@ $(HOST_OBJS) $(HOST_LINK) $(HOST_LINK_EXTRA) \
+		$(addprefix -Wl$(comma)--wrap=,$(HOST_WRAPS)) $(HOST_SDL_LIBS) -lm
 
 $(PLATFORM_UNIT_OBJS): $(C_BUILDDIR)/%.o: $(PLATFORM_DIR)/units/%.cpp $(HOST_RENAMES)
 	@mkdir -p $(dir $@)

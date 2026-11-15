@@ -92,6 +92,12 @@ enum {
  * exists, and says no. */
 int HostFrontendAvailable(void);
 void HostFrontendInit(void);
+/* The port's name and version, the window's title. */
+#define HOST_PORT_NAME    "Crash Bandicoot XS"
+#define HOST_PORT_VERSION "v0.01"
+/* The save file used in the window when --save gives none: next to the
+ * executable (NULL if its directory isn't known). */
+const char *HostFrontendDefaultSave(void);
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);

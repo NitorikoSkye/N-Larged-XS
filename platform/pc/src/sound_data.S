@@ -26,4 +26,6 @@ gGaxMusicData:
 gGaxSfxData:
     .incbin GAX_SFX_BIN
 
+#ifdef __ELF__
     .section .note.GNU-stack,"",@progbits
+#endif

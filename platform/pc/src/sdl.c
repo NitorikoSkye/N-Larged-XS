@@ -54,6 +54,11 @@ void HostFrontendInit(void)
 {
 }
 
+const char *HostFrontendDefaultSave(void)
+{
+    return NULL;
+}
+
 void HostFrontendVBlank(void)
 {
 }
@@ -138,8 +143,26 @@ int HostFrontendAvailable(void)
 
 static void Fail(const char *what)
 {
-    fprintf(stderr, "%s: %s\n", what, SDL_GetError());
+    char text[512];
+
+    snprintf(text, sizeof(text), "%s: %s", what, SDL_GetError());
+    fprintf(stderr, "%s\n", text);
+    /* A GUI executable (Windows) has no console to show stderr on. */
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, HOST_PORT_NAME, text, NULL);
     exit(2);
+}
+
+const char *HostFrontendDefaultSave(void)
+{
+    static char path[4096];
+    char *base = SDL_GetBasePath();
+
+    if (base == NULL) {
+        return NULL;
+    }
+    snprintf(path, sizeof(path), "%scrashbandicootxs.sav", base);
+    SDL_free(base);
+    return path;
 }
 
 /* The default audio device: 16-bit samples (SDL converts them if the
@@ -232,7 +255,7 @@ void HostFrontendInit(void)
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) != 0) {
         Fail("SDL_Init");
     }
-    sWindow = SDL_CreateWindow("Crash Bandicoot XS", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    sWindow = SDL_CreateWindow(HOST_PORT_NAME " " HOST_PORT_VERSION, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                HOST_SCREEN_WIDTH * scale, HOST_SCREEN_HEIGHT * scale,
                                SDL_WINDOW_RESIZABLE);
     if (sWindow == NULL) {

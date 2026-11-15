@@ -1,0 +1,28 @@
+/* The Windows executable's icon (Crash's HUD head, bank47_icons/f034)
+ * and version information (platform.mk, HOST_WINDOWS). */
+#include <winver.h>
+
+1 ICON "crashbandicootxs.ico"
+
+1 VERSIONINFO
+FILEVERSION 0,0,1,0
+PRODUCTVERSION 0,0,1,0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904B0"
+    BEGIN
+      VALUE "FileDescription", "Crash Bandicoot XS"
+      VALUE "ProductName", "Crash Bandicoot XS"
+      VALUE "FileVersion", "v0.01"
+      VALUE "ProductVersion", "v0.01"
+      VALUE "OriginalFilename", "CrashBandicootXS.exe"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x409, 1200
+  END
+END

@@ -16,37 +16,50 @@
 
 #include "gba/host.h"
 
+/* ELF (Linux) has .type and .size; PE/COFF (Windows) has neither, and
+ * caps an object file section's alignment at 8 KB: there the regions are
+ * in a section of their own, .gbamem, which the link places on a 1 MB
+ * boundary (platform.mk), so that the offsets aligned within it are
+ * aligned in memory too. */
+#ifdef __ELF__
     .bss
+#define OBJECT(name, bytes) .type name, @object; .size name, bytes
+#define ALIGN_MB(n) .balign 0x100000
+#else
+    .section .gbamem,"bw"
+    .balign 8192
+#define OBJECT(name, bytes)
+#define ALIGN_MB(n) .org (n) * 0x100000
+#endif
 
-#define REGION(name, bytes) \
-    .balign 0x100000;      \
+#define REGION(n, name, bytes) \
+    ALIGN_MB(n);           \
     .globl name;           \
-    .type name, @object;   \
-    .size name, bytes;     \
+    OBJECT(name, bytes);   \
 name:                      \
     .zero bytes
 
-REGION(gHostEwram, HOST_EWRAM_SIZE)
-REGION(gHostIwram, HOST_IWRAM_SIZE)
-REGION(gHostIo, HOST_IO_SIZE)
-REGION(gHostPltt, HOST_PLTT_SIZE)
-REGION(gHostVram, HOST_VRAM_SIZE)
-REGION(gHostOam, HOST_OAM_SIZE)
+REGION(0, gHostEwram, HOST_EWRAM_SIZE)
+REGION(1, gHostIwram, HOST_IWRAM_SIZE)
+REGION(2, gHostIo, HOST_IO_SIZE)
+REGION(3, gHostPltt, HOST_PLTT_SIZE)
+REGION(4, gHostVram, HOST_VRAM_SIZE)
+REGION(5, gHostOam, HOST_OAM_SIZE)
 
 /* Not the GBA's: what a NULL_READ pointer reads when it is NULL. */
     .balign 64
     .globl gHostNullPage
-    .type gHostNullPage, @object
-    .size gHostNullPage, HOST_NULL_PAGE_SIZE
+    OBJECT(gHostNullPage, HOST_NULL_PAGE_SIZE)
 gHostNullPage:
     .zero HOST_NULL_PAGE_SIZE
 
 /* Not the GBA's either: where a NULL_WRITE pointer writes when it is NULL. */
     .balign 64
     .globl gHostNullSink
-    .type gHostNullSink, @object
-    .size gHostNullSink, HOST_NULL_PAGE_SIZE
+    OBJECT(gHostNullSink, HOST_NULL_PAGE_SIZE)
 gHostNullSink:
     .zero HOST_NULL_PAGE_SIZE
 
+#ifdef __ELF__
     .section .note.GNU-stack,"",@progbits
+#endif
