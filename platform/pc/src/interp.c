@@ -170,6 +170,31 @@ static void KeepInto(struct Kept *k)
     memcpy(k->f.pltt, gHostPltt, sizeof(k->f.pltt));
     memcpy(k->f.oam, gHostOam, sizeof(k->f.oam));
     memcpy(k->owner, sCommitted, sizeof(k->owner));
+    /* HOST_TEST_OAM_ROTATE=k (tests): every other frame, the entries
+     * (not the affine parameters) and their owners k slots on, as a
+     * sprite drawn every other frame before them would put them. */
+    if (getenv("HOST_TEST_OAM_ROTATE") != NULL && (gHostVBlanks & 1)) {
+        int rot = atoi(getenv("HOST_TEST_OAM_ROTATE"));
+        u16 *oam = (u16 *)k->f.oam;
+        u16 copy[128][3];
+        struct Owner owners[128];
+        int i;
+
+        for (i = 0; i < 128; i++) {
+            copy[i][0] = oam[4 * i];
+            copy[i][1] = oam[4 * i + 1];
+            copy[i][2] = oam[4 * i + 2];
+            owners[i] = k->owner[i];
+        }
+        for (i = 0; i < 128; i++) {
+            int j = (i + rot) % 128;
+
+            oam[4 * j] = copy[i][0];
+            oam[4 * j + 1] = copy[i][1];
+            oam[4 * j + 2] = copy[i][2];
+            k->owner[j] = owners[i];
+        }
+    }
 }
 
 static inline u16 Io16(const struct HdFrame *f, u32 offset)
@@ -205,6 +230,44 @@ static void EntryPos(const struct HdFrame *f, int i, s32 *x, s32 *y)
     }
 }
 
+/* The entry of `b` no object owns that looks like `a`'s entry `i` (the
+ * same tile, size, shape, palette, priority and flags) nearest to it,
+ * the same slot first among equals; -1 if none. `*dist` is how far
+ * (the larger of the x and y distances). */
+static int NearestSame(const struct Kept *a, int i, const struct Kept *b, int *dist)
+{
+    const u16 *ea = (const u16 *)a->f.oam;
+    const u16 *eb = (const u16 *)b->f.oam;
+    s32 x0;
+    s32 y0;
+    int best = -1;
+    int bestD = 0;
+    int j;
+
+    EntryPos(&a->f, i, &x0, &y0);
+    for (j = 0; j < 128; j++) {
+        s32 x1;
+        s32 y1;
+        int d;
+
+        if (b->owner[j].valid || !Visible(&b->f, j) || (ea[4 * i] & 0xFF00) != (eb[4 * j] & 0xFF00) ||
+            (ea[4 * i + 1] & 0xFE00) != (eb[4 * j + 1] & 0xFE00) || ea[4 * i + 2] != eb[4 * j + 2]) {
+            continue;
+        }
+        EntryPos(&b->f, j, &x1, &y1);
+        d = x1 > x0 ? x1 - x0 : x0 - x1;
+        if ((y1 > y0 ? y1 - y0 : y0 - y1) > d) {
+            d = y1 > y0 ? y1 - y0 : y0 - y1;
+        }
+        if (best < 0 || d < bestD || (d == bestD && j == i)) {
+            best = j;
+            bestD = d;
+        }
+    }
+    *dist = bestD;
+    return best;
+}
+
 /* How `from`'s entries move to their places in `to` (the earlier frame's
  * moves forward, the later's backward: both from earlier to later). */
 static void MatchEntries(struct Kept *from, const struct Kept *to, int fromIsLater)
@@ -238,18 +301,27 @@ static void MatchEntries(struct Kept *from, const struct Kept *to, int fromIsLat
             if (found && (dx > 64 || dx < -64 || dy > 64 || dy < -64)) {
                 found = 0;
             }
-        } else if (!to->owner[i].valid && Visible(&to->f, i) && (a[4 * i] & 0xFF00) == (b[4 * i] & 0xFF00) &&
-                   (a[4 * i + 1] & 0xFE00) == (b[4 * i + 1] & 0xFE00) && a[4 * i + 2] == b[4 * i + 2]) {
-            s32 x0;
-            s32 y0;
-            s32 x1;
-            s32 y1;
+        } else {
+            /* No object owns it (the HUD's text, the menus' letters): the
+             * nearest entry of the other frame that looks the same, if it
+             * also finds this one the nearest. Not the same slot: a sprite
+             * drawn before it every other frame moves its slot, and the
+             * same slot can then hold another of the same letter. */
+            int d;
+            int j = NearestSame(from, i, to, &d);
 
-            EntryPos(&from->f, i, &x0, &y0);
-            EntryPos(&to->f, i, &x1, &y1);
-            dx = x1 - x0;
-            dy = y1 - y0;
-            found = dx <= 32 && dx >= -32 && dy <= 32 && dy >= -32;
+            if (j >= 0 && d <= 32 && NearestSame(to, j, from, &d) == i) {
+                s32 x0;
+                s32 y0;
+                s32 x1;
+                s32 y1;
+
+                EntryPos(&from->f, i, &x0, &y0);
+                EntryPos(&to->f, j, &x1, &y1);
+                dx = x1 - x0;
+                dy = y1 - y0;
+                found = 1;
+            }
         }
         if (found && (dx != 0 || dy != 0)) {
             from->moves[i] = 1;
@@ -485,7 +557,9 @@ void HostHdCheckFrame(void)
         u32 frame = HostFrame();
 
         HostInterpCapture();
-        if (frame >= gHostInterpDumpAt && frame < gHostInterpDumpAt + 3 && HostInterpReady()) {
+        u32 count = getenv("HOST_INTERP_COUNT") != NULL ? (u32)atoi(getenv("HOST_INTERP_COUNT")) : 3;
+
+        if (frame >= gHostInterpDumpAt && frame < gHostInterpDumpAt + count && HostInterpReady()) {
             static u32 big[HOST_SCREEN_WIDTH * 4 * HOST_SCREEN_HEIGHT * 4];
             int k;
 
