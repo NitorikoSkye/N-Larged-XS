@@ -388,7 +388,8 @@ static const char *const sScales[] = { "", "1x", "2x", "3x", "4x", "5x", "6x", "
 static const char *const sFpsNames[] = { "60 fps", "90 fps", "120 fps", "144 fps", "240 fps" };
 static const char *const sScalings[] = { "fit", "integer", "stretch" };
 static const char *const sBorders[] = { "black", "ambient", "themed" };
-static const char *const sFilters[] = { "pixels", "smooth", "sharp smooth", "scale2x", "scale3x" };
+static const char *const sFilters[] = { "pixels", "smooth", "sharp smooth", "scale2x", "scale3x", "cartoon",
+                                        "cartoon soft" };
 static const char *const sScanlines[] = { "off", "light", "dark" };
 static const char *const sColorModes[] = { "original", "gba screen" };
 static const char *const sCorners[] = { "off", "left", "right" };
@@ -435,12 +436,6 @@ static int FpsAvailable(int choice)
     return HostFrontendFpsAllowed(gHostFpsValues[choice]);
 }
 
-/* The pixel-art scalers work on the game's own frames: at 60 FPS only. */
-static int FilterAvailable(int choice)
-{
-    return gHostSettings.frameRate == HOST_FPS_60 ||
-           (choice != HOST_FILTER_SCALE2X && choice != HOST_FILTER_SCALE3X);
-}
 
 static int NotStretched(void)
 {
@@ -522,8 +517,8 @@ static const struct Option sDisplay[] = {
 };
 
 static const struct Option sGraphics[] = {
-    { "filter", "how the pixels are scaled up. scale2x and 3x: 60 fps only.",
-      OPT_CHOICE, &gHostSettings.filter, sFilters, HOST_FILTER_COUNT, HOST_APPLY_VIDEO, FilterAvailable },
+    { "filter", "how the pixels are scaled up. cartoon smooths the outlines.",
+      OPT_CHOICE, &gHostSettings.filter, sFilters, HOST_FILTER_COUNT, HOST_APPLY_VIDEO },
     { "scanlines", "dark lines between the rows of pixels, like a crt.", OPT_CHOICE, &gHostSettings.scanlines,
       sScanlines, 3, HOST_APPLY_VIDEO },
     { "lcd grid", "the gaps between the pixels of the gba's screen.", OPT_CHOICE, &gHostSettings.lcdGrid, sOffOn, 2,

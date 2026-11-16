@@ -226,7 +226,10 @@ $(HOST_INLINES:.cpp=.o): $(HOST_INLINES) $(HOST_RENAMES) | $(GENERATED_HEADERS)
 	$(HOST_CXX) $(HOST_CPPFLAGS) $(HOST_CXXFLAGS) $(DEPFLAGS) -c -o $@ $<
 	$(HOST_OBJCOPY) --redefine-syms=$(HOST_RENAMES) $@
 
-HOST_OBJS := $(C_OBJS) $(CXX_OBJS) $(PLATFORM_OBJS) $(HOST_GAX_OBJS) $(HOST_GAX_DATA:.c=.o) $(HOST_INLINES:.cpp=.o) \
+# xBRZ (platform/pc/xbrz/, the "cartoon" filters): modern C++, built on
+# its own, not with the game's flags.
+HOST_XBRZ_OBJS := $(PLATFORM_BUILDDIR)/xbrz/xbrz.o $(PLATFORM_BUILDDIR)/xbrz/xbrz_c.o
+HOST_OBJS := $(HOST_XBRZ_OBJS) $(C_OBJS) $(CXX_OBJS) $(PLATFORM_OBJS) $(HOST_GAX_OBJS) $(HOST_GAX_DATA:.c=.o) $(HOST_INLINES:.cpp=.o) \
 	$(HOST_UI_ASSETS:.c=.o)
 
 $(PLATFORM_OBJS) $(HOST_GAX_OBJS): | $(GENERATED_HEADERS)
@@ -249,6 +252,15 @@ HOST_LINK := $(OBJ_DIR)/host_link.ld
 # libstdc++'s in the executable; host_link.py checks that no other name
 # clashes with the host's libraries (HOST_LIBS).
 HOST_RENAMES := $(PLATFORM_DIR)/libc_names.txt
+ifeq ($(HOST_WINDOWS),1)
+# 64-bit Windows's size_t is unsigned long long: operator new's names
+# there end in y, not m. (Without these, every C++ library's `new` came
+# from the game's small heap: xBRZ's table, the cartoon filters.)
+HOST_RENAMES := $(patsubst %/,%,$(dir $(OBJ_DIR)))/libc_names_win.txt
+$(HOST_RENAMES): $(PLATFORM_DIR)/libc_names.txt
+	@mkdir -p $(dir $@)
+	sed -e 's/^_Znwm /_Znwy /' -e 's/^_Znam /_Znay /' $< > $@
+endif
 HOST_LIBS := $(wildcard $(shell $(HOST_CC) -print-file-name=libc.so.6) $(shell $(HOST_CC) -print-file-name=libm.so.6) \
 	$(shell $(HOST_CXX) -print-file-name=libstdc++.so.6))
 
@@ -356,6 +368,10 @@ $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.cpp $(HOST_RENAMES)
 	@mkdir -p $(dir $@)
 	$(HOST_CXX) $(HOST_CPPFLAGS) -iquote $(PLATFORM_DIR)/src $(HOST_CXXFLAGS) $(DEPFLAGS) -c -o $@ $<
 	$(HOST_OBJCOPY) --redefine-syms=$(HOST_RENAMES) $@
+
+$(PLATFORM_BUILDDIR)/xbrz/%.o: $(PLATFORM_DIR)/xbrz/%.cpp $(PLATFORM_DIR)/xbrz/xbrz.h
+	@mkdir -p $(dir $@)
+	$(HOST_CXX) -std=c++17 -O2 -fno-exceptions -fno-rtti -w -c -o $@ $<
 
 $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.S
 	@mkdir -p $(dir $@)

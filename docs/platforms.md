@@ -265,8 +265,9 @@ that box widened across the screen, the selected row in the pause
 menu's white, values as `<75%>`, what can't be used grey. Categories:
 General (portable mode, pause when unfocused, quit), Display (window
 mode and size, frame rate, vsync, scaling; widescreen greyed, below),
-Graphics (pixels, smooth, sharp smooth, Scale2x, Scale3x; scanlines; LCD
-grid; the GBA screen's colours; LCD ghosting), Interface (FPS counter,
+Graphics (pixels, smooth, sharp smooth, Scale2x, Scale3x, cartoon,
+cartoon soft; scanlines; LCD grid; the GBA screen's colours; LCD
+ghosting), Interface (FPS counter,
 input display), Audio (master, music, sound effects: the last two in
 GAX2's mixer, gHostGaxVolume, on top of the pause menu's), Controls
 (keyboard and controller bindings, two per action, restore defaults;
@@ -313,6 +314,19 @@ level comes from LevelProgress::PlayRoom, --wrap'ed (src/level_pick.c,
 gHostPlayingLevel). The FPS counter and the input display go into the
 borders when they fit there, at a smaller size if need be, and over the
 picture's corners otherwise.
+
+**Cartoon filters** (v0.12; Graphics' Filter, src/sdl.c, platform/pc/xbrz/).
+xBRZ (Zenju's "scale by rules" pixel-art upscaler, GPLv3 as this project)
+rounds the outlines and fills the steps of the GBA's 240x160: "cartoon"
+at the window's height over 160 (2-6x), "cartoon soft" at 2x; both are
+then scaled to the window smoothly. Its rows are shared out to the HD
+picture's worker threads, and an unchanged picture keeps its last scaling.
+The pixel-art scalers (Scale2x, Scale3x, xBRZ) work at every frame rate
+now: with one of them, the frame interpolation draws its in-between
+pictures at 1x (whole pixels) and the scaler smooths each. On Windows the
+game's operator new is renamed under its 64-bit Windows names too
+(`_Znwy`, `_Znay`; platform.mk writes libc_names_win.txt): before, every
+C++ library's `new` there came from the game's small heap.
 
 **Auto save** (v0.11; Gameplay, src/autosave.c and src/autosave_hooks.cpp).
 Each time the warp room starts (the LevelSelect::Run wrap), if what was

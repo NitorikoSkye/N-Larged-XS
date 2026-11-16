@@ -28,6 +28,8 @@ enum {
     HOST_FILTER_SHARP,
     HOST_FILTER_SCALE2X,
     HOST_FILTER_SCALE3X,
+    HOST_FILTER_CARTOON,      /* xBRZ up to the window's size, then smooth */
+    HOST_FILTER_CARTOON_SOFT, /* xBRZ 2x, then smooth: softer */
     HOST_FILTER_COUNT
 };
 

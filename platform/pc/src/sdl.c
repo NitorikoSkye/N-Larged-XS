@@ -457,11 +457,6 @@ void HostFrontendApply(int what)
         if (gHostSettings.colors) {
             BuildLut();
         }
-        /* The scalers need the game's own frames. */
-        if (gHostSettings.frameRate != HOST_FPS_60 &&
-            (gHostSettings.filter == HOST_FILTER_SCALE2X || gHostSettings.filter == HOST_FILTER_SCALE3X)) {
-            gHostSettings.filter = HOST_FILTER_SHARP;
-        }
         HostInterpReset();
     }
 }
@@ -842,6 +837,53 @@ static void Scale3x(const u32 *in, u32 *out, int w, int h)
     }
 }
 
+/* The pixel-art scalers (Scale2x, Scale3x, xBRZ) take the GBA's own
+ * 240x160: the frame interpolation draws its in-between pictures at 1x
+ * for them (whole pixels; the scaler smooths them). */
+static int Upscaler(void)
+{
+    int f = gHostSettings.filter;
+
+    return f == HOST_FILTER_SCALE2X || f == HOST_FILTER_SCALE3X || f == HOST_FILTER_CARTOON ||
+           f == HOST_FILTER_CARTOON_SOFT;
+}
+
+/* xBRZ's factor: the cartoon filter's, the window's picture height over
+ * the GBA's (2-6); cartoon soft's, 2 (the rest is the smooth scaling). */
+static int XbrzFactor(void)
+{
+    SDL_Rect dst = GameRect();
+    int k = (dst.h + SH - 1) / SH;
+
+    if (gHostSettings.filter == HOST_FILTER_CARTOON_SOFT) {
+        return 2;
+    }
+    return k < 2 ? 2 : k > 6 ? 6 : k;
+}
+
+void HostXbrzScale(int factor, const unsigned int *src, unsigned int *dst, int w, int h, int yFirst, int yLast);
+void HostXbrzWarm(void);
+
+struct XbrzJob {
+    int factor;
+    const u32 *src;
+    u32 *dst;
+    int w;
+    int h;
+};
+
+static void XbrzLines(void *ctx, int first, int end)
+{
+    struct XbrzJob *j = ctx;
+
+    HostXbrzScale(j->factor, j->src, j->dst, j->w, j->h, first, end);
+}
+
+static void Parallel(HostLineRun run, void *ctx, int lines);
+
+static u32 *sXbrz;
+static size_t sXbrzSize;
+
 /* The picture through the settings, into the game texture. `dt` is the
  * time since the last picture shown, in 60ths of a second (ghosting). */
 static void UploadPicture(const u32 *src, int w, int h, int ownFrame, double dt)
@@ -861,7 +903,42 @@ static void UploadPicture(const u32 *src, int w, int h, int ownFrame, double dt)
         }
         p = out;
     }
-    if (ownFrame && (gHostSettings.filter == HOST_FILTER_SCALE2X || gHostSettings.filter == HOST_FILTER_SCALE3X)) {
+    (void)ownFrame;
+    if (w == SW && (gHostSettings.filter == HOST_FILTER_CARTOON || gHostSettings.filter == HOST_FILTER_CARTOON_SOFT)) {
+        struct XbrzJob job;
+        int f = XbrzFactor();
+
+        if (n * f * f > sXbrzSize) {
+            free(sXbrz);
+            sXbrzSize = n * 36;
+            sXbrz = malloc(sXbrzSize * 4);
+            if (sXbrz == NULL) {
+                Fail("out of memory");
+            }
+        }
+        /* An in-between picture often rounds to the last one at 1x: that
+         * one's scaling is still there. */
+        {
+            static u32 last[SW * SH];
+            static int lastFactor;
+
+            if (f != lastFactor || memcmp(last, p, n * 4) != 0) {
+                HostXbrzWarm();
+                job.factor = f;
+                job.src = p;
+                job.dst = sXbrz;
+                job.w = w;
+                job.h = h;
+                Parallel(XbrzLines, &job, h);
+                memcpy(last, p, n * 4);
+                lastFactor = f;
+            }
+        }
+        p = sXbrz;
+        w *= f;
+        h *= f;
+        n = (size_t)w * h;
+    } else if (w == SW && (gHostSettings.filter == HOST_FILTER_SCALE2X || gHostSettings.filter == HOST_FILTER_SCALE3X)) {
         u32 *out;
 
         Work(&sWork, n * 9);
@@ -950,7 +1027,8 @@ static void DrawGame(SDL_Rect dst)
             return;
         }
     }
-    SDL_SetTextureScaleMode(sGameTex, (filter == HOST_FILTER_SMOOTH || filter == HOST_FILTER_SHARP)
+    SDL_SetTextureScaleMode(sGameTex, (filter == HOST_FILTER_SMOOTH || filter == HOST_FILTER_SHARP ||
+                                       filter == HOST_FILTER_CARTOON || filter == HOST_FILTER_CARTOON_SOFT)
                                           ? SDL_ScaleModeLinear
                                           : SDL_ScaleModeNearest);
     SDL_RenderCopy(sRenderer, sGameTex, NULL, &dst);
@@ -1878,6 +1956,9 @@ void HostFrontendVBlank(void)
         }
         if (scale > 4) {
             scale = 4;
+        }
+        if (Upscaler()) {
+            scale = 1;
         }
         need = (size_t)SW * scale * SH * scale;
         if (need > sHdSize) {
