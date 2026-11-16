@@ -9,9 +9,18 @@ and tablets, and x86-64 emulators and Chromebooks).
 The game is the pc platform's core, unchanged: the same game code, PPU,
 GAX2 sound and EEPROM save, built as a static Linux executable for ARM64
 (Ubuntu's `aarch64-linux-gnu` cross compiler, `-static`) and x86-64. It
-needs no Android libraries, so no NDK. It is in the APK as
-`lib/<abi>/libcrashxs_core.so`, where Android installs native libraries
-and lets an app run them.
+needs no Android libraries, so no NDK. Each ABI has two builds of it, in
+the APK where Android installs native libraries and lets an app run them:
+
+- `lib/<abi>/libcrashxs_core.so`, linked with musl (`musl-cc`: GCC with
+  musl's headers, musl's static libc from zig's, `pip install ziglang`).
+  musl's start-up asks the kernel for very little, and nothing an app
+  may not do. The one the app starts.
+- `lib/<abi>/libcrashxs_gnu.so`, linked with glibc (Android v0.01's). The
+  app tries it when the first stops before its first picture.
+
+Both print `core: started` first, and a fatal signal as `core: fatal
+signal N` (with the system call's number for SIGSYS).
 
 The app (two Java classes, no libraries) starts it as a child process with
 `--stream` (platform/pc/src/stream.c): the game writes each frame's
@@ -29,14 +38,16 @@ reads the buttons from stdin, and keeps the GBA's pace itself.
   each press. A controller in use hides them until the screen is touched.
 
 The save is `crashbandicootxs.sav` in the app's private files; what the
-core prints goes to `core.log` next to it.
+cores print goes to `core0.log` and `core1.log` next to it. If the game
+stops, the screen says how each core ended (its exit code or signal, the
+log's last lines) and the phone's Android version, model and ABI.
 
 ## Building
 
 Debian/Ubuntu packages: `gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 binutils-aarch64-linux-gnu libc6-dev-arm64-cross openjdk-17-jdk-headless
 android-sdk-platform-23 android-sdk-build-tools dalvik-exchange apksigner
-zipalign`. No Gradle, no SDK manager. The APK is signed with
+zipalign`, and `pip install ziglang` (musl). No Gradle, no SDK manager. The APK is signed with
 `crashxs.keystore` (here, so that every build can update the last one
 installed without losing its save).
 

@@ -83,25 +83,57 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** The cores, in the order tried: musl's, then glibc's if musl's stops
+     * before its first picture. */
+    private static final String[] CORES = { "libcrashxs_core.so", "libcrashxs_gnu.so" };
+    private int coreIndex;
+    private Thread logThread;
+    private volatile boolean gotPicture;
+    /** What the cores tried before this one said when they stopped. */
+    private final StringBuilder report = new StringBuilder();
+
     private void startCore() {
-        String exe = getApplicationInfo().nativeLibraryDir + "/libcrashxs_core.so";
+        if (audio == null) {
+            int min = AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
+            audio = new AudioTrack(AudioManager.STREAM_MUSIC, 48000, AudioFormat.CHANNEL_OUT_MONO,
+                    AudioFormat.ENCODING_PCM_16BIT, Math.max(min, 48000 / 60 * 2 * 6), AudioTrack.MODE_STREAM);
+            audio.play();
+            player = new Thread(new Runnable() {
+                public void run() {
+                    play();
+                }
+            }, "core-sound");
+            player.start();
+        }
+        startCore(0);
+    }
+
+    private void startCore(int index) {
+        coreIndex = index;
+        gotPicture = false;
+        running = true;
+        File exe = new File(getApplicationInfo().nativeLibraryDir, CORES[index]);
         File save = new File(getFilesDir(), "crashbandicootxs.sav");
-        File log = new File(getFilesDir(), "core.log");
+        final File logFile = new File(getFilesDir(), "core" + index + ".log");
+        final Process p;
 
         try {
-            ProcessBuilder pb = new ProcessBuilder(exe, "--stream", "--save", save.getAbsolutePath());
+            if (!exe.exists()) {
+                throw new IOException(exe + " is missing");
+            }
+            ProcessBuilder pb = new ProcessBuilder(exe.getAbsolutePath(), "--stream", "--save", save.getAbsolutePath());
             /* glibc's restartable sequences: not every Android kernel lets
-             * an app use them. */
+             * an app use them (musl's core has none). */
             pb.environment().put("GLIBC_TUNABLES", "glibc.pthread.rseq=0");
-            core = pb.start();
-        } catch (IOException e) {
-            view.setError("The game couldn't start: " + e.getMessage());
+            p = pb.start();
+        } catch (Throwable e) {
+            stopped(index, null, e);
             return;
         }
-        /* What the game prints, to core.log (shown if it stops). */
-        final java.io.InputStream err = core.getErrorStream();
-        final File logFile = log;
-        new Thread(new Runnable() {
+        core = p;
+        /* What the game prints, to core<n>.log (shown if it stops). */
+        final java.io.InputStream err = p.getErrorStream();
+        logThread = new Thread(new Runnable() {
             public void run() {
                 try {
                     java.io.FileOutputStream out = new java.io.FileOutputStream(logFile);
@@ -116,30 +148,24 @@ public class MainActivity extends Activity {
                     /* closing */
                 }
             }
-        }, "core-log").start();
-        coreIn = core.getOutputStream();
-        int min = AudioTrack.getMinBufferSize(48000, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_16BIT);
-        audio = new AudioTrack(AudioManager.STREAM_MUSIC, 48000, AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_16BIT, Math.max(min, 48000 / 60 * 2 * 6), AudioTrack.MODE_STREAM);
-        audio.play();
-        running = true;
+        }, "core-log");
+        logThread.start();
+        synchronized (this) {
+            coreIn = p.getOutputStream();
+            sentKeys = -1;
+        }
+        sendKeys();
         reader = new Thread(new Runnable() {
             public void run() {
-                read();
+                read(p);
             }
         }, "core-reader");
         reader.start();
-        player = new Thread(new Runnable() {
-            public void run() {
-                play();
-            }
-        }, "core-sound");
-        player.start();
     }
 
     /** The core's messages: pictures to the view, sound to the player. */
-    private void read() {
-        DataInputStream in = new DataInputStream(new BufferedInputStream(core.getInputStream(), 1 << 17));
+    private void read(Process p) {
+        DataInputStream in = new DataInputStream(new BufferedInputStream(p.getInputStream(), 1 << 17));
         byte[] head = new byte[8];
 
         try {
@@ -152,11 +178,18 @@ public class MainActivity extends Activity {
                 in.readFully(head);
                 int type = (head[0] & 0xFF) | (head[1] & 0xFF) << 8 | (head[2] & 0xFF) << 16 | (head[3] & 0xFF) << 24;
                 int n = (head[4] & 0xFF) | (head[5] & 0xFF) << 8 | (head[6] & 0xFF) << 16 | (head[7] & 0xFF) << 24;
+                if (n < 0 || n > 1 << 20 || (type != 1 && type != 2)) {
+                    throw new IOException("bad message from the game: type " + type + ", " + n + " bytes");
+                }
                 byte[] data = new byte[n];
                 in.readFully(data);
                 if (type == 1) {
+                    if (n != GameView.W * GameView.H * 2) {
+                        throw new IOException("bad picture from the game: " + n + " bytes");
+                    }
+                    gotPicture = true;
                     view.setFrame(data);
-                } else if (type == 2) {
+                } else {
                     short[] s = new short[n / 2];
                     for (int i = 0; i < s.length; i++) {
                         s[i] = (short) ((data[2 * i] & 0xFF) | data[2 * i + 1] << 8);
@@ -166,36 +199,109 @@ public class MainActivity extends Activity {
                     sound.offer(s);
                 }
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             if (running) {
-                view.setError("The game stopped. " + lastLog());
+                stopped(coreIndex, p, e);
             }
+        }
+    }
+
+    /** A core stopped: the next core if this one never drew, else the
+     * report on the screen. */
+    private void stopped(int index, Process p, Throwable why) {
+        StringBuilder r = new StringBuilder();
+
+        r.append(CORES[index]).append(": ");
+        if (why instanceof java.io.EOFException) {
+            r.append("the game closed its output");
+        } else {
+            r.append(why.getClass().getSimpleName()).append(' ').append(why.getMessage());
+        }
+        if (p != null) {
+            r.append(", ").append(exitOf(p));
+            if (logThread != null) {
+                try {
+                    logThread.join(1500);
+                } catch (InterruptedException e) {
+                    /* go on */
+                }
+            }
+            r.append('\n').append(logTail(new File(getFilesDir(), "core" + index + ".log")));
+        }
+        r.append('\n');
+        report.append(r);
+        if (!gotPicture && index + 1 < CORES.length && running) {
+            startCore(index + 1);
+            return;
+        }
+        String abi = Build.VERSION.SDK_INT >= 21 && Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : Build.CPU_ABI;
+        view.setError("The game stopped (Android app v0.02).\n" + report
+                + "Android " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + "), "
+                + Build.MANUFACTURER + " " + Build.MODEL + ", " + abi);
+    }
+
+    /** How the process ended: its exit code, or the signal that ended it. */
+    private static String exitOf(Process p) {
+        for (int i = 0; i < 40; i++) {
+            try {
+                int code = p.exitValue();
+                if (code > 128) {
+                    return "killed by signal " + (code - 128) + signalName(code - 128);
+                }
+                return "exit code " + code;
+            } catch (IllegalThreadStateException e) {
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException e2) {
+                    break;
+                }
+            }
+        }
+        p.destroy();
+        return "still running (stopped now)";
+    }
+
+    private static String signalName(int sig) {
+        switch (sig) {
+        case 4: return " (SIGILL)";
+        case 6: return " (SIGABRT)";
+        case 7: return " (SIGBUS)";
+        case 9: return " (SIGKILL)";
+        case 11: return " (SIGSEGV)";
+        case 31: return " (SIGSYS, a system call the phone refused)";
+        default: return "";
+        }
+    }
+
+    /** The log's last lines. */
+    private static String logTail(File log) {
+        try {
+            java.io.RandomAccessFile f = new java.io.RandomAccessFile(log, "r");
+            long len = f.length();
+            byte[] b = new byte[(int) Math.min(len, 600)];
+            f.seek(len - b.length);
+            f.readFully(b);
+            f.close();
+            String s = new String(b, "UTF-8").trim();
+            String[] lines = s.split("\n");
+            StringBuilder t = new StringBuilder();
+            for (int i = Math.max(0, lines.length - 6); i < lines.length; i++) {
+                t.append(t.length() > 0 ? "\n" : "").append("  ").append(lines[i]);
+            }
+            return t.length() > 0 ? t.toString() : "  (no log: it stopped before printing anything)";
+        } catch (Exception e) {
+            return "  (no log)";
         }
     }
 
     private void play() {
         try {
-            while (running) {
+            while (true) {
                 short[] s = sound.take();
                 audio.write(s, 0, s.length);
             }
         } catch (InterruptedException e) {
             /* closing */
-        }
-    }
-
-    private String lastLog() {
-        try {
-            File log = new File(getFilesDir(), "core.log");
-            java.io.RandomAccessFile f = new java.io.RandomAccessFile(log, "r");
-            long len = f.length();
-            byte[] b = new byte[(int) Math.min(len, 300)];
-            f.seek(len - b.length);
-            f.readFully(b);
-            f.close();
-            return new String(b, "UTF-8").trim();
-        } catch (Exception e) {
-            return "";
         }
     }
 

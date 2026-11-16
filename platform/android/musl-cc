@@ -1,0 +1,44 @@
+#!/bin/sh
+# The Android cores' compiler (platform/android/README.md): GCC, as the
+# glibc cores, compiles against musl's headers; GNU ld links with musl's
+# static libc. A phone runs a static musl program as any Linux does: musl
+# starts with nothing from the system and asks the kernel only the usual.
+# musl's headers and libraries come from zig's (pip install ziglang), built
+# once for the target and kept in build/android/musl/<arch>.
+#   musl-cc <aarch64|x86_64> <gcc|g++> args...
+set -e
+ARCH=$1
+DRV=$2
+shift 2
+case $ARCH in
+aarch64) GCC=aarch64-linux-gnu-$DRV LIBGCC=$(aarch64-linux-gnu-gcc -print-libgcc-file-name) ;;
+*) GCC=x86_64-linux-gnu-$DRV LIBGCC=$(x86_64-linux-gnu-gcc -print-libgcc-file-name) ;;
+esac
+ZIG=$(python3 -c "import ziglang, os; print(os.path.dirname(ziglang.__file__))")
+INC=$ZIG/lib/libc/include
+M=$(pwd)/build/android/musl/$ARCH
+
+case " $* " in
+*" -c "*|*" -E "*|*" -S "*)
+    exec $GCC -nostdinc -isystem "$($GCC -print-file-name=include)" \
+        -isystem $INC/$ARCH-linux-musl -isystem $INC/generic-musl \
+        -isystem $INC/$ARCH-linux-any -isystem $INC/any-linux-any \
+        -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-stack-protector "$@" ;;
+esac
+
+if [ ! -f $M/libc.a ]; then
+    mkdir -p $M
+    printf 'int main(void){return 0;}\n' > $M/t.c
+    for f in $(python3 -m ziglang cc -target $ARCH-linux-musl -static -o $M/t $M/t.c -v 2>&1 |
+            grep -o '/[^ ]*/\(crt1\.o\|libc\.a\|libzigc\.a\|libcompiler_rt\.a\)' | sort -u); do
+        cp $f $M/
+    done
+    rm -f $M/t $M/t.c
+fi
+# The link: the game's libm is musl's (in libc.a), not the system's.
+for a in "$@"; do
+    shift
+    [ "$a" = -lm ] || set -- "$@" "$a"
+done
+exec $GCC -static -nostdlib -nostartfiles $M/crt1.o "$@" \
+    -Wl,--start-group $M/libc.a $M/libzigc.a $LIBGCC $M/libcompiler_rt.a -Wl,--end-group

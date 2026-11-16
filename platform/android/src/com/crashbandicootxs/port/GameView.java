@@ -25,7 +25,7 @@ import java.nio.ByteBuffer;
  * hides them until the screen is touched again.
  */
 public class GameView extends View {
-    private static final int W = 240, H = 160;
+    static final int W = 240, H = 160;
 
     private final MainActivity activity;
     private final Bitmap picture = Bitmap.createBitmap(W, H, Bitmap.Config.RGB_565);
@@ -35,6 +35,9 @@ public class GameView extends View {
     private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint text = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** The message when the game stops: what happened, for a report. */
+    private final Paint errorText = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint errorBack = new Paint();
     private final Rect gameRect = new Rect();
     private final Rect source = new Rect(0, 0, W, H);
 
@@ -112,6 +115,10 @@ public class GameView extends View {
         startRect.set(w / 2f + 6 * u, h - 8 * u, w / 2f + 30 * u, h - 2.5f * u);
         line.setStrokeWidth(0.6f * u);
         text.setTextSize(4.2f * u);
+        errorText.setTextSize(Math.max(2.4f * u, 11f));
+        errorText.setColor(Color.WHITE);
+        errorText.setTypeface(Typeface.MONOSPACE);
+        errorBack.setColor(Color.argb(215, 0, 0, 0));
     }
 
     @Override
@@ -123,11 +130,35 @@ public class GameView extends View {
         }
         c.drawBitmap(picture, source, gameRect, pixels);
         if (error != null) {
-            text.setColor(Color.WHITE);
-            c.drawText(error, getWidth() / 2f, getHeight() / 2f, text);
+            drawError(c, error);
         }
         if (!controlsHidden) {
             drawControls(c);
+        }
+    }
+
+    /** The message, lines wrapped to the screen, on a dark box in the middle. */
+    private void drawError(Canvas c, String message) {
+        float width = getWidth() * 0.86f;
+        java.util.ArrayList<String> lines = new java.util.ArrayList<String>();
+
+        for (String line : message.split("\n")) {
+            while (line.length() > 0) {
+                int n = errorText.breakText(line, true, width, null);
+                if (n <= 0) {
+                    break;
+                }
+                lines.add(line.substring(0, n));
+                line = line.substring(n);
+            }
+        }
+        float lh = errorText.getTextSize() * 1.25f;
+        float h = lh * lines.size();
+        float x = (getWidth() - width) / 2f;
+        float y = Math.max(lh, (getHeight() - h) / 2f);
+        c.drawRect(x - lh / 2, y - lh / 2, x + width + lh / 2, y + h + lh / 2, errorBack);
+        for (int i = 0; i < lines.size(); i++) {
+            c.drawText(lines.get(i), x, y + lh * (i + 0.8f), errorText);
         }
     }
 

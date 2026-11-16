@@ -77,8 +77,65 @@ static void Message(u32 type, const void *data, u32 n)
     WriteAll(data, n);
 }
 
+/* A fatal signal, said on stderr (the app shows the log's end): the
+ * signal, the address and, for a system call the phone refused, its
+ * number. Only write(): nothing else is safe here. */
+static void PutNum(char **p, unsigned long v, int base)
+{
+    char t[24];
+    int n = 0;
+
+    do {
+        t[n++] = "0123456789abcdef"[v % base];
+        v /= base;
+    } while (v != 0);
+    while (n > 0) {
+        *(*p)++ = t[--n];
+    }
+}
+
+static void Fatal(int sig, siginfo_t *info, void *ctx)
+{
+    char msg[160];
+    char *p = msg;
+    const char *s = "core: fatal signal ";
+
+    (void)ctx;
+    while (*s) *p++ = *s++;
+    PutNum(&p, (unsigned long)sig, 10);
+    s = " code ";
+    while (*s) *p++ = *s++;
+    PutNum(&p, (unsigned long)(unsigned)info->si_code, 10);
+    s = " addr 0x";
+    while (*s) *p++ = *s++;
+    PutNum(&p, (unsigned long)info->si_addr, 16);
+#ifdef SIGSYS
+    if (sig == SIGSYS) {
+        s = " syscall ";
+        while (*s) *p++ = *s++;
+        PutNum(&p, (unsigned long)(unsigned)info->si_syscall, 10);
+    }
+#endif
+    *p++ = '\n';
+    (void)!write(2, msg, (size_t)(p - msg));
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+
 void HostStreamInit(void)
 {
+    static const int sigs[] = { SIGSEGV, SIGBUS, SIGILL, SIGFPE, SIGABRT, SIGSYS };
+    struct sigaction sa;
+    size_t i;
+
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_sigaction = Fatal;
+    sa.sa_flags = SA_SIGINFO;
+    for (i = 0; i < sizeof(sigs) / sizeof(sigs[0]); i++) {
+        sigaction(sigs[i], &sa, NULL);
+    }
+    fprintf(stderr, "core: started\n");
+    fflush(stderr);
     signal(SIGPIPE, SIG_IGN);
     /* The stream keeps stdout; what the game prints goes to stderr. */
     sOut = dup(1);
@@ -125,9 +182,20 @@ void HostStreamVBlank(void)
         picture[i] = (u16)((c >> 8 & 0xF800) | (c >> 5 & 0x07E0) | (c >> 3 & 0x001F));
     }
     Message(1, picture, sizeof(picture));
-    /* The keys: the last whole message read. */
-    while ((n = read(0, in, sizeof(in) & ~1u)) > 0) {
-        sKeys = (u16)(in[n - 2] | in[n - 1] << 8);
+    /* The keys: the last whole message read (a message split across
+     * reads keeps its first byte). */
+    while ((n = read(0, in, sizeof(in))) > 0) {
+        static int half = -1;
+        ssize_t j;
+
+        for (j = 0; j < n; j++) {
+            if (half < 0) {
+                half = in[j];
+            } else {
+                sKeys = (u16)(half | in[j] << 8);
+                half = -1;
+            }
+        }
     }
     if (n == 0) {
         HostExit(0, "stream closed");
