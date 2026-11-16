@@ -20,6 +20,19 @@
  * app ends the run (the save is already written: eeprom.c writes it at
  * the VBlank after each change). */
 
+#include "gba/gba.h"
+#include "host_platform.h"
+
+int gHostStream;
+
+#ifdef _WIN32
+/* Windows has no --stream (the Android app's): the window only. */
+void HostStreamInit(void) {}
+void HostStreamVBlank(void) {}
+void HostStreamAudio(const s8 *buf, u32 n, u32 rate) { (void)buf; (void)n; (void)rate; }
+u16 HostStreamKeys(void) { return 0; }
+#else
+
 #include <errno.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -28,14 +41,9 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "gba/gba.h"
-#include "host_platform.h"
-
 #define GBA_CLOCK      16777216
 #define CYCLES_A_FRAME 280896
 #define OUT_RATE       48000
-
-int gHostStream;
 
 static int sOut = 1;
 static u16 sKeys;
@@ -232,3 +240,5 @@ u16 HostStreamKeys(void)
 {
     return sKeys;
 }
+
+#endif /* _WIN32 */
