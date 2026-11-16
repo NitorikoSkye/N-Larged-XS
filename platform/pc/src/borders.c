@@ -65,7 +65,8 @@ enum {
     ICON_HUD_SLASH = ICON_HUD_DIGIT0 + 10,
     ICON_HUD_COLON,
     ICON_HUD_DOT,
-    ICON_HUD_SMALL0, /* its small digits, 0-9 */
+    ICON_HUD_CRATE_SMALL, /* a third of the crate */
+    ICON_HUD_SMALL0,      /* its small digits, 0-9 */
 };
 
 /* Interface's HUD in "borders": set while the left border has the HUD
@@ -462,50 +463,57 @@ static int GlyphOf(char ch)
     return ch == '/' ? ICON_HUD_SLASH : ch == ':' ? ICON_HUD_COLON : ch == '.' ? ICON_HUD_DOT : -1;
 }
 
-static void HudNumber(u32 *c, int w, int h, int x1, int y, const char *s)
+/* A glyph's advance: its width and a pixel; tight, no pixel, and the
+ * slash (a diagonal) tucked 2 into each neighbour's empty corner. */
+static int Advance(const char *p, int tight)
 {
-    int width = 0;
-    const char *p;
-    int x;
+    int g = GlyphOf(*p);
+    int a;
 
-    for (p = s; *p; p++) {
-        int g = GlyphOf(*p);
-
-        width += g >= 0 ? gUiIcons[g].w + 1 : 3;
+    if (g < 0) {
+        return 3;
     }
-    x = x1 - width;
-    for (p = s; *p; p++) {
-        int g = GlyphOf(*p);
-
-        if (g < 0) {
-            x += 3;
-            continue;
-        }
-        /* Icon centres; the glyphs sit on a common baseline (y + 13) */
-        Icon(c, w, h, g, x + gUiIcons[g].w / 2, y + 13 - gUiIcons[g].h + gUiIcons[g].h / 2, 0);
-        x += gUiIcons[g].w + 1;
+    a = gUiIcons[g].w + (tight ? 0 : 1);
+    if (tight && (*p == '/' || p[1] == '/')) {
+        a -= 2;
     }
+    return a;
 }
 
-static int HudNumberWidth(const char *s)
+static int HudNumberWidth(const char *s, int tight)
 {
     int width = 0;
 
     for (; *s; s++) {
-        int g = GlyphOf(*s);
-
-        width += g >= 0 ? gUiIcons[g].w + 1 : 3;
+        width += Advance(s, tight);
     }
     return width;
 }
 
+static void HudNumber(u32 *c, int w, int h, int x1, int y, const char *s, int tight)
+{
+    const char *p;
+    int x = x1 - HudNumberWidth(s, tight);
+
+    for (p = s; *p; p++) {
+        int g = GlyphOf(*p);
+
+        if (g >= 0) {
+            /* Icon centres; the glyphs sit on a common baseline (y + 13) */
+            Icon(c, w, h, g, x + gUiIcons[g].w / 2, y + 13 - gUiIcons[g].h + gUiIcons[g].h / 2, 0);
+        }
+        x += Advance(p, tight);
+    }
+}
+
 /* The HUD in the left border: lives, wumpa, crates (and the time trial's
  * clock), with the HUD's own icons and digits, on a plate under the
- * level's name. A number too wide to sit beside its icon ("12/134")
- * goes under it, across the plate. */
+ * level's name. A crate count too wide to sit beside its icon
+ * ("112/134") gets a smaller crate and its digits closer together. */
 struct HudLayout {
     char text[4][24];
-    int under[4];
+    int tight[4]; /* the row's widest doesn't fit beside its icon: the
+                   * icon a third and the digits close together */
     int rows;
     int height;
 };
@@ -527,8 +535,7 @@ static void LayOutHud(struct HudLayout *l, int x0, int x1, const struct HostHud 
     }
     snprintf(l->text[3], sizeof(l->text[3]), "%d:%02d.%d", (int)hud->minutes, (int)hud->seconds, (int)hud->tenths);
     for (i = 0; i < l->rows; i++) {
-        /* beside the icon (from 2 past its right edge, x0 + 20) if the
-         * widest it can get there fits, so the panel keeps its shape
+        /* judged by the widest it can get, so the row keeps its look
          * through the level: 99 lives, 100 wumpa, every crate */
         char widest[24];
 
@@ -537,8 +544,8 @@ static void LayOutHud(struct HudLayout *l, int x0, int x1, const struct HostHud 
         } else {
             snprintf(widest, sizeof(widest), "%s", i == 0 ? "99" : i == 1 ? "100" : l->text[i]);
         }
-        l->under[i] = sHudIcons[i] >= 0 && HudNumberWidth(widest) > (x1 - 4) - (x0 + 22);
-        l->height += l->under[i] ? 36 : 20;
+        l->tight[i] = sHudIcons[i] >= 0 && HudNumberWidth(widest, 0) > (x1 - 4) - (x0 + 22);
+        l->height += 20;
     }
 }
 
@@ -552,16 +559,18 @@ static void HudPanel(u32 *c, int w, int h, int x0, int x1, int y, const struct H
     Plate(c, w, h, x0, y, x1, y + l.height);
     ry = y + 4;
     for (i = 0; i < l.rows; i++) {
-        if (sHudIcons[i] >= 0) {
-            Icon(c, w, h, sHudIcons[i], x0 + 12, ry + 8, 0);
-        }
-        if (l.under[i]) {
-            HudNumber(c, w, h, x1 - 4, ry + 17, l.text[i]);
-            ry += 36;
+        if (l.tight[i]) {
+            /* the small crate against the plate's left edge, the number
+             * against its right */
+            Icon(c, w, h, ICON_HUD_CRATE_SMALL, x0 + 1 + gUiIcons[ICON_HUD_CRATE_SMALL].w / 2, ry + 8, 0);
+            HudNumber(c, w, h, x1 - 2, ry + 1, l.text[i], 1);
         } else {
-            HudNumber(c, w, h, x1 - 4, ry + 1, l.text[i]);
-            ry += 20;
+            if (sHudIcons[i] >= 0) {
+                Icon(c, w, h, sHudIcons[i], x0 + 12, ry + 8, 0);
+            }
+            HudNumber(c, w, h, x1 - 4, ry + 1, l.text[i], 0);
         }
+        ry += 20;
     }
 }
 

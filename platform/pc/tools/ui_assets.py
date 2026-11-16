@@ -107,6 +107,7 @@ ICONS = [
     ("HUD_SLASH", 47, 24, 33, 0),
     ("HUD_COLON", 47, 21, 33, 0),
     ("HUD_DOT", 47, 22, 33, 0),
+    ("HUD_CRATE_SMALL", 47, 23, 45, 3),  # a third: the crate count's row when it's tight
 ] + [(f"HUD_SMALL{d}", 47, 11 + d, 33, 0) for d in range(10)]
 
 
@@ -130,7 +131,7 @@ def icons(out, sprites):
         colors = jasc(palf[0])
         px = im.load()
         w, h = im.size
-        step = 2 if half else 1
+        step = {0: 1, 1: 2}.get(half, half)  # 0 full size, 1 half, n: every nth pixel
         rows = [[px[x, y] for x in range(0, w - step + 1, step)] for y in range(0, h - step + 1, step)]
         # cropped to what it draws
         ys = [y for y, r in enumerate(rows) if any(r)]
