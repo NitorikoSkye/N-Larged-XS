@@ -236,11 +236,14 @@ make PLATFORM=pc OBJ_DIR=build/win/crashbandicootxs \
     HOST_CC=x86_64-w64-mingw32-gcc HOST_CXX=x86_64-w64-mingw32-g++ \
     HOST_NM=x86_64-w64-mingw32-nm HOST_CXXFILT=x86_64-w64-mingw32-c++filt \
     HOST_OBJCOPY=x86_64-w64-mingw32-objcopy \
-    SDL2_PREFIX=path/to/SDL2-2.30.x/x86_64-w64-mingw32   # build/win/CrashBandicootXS.exe
+    SDL2_PREFIX=path/to/SDL2-2.30.x/x86_64-w64-mingw32   # build/win/CrashBandicootXS-<version>.exe
 ```
 
 It is a GUI program (no console) that imports only Windows' own DLLs,
-with an icon and version information (platform/pc/win/). What differs
+with an icon and version information (platform/pc/win/). The version is
+written once, `HOST_PORT_VERSION` in host_platform.h: the window's title
+is "Crash Bandicoot XS - v0.06", and platform.mk puts it in the
+executable's name and its version resource. What differs
 from the ELF build: `-mno-ms-bitfields` (MinGW's default lays bitfields
 out as MSVC does), the host memory in a section of its own (`.gbamem`,
 memory.S) with each region at a 1 MB offset and the image's sections

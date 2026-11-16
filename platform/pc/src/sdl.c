@@ -692,7 +692,7 @@ void HostFrontendInit(void)
     HostConfigInit();
     gHostUiKeyName = KeyName;
     gHostUiPadName = PadName;
-    sWindow = SDL_CreateWindow(HOST_PORT_NAME " " HOST_PORT_VERSION, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    sWindow = SDL_CreateWindow(HOST_PORT_NAME " - " HOST_PORT_VERSION, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
                                SW * gHostSettings.windowScale, SH * gHostSettings.windowScale,
                                SDL_WINDOW_RESIZABLE |
                                    (gHostSettings.fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));

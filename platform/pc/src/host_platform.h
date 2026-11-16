@@ -94,9 +94,11 @@ enum {
  * exists, and says no. */
 int HostFrontendAvailable(void);
 void HostFrontendInit(void);
-/* The port's name and version, the window's title. */
+/* The port's name and version: the window's title is "name - version",
+ * and the Windows executable is CrashBandicootXS-<version>.exe
+ * (platform.mk reads the version from here). */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.05"
+#define HOST_PORT_VERSION "v0.06"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);

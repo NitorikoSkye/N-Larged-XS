@@ -36,10 +36,16 @@ HOST_WINDOWS ?= $(if $(findstring mingw,$(shell $(HOST_CC) -dumpmachine 2>/dev/n
 #        HOST_CXXFILT=aarch64-linux-gnu-c++filt HOST_OBJCOPY=aarch64-linux-gnu-objcopy
 HOST_ANDROID ?= 0
 
+# The port's version (host_platform.h's HOST_PORT_VERSION, the one place
+# it is written): in the Windows executable's name and version resource.
+HOST_PORT_VERSION := $(shell sed -n 's/^\#define HOST_PORT_VERSION "\(.*\)"/\1/p' $(PLATFORM_DIR)/src/host_platform.h)
+# As numbers for the resource's FILEVERSION: v0.06 -> 0,6.
+HOST_PORT_VERSION_NUM := $(shell echo $(patsubst v%,%,$(HOST_PORT_VERSION)) | awk -F. '{ printf "%d,%d", $$1, $$2 }')
+
 ifeq ($(HOST_ANDROID),1)
 HOST_EXE := $(patsubst %/,%,$(dir $(OBJ_DIR)))/libcrashxs_core.so
 else ifeq ($(HOST_WINDOWS),1)
-HOST_EXE := $(patsubst %/,%,$(dir $(OBJ_DIR)))/CrashBandicootXS.exe
+HOST_EXE := $(patsubst %/,%,$(dir $(OBJ_DIR)))/CrashBandicootXS-$(HOST_PORT_VERSION).exe
 else
 HOST_EXE := build/$(PLATFORM)/crashbandicootxs_$(PLATFORM)
 endif
@@ -284,9 +290,11 @@ HOST_WRAPS += _ZN6Engine3Gfx9OamBuffer3AddEPKv _ZN6Engine3Gfx9OamBuffer6AppendEP
 ifeq ($(HOST_WINDOWS),1)
 HOST_WINDRES ?= $(patsubst %gcc,%windres,$(HOST_CC))
 HOST_WIN_RES := $(PLATFORM_BUILDDIR)/win_resource.o
-$(HOST_WIN_RES): $(PLATFORM_DIR)/win/resource.rc $(wildcard $(PLATFORM_DIR)/win/*.ico)
+$(HOST_WIN_RES): $(PLATFORM_DIR)/win/resource.rc $(wildcard $(PLATFORM_DIR)/win/*.ico) $(PLATFORM_DIR)/src/host_platform.h
 	@mkdir -p $(dir $@)
-	$(HOST_WINDRES) -I $(PLATFORM_DIR)/win -o $@ $<
+	$(HOST_WINDRES) -I $(PLATFORM_DIR)/win -D 'HOST_VERSION_STR=\"$(HOST_PORT_VERSION)\"' \
+		-D 'HOST_EXE_NAME=\"CrashBandicootXS-$(HOST_PORT_VERSION).exe\"' \
+		-D HOST_VERSION_NUM=$(HOST_PORT_VERSION_NUM) -o $@ $<
 HOST_LINK_EXTRA := $(HOST_WIN_RES)
 HOST_LINK_FLAGS := -static -static-libgcc -static-libstdc++ -Wl,--disable-dynamicbase \
 	-Wl,--section-alignment,0x100000 -Wl,--allow-multiple-definition
