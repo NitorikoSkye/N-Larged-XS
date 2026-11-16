@@ -552,21 +552,28 @@ static void LayOutHud(struct HudLayout *l, int x0, int x1, const struct HostHud 
 static void HudPanel(u32 *c, int w, int h, int x0, int x1, int y, const struct HostHud *hud)
 {
     struct HudLayout l;
+    int cx;
     int ry;
     int i;
 
     LayOutHud(&l, x0, x1, hud);
     Plate(c, w, h, x0, y, x1, y + l.height);
     ry = y + 4;
+    /* The icons' column: the middle of the room beside the numbers; with
+     * a tight row, nearer the plate's edge, for the small crate there and
+     * the others with it. */
+    for (i = 0, cx = x0 + 12; i < l.rows; i++) {
+        if (l.tight[i]) {
+            cx = x0 + 8;
+        }
+    }
     for (i = 0; i < l.rows; i++) {
         if (l.tight[i]) {
-            /* the small crate against the plate's left edge, the number
-             * against its right */
-            Icon(c, w, h, ICON_HUD_CRATE_SMALL, x0 + 1 + gUiIcons[ICON_HUD_CRATE_SMALL].w / 2, ry + 8, 0);
+            Icon(c, w, h, ICON_HUD_CRATE_SMALL, cx, ry + 8, 0);
             HudNumber(c, w, h, x1 - 2, ry + 1, l.text[i], 1);
         } else {
             if (sHudIcons[i] >= 0) {
-                Icon(c, w, h, sHudIcons[i], x0 + 12, ry + 8, 0);
+                Icon(c, w, h, sHudIcons[i], cx, ry + 8, 0);
             }
             HudNumber(c, w, h, x1 - 4, ry + 1, l.text[i], 0);
         }
