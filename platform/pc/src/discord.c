@@ -347,6 +347,18 @@ static long long Pid(void)
 }
 #endif
 
+/* HOST_DISCORD_LOG=FILE: what the connection does, for finding out why
+ * a status doesn't show. */
+static FILE *sLog;
+
+static void Log(const char *what, int v)
+{
+    if (sLog != NULL) {
+        fprintf(sLog, "%u %s %d\n", (unsigned)SDL_GetTicks(), what, v);
+        fflush(sLog);
+    }
+}
+
 static int SendFrame(Conn c, u32 op, const char *json)
 {
     u32 n = (u32)strlen(json);
@@ -411,13 +423,26 @@ static int Connect(Conn *out)
     }
     snprintf(json, sizeof(json), "{\"v\":1,\"client_id\":\"%s\"}", gHostSettings.discordAppId);
     /* The answer: READY (op 1), or CLOSE (op 2) for an id Discord doesn't know. */
-    if (!SendFrame(c, 0, json) || WaitFrame(c, 5000) <= 0) {
+    if (!SendFrame(c, 0, json)) {
+        Log("handshake not sent", 0);
         CloseConn(c);
         return HOST_DISCORD_NOT_RUNNING;
     }
-    if (ReadFrame(c) != 1) {
-        CloseConn(c);
-        return HOST_DISCORD_BAD_ID;
+    {
+        int w = WaitFrame(c, 5000);
+        int op;
+
+        if (w <= 0) {
+            Log("no answer to the handshake", w);
+            CloseConn(c);
+            return HOST_DISCORD_NOT_RUNNING;
+        }
+        op = ReadFrame(c);
+        Log("handshake answer, op", op);
+        if (op != 1) {
+            CloseConn(c);
+            return op < 0 ? HOST_DISCORD_NOT_RUNNING : HOST_DISCORD_BAD_ID;
+        }
     }
     *out = c;
     return HOST_DISCORD_CONNECTED;
@@ -467,6 +492,7 @@ static int Thread(void *unused)
             }
         }
         if (AvailConn(c) < 0) {
+            Log("connection lost", 0);
             CloseConn(c);
             c = NO_CONN;
             gHostDiscordStatus = HOST_DISCORD_NOT_RUNNING;
@@ -485,6 +511,7 @@ static int Thread(void *unused)
             if (serial == 0) {
                 /* nothing composed yet */
             } else if (SendFrame(c, 1, cmd)) {
+                Log("activity sent", serial);
                 nonce++;
                 sent = serial;
                 lastSend = now;
@@ -505,6 +532,11 @@ static int Thread(void *unused)
 
 void HostDiscordInit(void)
 {
+    const char *log = SDL_getenv("HOST_DISCORD_LOG");
+
+    if (log != NULL && log[0] != '\0') {
+        sLog = fopen(log, "w");
+    }
     sLock = SDL_CreateMutex();
     sSince = (long long)time(NULL);
     sThread = SDL_CreateThread(Thread, "discord", NULL);

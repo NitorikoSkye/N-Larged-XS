@@ -1702,6 +1702,9 @@ static void Hold(int *shot)
             }
         }
         CheckQuit();
+        /* Discord's status stays current while the game is held (the
+         * settings menu, or paused in the background). */
+        HostDiscordFrame();
         if (HostUiIsOpen() && !HostUiCapturing()) {
             int dir = PadDirection();
             Uint32 now = SDL_GetTicks();

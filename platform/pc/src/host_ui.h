@@ -111,9 +111,9 @@ extern struct HostSettings gHostSettings;
 
 /* The Discord application Rich Presence talks as (its name is what the
  * profile says is being played; its art assets are the pictures), unless
- * settings.ini's discord_app_id names another. Empty: none built in. */
+ * settings.ini's discord_app_id names another (empty there: this one). */
 #ifndef HOST_DISCORD_APP_ID
-#define HOST_DISCORD_APP_ID ""
+#define HOST_DISCORD_APP_ID "1571726745764110526"
 #endif
 
 /* discord.c: Rich Presence. The status, for the settings menu. */
