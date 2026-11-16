@@ -281,6 +281,8 @@ HOST_WRAPS := _ZN4Game2Ui11LevelSelect3RunEPi _ZN4Game5Level13LevelProgress10Sel
 HOST_WRAPS += _ZN4Game5Level13LevelProgress8PlayRoomEv
 # Rumble (src/rumble.c) follows the game's sound effects.
 HOST_WRAPS += _ZN6Engine5Audio12AudioContext7PlaySfxEjj
+# Looking up and down (src/look_hook.cpp) wraps the camera's update.
+HOST_WRAPS += _ZN4Game5Level6Camera6UpdateEv
 # The save menu without "load link game" (src/save_menu_hook.cpp).
 HOST_WRAPS += _ZN4Game2Ui8SaveMenu8DrawMainEv
 # Button prompts (src/prompt_hook.cpp) follow the font's glyphs.

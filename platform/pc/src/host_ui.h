@@ -112,6 +112,7 @@ struct HostSettings {
     int pad[HOST_BIND_COUNT][HOST_BIND_SLOTS];  /* HOST_PAD_* */
     /* Gameplay */
     int autoSave; /* HOST_AUTOSAVE_* */
+    int lookAround; /* look up/down (look_hook.cpp) */
     /* Extras: Discord Rich Presence (discord.c) */
     int discord;
     int discordProgress;

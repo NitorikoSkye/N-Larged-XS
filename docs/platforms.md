@@ -435,6 +435,21 @@ what it does); with the Dingodile keys shifted after a load of slot 1, the
 fight's win auto saves slot 1, the same bytes on Linux and Windows, and
 the game's own load menu loads it.
 
+**Look up and down** (v0.24; Gameplay's Look up/down, on by default;
+src/look_hook.cpp). Holding up or down alone for two thirds of a second
+while Crash stands still on the ground (his floor contact,
+`hitAxes & PART_DIR_DOWN`, no speed) glides the view 48 pixels that way,
+easing an eighth of the way each frame; letting go (or moving, jumping)
+glides it back. The link wraps Camera::Update (only UpdateRoomFrame calls
+it): after the game's update the scroll is set again with the offset
+added, so the game's camera never moves, SetScroll clamps the view to
+the level, and the layers' Scroll streams the new BG rows and the sprites
+are drawn against it in the same frame. Only the camera that follows
+Crash on foot (CAMERA_MODE_FACING) looks: under water the camera already
+goes where he swims, and the vehicle rooms have their own. Headless runs
+have it off (their settings are zeros) unless `HOST_LOOK=1`; with it on,
+the Dingodile test's game state is the same at every checkpoint.
+
 **Discord** (v0.07; Extras, src/discord.c). Rich Presence over Discord's
 local IPC, with no SDK: the named pipe `\\.\pipe\discord-ipc-N` on
 Windows, the `discord-ipc-N` Unix socket elsewhere (the runtime directory,

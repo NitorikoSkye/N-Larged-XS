@@ -578,6 +578,8 @@ static const char *const sAutoSaves[HOST_AUTOSAVE_COUNT] = { "off", "slot in use
 static const struct Option sGameplay[] = {
     { "auto save", "after a level with something new: save to the slot in use, or slot 4.",
       OPT_CHOICE, &gHostSettings.autoSave, sAutoSaves, HOST_AUTOSAVE_COUNT, 0 },
+    { "look up/down", "hold up or down while standing still to see above or below.", OPT_CHOICE,
+      &gHostSettings.lookAround, sOffOn, 2, 0 },
 };
 
 static const char *const sDiscordStates[HOST_DISCORD_STATUS_COUNT] = {
@@ -607,7 +609,7 @@ static const struct Category sCategories[] = {
     { "interface", "hud, fps counter, input display and timer", sInterface, COUNT(sInterface) },
     { "audio", "quality, and master, music and sound fx volume", sAudio, COUNT(sAudio) },
     { "controls", "keyboard, controller, rumble and button prompts", sControls, COUNT(sControls) },
-    { "gameplay", "auto save", sGameplay, COUNT(sGameplay) },
+    { "gameplay", "auto save and looking up and down", sGameplay, COUNT(sGameplay) },
     { "extras", "discord status", sExtras, COUNT(sExtras) },
 };
 

@@ -115,6 +115,7 @@ void HostConfigDefaults(struct HostSettings *s)
         s->fullscreen = 1;
     }
     s->autoSave = HOST_AUTOSAVE_IN_USE;
+    s->lookAround = 1;
     s->discord = 1;
     s->discordProgress = 1;
     snprintf(s->discordAppId, sizeof(s->discordAppId), "%s", HOST_DISCORD_APP_ID);
@@ -156,6 +157,7 @@ static const struct {
     { "rumble", &gHostSettings.rumble, 0, 2 },
     { "button_prompts", &gHostSettings.prompts, 0, HOST_PROMPTS_COUNT - 1 },
     { "auto_save", &gHostSettings.autoSave, 0, HOST_AUTOSAVE_COUNT - 1 },
+    { "look_around", &gHostSettings.lookAround, 0, 1 },
     { "discord_status", &gHostSettings.discord, 0, 1 },
     { "discord_show_progress", &gHostSettings.discordProgress, 0, 1 },
 };
