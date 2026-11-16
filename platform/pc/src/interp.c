@@ -268,6 +268,34 @@ static int NearestSame(const struct Kept *a, int i, const struct Kept *b, int *d
     return best;
 }
 
+/* Whether `b` has, where `a`'s entry `i` is, an entry no object owns with
+ * its tile, size, shape and flags, in any palette: a letter whose colour
+ * changed (a menu's selected row, its blink) stays where it is. */
+static int StaysPut(const struct Kept *a, int i, const struct Kept *b)
+{
+    const u16 *ea = (const u16 *)a->f.oam;
+    const u16 *eb = (const u16 *)b->f.oam;
+    s32 x0;
+    s32 y0;
+    int j;
+
+    EntryPos(&a->f, i, &x0, &y0);
+    for (j = 0; j < 128; j++) {
+        s32 x1;
+        s32 y1;
+
+        if (b->owner[j].valid || !Visible(&b->f, j) || (ea[4 * i] & 0xFF00) != (eb[4 * j] & 0xFF00) ||
+            (ea[4 * i + 1] & 0xFE00) != (eb[4 * j + 1] & 0xFE00) || (ea[4 * i + 2] & 0x03FF) != (eb[4 * j + 2] & 0x03FF)) {
+            continue;
+        }
+        EntryPos(&b->f, j, &x1, &y1);
+        if (x1 == x0 && y1 == y0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
 /* How `from`'s entries move to their places in `to` (the earlier frame's
  * moves forward, the later's backward: both from earlier to later). */
 static void MatchEntries(struct Kept *from, const struct Kept *to, int fromIsLater)
@@ -306,9 +334,13 @@ static void MatchEntries(struct Kept *from, const struct Kept *to, int fromIsLat
              * nearest entry of the other frame that looks the same, if it
              * also finds this one the nearest. Not the same slot: a sprite
              * drawn before it every other frame moves its slot, and the
-             * same slot can then hold another of the same letter. */
+             * same slot can then hold another of the same letter. And not
+             * at all if the same letter is still where it was in another
+             * colour (StaysPut): the menus' selected rows and their blink
+             * recolour letters, and a look-alike in the row the colour
+             * moved to isn't this one. */
             int d;
-            int j = NearestSame(from, i, to, &d);
+            int j = StaysPut(from, i, to) ? -1 : NearestSame(from, i, to, &d);
 
             if (j >= 0 && d <= 32 && NearestSame(to, j, from, &d) == i) {
                 s32 x0;

@@ -294,7 +294,12 @@ times the GBA's resolution on worker threads, so positions between
 pixels show. With nothing moved it is ppu.c's picture pixel for pixel:
 `--hd-check` compares every frame at scales 1 and 2 (boot.keys: 6654
 frames, none differ). `--interp-dump DIR --interp-at N` writes frames N
-to N+2 at quarter steps.
+to N+2 at quarter steps. An entry no object drew (menu letters, for
+one) is matched to the nearest identical sprite in the other frame, but
+not when the same tile and shape sit at its very place there in any
+palette (v0.21): a menu's cursor or blink recolours letters, and
+without that check a recoloured letter was paired with a look-alike in
+the next row and slid between rows (title screen, save slots).
 
 **Borders** (v0.03; Display's Borders, src/sdl.c and src/borders.c).
 When the window isn't the picture's 3:2 shape, what fills it beside (or
