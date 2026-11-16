@@ -364,7 +364,7 @@ HOST_HQ_DUMP=FILE write the 16-bit mix headless.
 
 **Button prompts** (v0.22; Controls, src/prompts.c, src/prompt_hook.cpp).
 The game's text draws the GBA's A, B, L and R as glyphs (the small
-font's last four: the power dialogs' help, the link messages). They are
+font's last four: the power dialogs' help). They are
 drawn as what they are bound to instead: auto (the default) follows the
 device used last (before any, the first pad plugged in, else the
 keyboard) and its kind (SDL_GameControllerGetType); or always gba (the
@@ -891,6 +891,15 @@ CI compares every frame's picture with mGBA's with no link
 host's SIOCNT was plain memory, SD read low ("bad connection"), and
 the session never started (Update stopped and re-primed the port every
 frame); the pictures were the same, the code it ran was not.
+
+**No "load link game"** (v0.23, src/save_menu_hook.cpp). With no second
+console to load from, the save menu's main page has four options: the
+link wraps SaveMenu::DrawMain, draws the rows without "load link game"
+(half a row lower, still centred), and moves a cursor that lands on its
+row (MainInput, in DrawMain's object, can't be wrapped) on to the next
+row the way it was going, before the page is drawn, so it is never shown
+or picked. `HOST_LINK_GAME=1` keeps the game's page, for the link test
+above (CI sets it).
 
 **DMA.** Every DMA the game starts is immediate (`DmaCopy*`, `DmaFill*`,
 DMA3, through DmaSet): none is timed to VBlank, HBlank or a FIFO (only
