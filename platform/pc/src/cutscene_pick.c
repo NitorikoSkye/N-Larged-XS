@@ -12,6 +12,7 @@
 
 #include "gba/gba.h"
 #include "host_platform.h"
+#include "host_ui.h"
 
 extern s32 gLanguage;
 
@@ -20,6 +21,10 @@ void _ZN4Game5Level10LevelState12PlayCutsceneEi(void *self, s32 idx);
 
 void __wrap__ZN4Game5Level10LevelState16PlayBootCutsceneEv(void *self)
 {
+    /* Skip intro (intro_skip.c): no legal notice either. */
+    if (HostSkipIntro()) {
+        return;
+    }
     if (gHostOptions.cutscene < 0) {
         __real__ZN4Game5Level10LevelState16PlayBootCutsceneEv(self);
         return;

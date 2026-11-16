@@ -495,6 +495,8 @@ static const struct Option sGeneral[] = {
       OPT_ACTION, &gHostSettings.portable, sOffOn, 2, 0, NULL, NULL, TogglePortable },
     { "pause when unfocused", "the game stops while its window isn't the active one.", OPT_CHOICE,
       &gHostSettings.pauseUnfocused, sOffOn, 2, 0 },
+    { "skip intro", "from the next launch: straight to the title, no logos or intro.",
+      OPT_CHOICE, &gHostSettings.skipIntro, sOffOn, 2, 0 },
     { "quit game", "close the game. your progress is in its save, as the game saves it.", OPT_ACTION, NULL, NULL, 0,
       0, NULL, NULL, AskQuit },
 };
@@ -580,7 +582,7 @@ static const struct Option sExtras[] = {
 #define COUNT(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
 static const struct Category sCategories[] = {
-    { "general", "portable mode and quitting", sGeneral, COUNT(sGeneral) },
+    { "general", "portable mode, skip intro and quitting", sGeneral, COUNT(sGeneral) },
     { "display", "window, frame rate and scaling", sDisplay, COUNT(sDisplay) },
     { "graphics", "filters and screen effects", sGraphics, COUNT(sGraphics) },
     { "interface", "fps counter and input display", sInterface, COUNT(sInterface) },

@@ -124,6 +124,8 @@ static const struct {
     int max;
 } sInts[] = {
     { "pause_unfocused", &gHostSettings.pauseUnfocused, 0, 1 },
+    { "skip_intro", &gHostSettings.skipIntro, 0, 1 },
+    { "language", &gHostSettings.language, 0, 5 },
     { "fullscreen", &gHostSettings.fullscreen, 0, 1 },
     { "window_scale", &gHostSettings.windowScale, 1, 8 },
     { "frame_rate_index", &gHostSettings.frameRate, 0, HOST_FPS_COUNT - 1 },

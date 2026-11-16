@@ -228,7 +228,11 @@ $(HOST_INLINES:.cpp=.o): $(HOST_INLINES) $(HOST_RENAMES) | $(GENERATED_HEADERS)
 
 # xBRZ (platform/pc/xbrz/, the "cartoon" filters): modern C++, built on
 # its own, not with the game's flags.
+# (Only with the window: without SDL, as the Android core, no filters.)
+HOST_XBRZ_OBJS :=
+ifeq ($(HOST_SDL),1)
 HOST_XBRZ_OBJS := $(PLATFORM_BUILDDIR)/xbrz/xbrz.o $(PLATFORM_BUILDDIR)/xbrz/xbrz_c.o
+endif
 HOST_OBJS := $(HOST_XBRZ_OBJS) $(C_OBJS) $(CXX_OBJS) $(PLATFORM_OBJS) $(HOST_GAX_OBJS) $(HOST_GAX_DATA:.c=.o) $(HOST_INLINES:.cpp=.o) \
 	$(HOST_UI_ASSETS:.c=.o)
 
@@ -275,6 +279,9 @@ comma := ,
 HOST_WRAPS := _ZN4Game2Ui11LevelSelect3RunEPi _ZN4Game5Level13LevelProgress10SelectRoomEv
 # The themed borders (src/borders.c) know the level being played.
 HOST_WRAPS += _ZN4Game5Level13LevelProgress8PlayRoomEv
+# Skip intro (src/intro_skip.c) wraps the boot's steps after the legal notice.
+HOST_WRAPS += _ZN4Game5Level10LevelState16ShowCompanyLogosEv _ZN4Game5Level10LevelState17PlayIntroCutsceneEv \
+	OpenLanguageSelect RunLanguageSelect CloseLanguageSelect
 # Auto save (src/autosave_hooks.cpp) follows the save menu and the title.
 HOST_WRAPS += _ZN4Game2Ui11TitleScreen3RunEv _ZN4Game2Ui8SaveMenu3RunEjj
 # --cutscene (src/cutscene_pick.c) wraps the boot's cutscene.

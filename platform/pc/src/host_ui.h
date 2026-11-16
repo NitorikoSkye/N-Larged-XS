@@ -78,6 +78,8 @@ enum {
 struct HostSettings {
     /* General */
     int portable;
+    int skipIntro; /* boot straight to the title (intro_skip.c) */
+    int language;  /* the language select's last pick, for skipped boots */
     int pauseUnfocused;
     /* Display */
     int fullscreen;
@@ -119,6 +121,9 @@ extern struct HostSettings gHostSettings;
 #ifndef HOST_DISCORD_APP_ID
 #define HOST_DISCORD_APP_ID "1571726745764110526"
 #endif
+
+/* intro_skip.c: General's Skip intro, as this launch has it. */
+int HostSkipIntro(void);
 
 /* autosave.c: Gameplay's Auto save. */
 enum {

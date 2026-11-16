@@ -263,7 +263,7 @@ by the platform in the game's own style from the game's own pieces
 the categories in the pause screen's left box, a category's options in
 that box widened across the screen, the selected row in the pause
 menu's white, values as `<75%>`, what can't be used grey. Categories:
-General (portable mode, pause when unfocused, quit), Display (window
+General (portable mode, pause when unfocused, skip intro, quit), Display (window
 mode and size, frame rate, vsync, scaling; widescreen greyed, below),
 Graphics (pixels, smooth, sharp smooth, Scale2x, Scale3x, cartoon,
 cartoon soft; scanlines; LCD grid; the GBA screen's colours; LCD
@@ -314,6 +314,16 @@ level comes from LevelProgress::PlayRoom, --wrap'ed (src/level_pick.c,
 gHostPlayingLevel). The FPS counter and the input display go into the
 borders when they fit there, at a smaller size if need be, and over the
 picture's corners otherwise.
+
+**Skip intro** (v0.13; General, src/intro_skip.c). From the next launch,
+the game boots straight to the title screen: MainLoop's legal notice
+(PlayBootCutscene, whose wrap is cutscene_pick.c's), company logos,
+language select (Open/Run/CloseLanguageSelect) and intro cutscene
+(PlayIntroCutscene) are wrapped and do nothing, and the language is the
+one the language select last returned (settings.ini's `language`, kept
+each time it runs; English before). The setting is read at the first boot
+step. --cutscene still plays the boot. The story's cutscene after "new
+game" is the game's own and plays.
 
 **Cartoon filters** (v0.12; Graphics' Filter, src/sdl.c, platform/pc/xbrz/).
 xBRZ (Zenju's "scale by rules" pixel-art upscaler, GPLv3 as this project)
