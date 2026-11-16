@@ -487,41 +487,81 @@ static void HudNumber(u32 *c, int w, int h, int x1, int y, const char *s)
     }
 }
 
+static int HudNumberWidth(const char *s)
+{
+    int width = 0;
+
+    for (; *s; s++) {
+        int g = GlyphOf(*s);
+
+        width += g >= 0 ? gUiIcons[g].w + 1 : 3;
+    }
+    return width;
+}
+
 /* The HUD in the left border: lives, wumpa, crates (and the time trial's
  * clock), with the HUD's own icons and digits, on a plate under the
- * level's name. */
-static void HudPanel(u32 *c, int w, int h, int x0, int x1, int y, const struct HostHud *hud)
+ * level's name. A number too wide to sit beside its icon ("12/134")
+ * goes under it, across the plate. */
+struct HudLayout {
+    char text[4][24];
+    int under[4];
+    int rows;
+    int height;
+};
+
+static const int sHudIcons[4] = { ICON_HUD_LIVES, ICON_HUD_WUMPA, ICON_HUD_CRATE, -1 };
+
+static void LayOutHud(struct HudLayout *l, int x0, int x1, const struct HostHud *hud)
 {
-    char text[24];
-    int rows = 3 + (hud->timeTrial != 0);
     int i;
 
-    Plate(c, w, h, x0, y, x1, y + 6 + 20 * rows);
-    for (i = 0; i < rows; i++) {
-        int ry = y + 4 + 20 * i;
+    l->rows = 3 + (hud->timeTrial != 0);
+    l->height = 6;
+    snprintf(l->text[0], sizeof(l->text[0]), "%d", (int)hud->lives);
+    snprintf(l->text[1], sizeof(l->text[1]), "%d", (int)hud->wumpa);
+    if (hud->crateTotal > 0) {
+        snprintf(l->text[2], sizeof(l->text[2]), "%d/%d", (int)hud->crates, (int)hud->crateTotal);
+    } else {
+        snprintf(l->text[2], sizeof(l->text[2]), "%d", (int)hud->crates);
+    }
+    snprintf(l->text[3], sizeof(l->text[3]), "%d:%02d.%d", (int)hud->minutes, (int)hud->seconds, (int)hud->tenths);
+    for (i = 0; i < l->rows; i++) {
+        /* beside the icon (from 2 past its right edge, x0 + 20) if the
+         * widest it can get there fits, so the panel keeps its shape
+         * through the level: 99 lives, 100 wumpa, every crate */
+        char widest[24];
 
-        switch (i) {
-        case 0:
-            Icon(c, w, h, ICON_HUD_LIVES, x0 + 12, ry + 8, 0);
-            snprintf(text, sizeof(text), "%d", (int)hud->lives);
-            break;
-        case 1:
-            Icon(c, w, h, ICON_HUD_WUMPA, x0 + 12, ry + 8, 0);
-            snprintf(text, sizeof(text), "%d", (int)hud->wumpa);
-            break;
-        case 2:
-            Icon(c, w, h, ICON_HUD_CRATE, x0 + 12, ry + 8, 0);
-            if (hud->crateTotal > 0) {
-                snprintf(text, sizeof(text), "%d/%d", (int)hud->crates, (int)hud->crateTotal);
-            } else {
-                snprintf(text, sizeof(text), "%d", (int)hud->crates);
-            }
-            break;
-        default:
-            snprintf(text, sizeof(text), "%d:%02d.%d", (int)hud->minutes, (int)hud->seconds, (int)hud->tenths);
-            break;
+        if (i == 2 && hud->crateTotal > 0) {
+            snprintf(widest, sizeof(widest), "%d/%d", (int)hud->crateTotal, (int)hud->crateTotal);
+        } else {
+            snprintf(widest, sizeof(widest), "%s", i == 0 ? "99" : i == 1 ? "100" : l->text[i]);
         }
-        HudNumber(c, w, h, x1 - 4, ry + 1, text);
+        l->under[i] = sHudIcons[i] >= 0 && HudNumberWidth(widest) > (x1 - 4) - (x0 + 22);
+        l->height += l->under[i] ? 36 : 20;
+    }
+}
+
+static void HudPanel(u32 *c, int w, int h, int x0, int x1, int y, const struct HostHud *hud)
+{
+    struct HudLayout l;
+    int ry;
+    int i;
+
+    LayOutHud(&l, x0, x1, hud);
+    Plate(c, w, h, x0, y, x1, y + l.height);
+    ry = y + 4;
+    for (i = 0; i < l.rows; i++) {
+        if (sHudIcons[i] >= 0) {
+            Icon(c, w, h, sHudIcons[i], x0 + 12, ry + 8, 0);
+        }
+        if (l.under[i]) {
+            HudNumber(c, w, h, x1 - 4, ry + 17, l.text[i]);
+            ry += 36;
+        } else {
+            HudNumber(c, w, h, x1 - 4, ry + 1, l.text[i]);
+            ry += 20;
+        }
     }
 }
 
@@ -547,6 +587,19 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
 
     if (c == NULL) {
         return;
+    }
+    /* The left bar with the HUD: the porthole, the name and the panel
+     * (from cy - 33 to cy + 64 + its height) kept inside the bar. */
+    if (side == 0 && HudInBorder()) {
+        struct HudLayout l;
+
+        LayOutHud(&l, 2, w - 11, &gHostHud);
+        if (cy > h - 4 - 64 - l.height) {
+            cy = h - 4 - 64 - l.height;
+        }
+        if (cy < 37) {
+            cy = 37;
+        }
     }
     Wall(c, w, h, innerRight);
     if (w >= 75) {
