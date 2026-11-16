@@ -62,6 +62,8 @@ static void Usage(const char *argv0)
         "       [--checkpoint-every N] [--dump DIR] [--screens DIR]\n"
         "       [--ppu-stats] [--quiet]\n"
         "  --headless            no window, no frame pacing (always, built without SDL)\n"
+        "  --fullscreen, --windowed  this launch in the whole screen or a window, whatever the\n"
+        "                        settings say (for Steam's launch options)\n"
         "  --scale N             the window's size, N times the GBA's (3)\n"
         "  --save FILE           keep the EEPROM in FILE (read at start, written as it changes)\n"
         "  --wav FILE            write the audio output to FILE (8-bit, at the first song's mix rate)\n"
@@ -107,6 +109,16 @@ static u32 Number(const char *argv0, const char *text)
 
 int main(int argc, char **argv)
 {
+    /* HOST_AUDIO_HQ=1: high-quality audio's mix also headless (audio.c's
+     * HOST_HQ_DUMP writes it) */
+    {
+        extern int gHostAudioHq;
+        const char *hq = getenv("HOST_AUDIO_HQ");
+
+        if (hq != NULL && hq[0] == '1') {
+            gHostAudioHq = 1;
+        }
+    }
     int i;
     int checkpointsAsked = 0;
 
@@ -120,6 +132,10 @@ int main(int argc, char **argv)
         }
         if (strcmp(arg, "--headless") == 0) {
             gHostOptions.headless = 1;
+            continue;
+        }
+        if (strcmp(arg, "--fullscreen") == 0 || strcmp(arg, "--windowed") == 0) {
+            gHostOptions.windowMode = arg[2] == 'f' ? 2 : 1;
             continue;
         }
         if (strcmp(arg, "--stream") == 0) {

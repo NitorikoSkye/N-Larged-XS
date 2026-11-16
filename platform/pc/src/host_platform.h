@@ -30,6 +30,7 @@ struct HostOptions {
     s32 cutscene;          /* --cutscene N: the boot plays cutscene N (-1: no) */
     s32 language;          /* --language L: in language L (gLanguage; -1: as it is) */
     s32 extraRoom;         /* --room bonus|gem-path: HOST_EXTRA_ROOM_* (0: no) */
+    int windowMode;        /* --windowed 1, --fullscreen 2 (Steam's launch options): this launch */
 };
 
 /* --room bonus and --room gem-path (level_pick.c): the level's room list's
@@ -98,7 +99,7 @@ void HostFrontendInit(void);
  * and the Windows executable is CrashBandicootXS-<version>.exe
  * (platform.mk reads the version from here). */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.13"
+#define HOST_PORT_VERSION "v0.14"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);
@@ -122,6 +123,8 @@ void HostGaxLogEnd(void);
 /* The window's audio device (sdl.c): `n` signed 8-bit mono samples at
  * `rate` Hz. */
 void HostFrontendAudio(const s8 *buf, u32 n, u32 rate);
+/* High-quality audio's: 16-bit samples (audio.c, gax_dsp.c). */
+void HostFrontendAudio16(const s16 *buf, u32 n, u32 rate);
 
 /* The EEPROM's image in --save FILE (eeprom.c): written back at a VBlank
  * after the game changed it, and at the end. */

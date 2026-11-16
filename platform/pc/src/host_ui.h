@@ -88,7 +88,6 @@ struct HostSettings {
     int vsync;
     int scaling; /* HOST_SCALING_* */
     int borders; /* HOST_BORDERS_*: what fills the window around the picture */
-    int widescreen;
     /* Graphics */
     int filter;    /* HOST_FILTER_* */
     int scanlines; /* 0 off, 1 light, 2 dark */
@@ -98,12 +97,16 @@ struct HostSettings {
     /* Interface */
     int showFps;
     int inputDisplay; /* 0 off, 1 bottom left, 2 bottom right */
+    int hud;          /* HOST_HUD_* */
+    int speedrunTimer; /* HOST_TIMER_* */
     /* Audio, percent */
     int master;
     int music;
     int sfx;
+    int audioQuality; /* 0 original (the GBA's), 1 high (gax_dsp.c, sdl.c) */
     /* Controls */
     int deadzone; /* percent */
+    int rumble;   /* 0 off, 1 light, 2 strong (rumble.c) */
     int keys[HOST_BIND_COUNT][HOST_BIND_SLOTS]; /* SDL scancodes, 0 none */
     int pad[HOST_BIND_COUNT][HOST_BIND_SLOTS];  /* HOST_PAD_* */
     /* Gameplay */
@@ -121,6 +124,40 @@ extern struct HostSettings gHostSettings;
 #ifndef HOST_DISCORD_APP_ID
 #define HOST_DISCORD_APP_ID "1571726745764110526"
 #endif
+
+/* hud_hook.cpp: Interface's HUD, and the HUD's numbers for the left
+ * border (borders.c). */
+enum {
+    HOST_HUD_ON,
+    HOST_HUD_OFF,
+    HOST_HUD_BORDERS,
+    HOST_HUD_COUNT
+};
+struct HostHud {
+    u32 frame; /* HostFrame() of its last update: in a level when recent */
+    s32 lives;
+    s32 wumpa;
+    s32 crates;
+    s32 crateTotal;
+    s32 timeTrial;
+    s32 minutes;
+    s32 seconds;
+    s32 tenths;
+    s32 boss;
+};
+extern struct HostHud gHostHud;
+
+/* timer.c: Interface's Speedrun timer. */
+enum {
+    HOST_TIMER_OFF,
+    HOST_TIMER_LEVEL, /* the level's time and its split */
+    HOST_TIMER_RUN,   /* and the run's */
+    HOST_TIMER_COUNT
+};
+void HostTimerVBlank(void);
+void HostTimerRunStart(void);
+void HostTimerWarpRoom(void);
+int HostTimerLines(char big[32], char line2[64], char line3[64]);
 
 /* intro_skip.c: General's Skip intro, as this launch has it. */
 int HostSkipIntro(void);

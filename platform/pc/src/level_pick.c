@@ -46,7 +46,9 @@ s32 __wrap__ZN4Game2Ui11LevelSelect3RunEPi(s32 *level)
 {
     s32 result;
 
-    /* Back in the warp room: auto save (autosave.c), as it starts. */
+    /* Back in the warp room: the level's split (timer.c) and auto save
+     * (autosave.c), as it starts. */
+    HostTimerWarpRoom();
     HostAutosaveWarpRoom();
     /* The warp room, for Discord's status (discord.c). */
     gHostInWarpRoom = 1;

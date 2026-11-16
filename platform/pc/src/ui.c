@@ -514,8 +514,6 @@ static const struct Option sDisplay[] = {
       OPT_CHOICE, &gHostSettings.scaling, sScalings, HOST_SCALING_COUNT, HOST_APPLY_VIDEO },
     { "borders", "around the picture: black, its colours blurred, or the world's art.", OPT_CHOICE,
       &gHostSettings.borders, sBorders, HOST_BORDERS_COUNT, HOST_APPLY_VIDEO, NULL, NotStretched },
-    { "widescreen", "not available yet: the levels are built for the gba's 3:2 screen.",
-      OPT_CHOICE, &gHostSettings.widescreen, sOffOn, 2, 0, NULL, Never },
 };
 
 static const struct Option sGraphics[] = {
@@ -531,14 +529,26 @@ static const struct Option sGraphics[] = {
       sOffOn, 2, HOST_APPLY_VIDEO },
 };
 
+static const char *const sHuds[HOST_HUD_COUNT] = { "on", "off", "borders" };
+
+static const char *const sTimers[HOST_TIMER_COUNT] = { "off", "level", "level and run" };
+
 static const struct Option sInterface[] = {
+    { "hud", "lives, wumpa and crates: in the game, hidden, or in the left border.", OPT_CHOICE,
+      &gHostSettings.hud, sHuds, HOST_HUD_COUNT, 0 },
     { "show fps", "the frames shown each second, in the window's top left corner.", OPT_CHOICE,
       &gHostSettings.showFps, sOffOn, 2, 0 },
     { "input display", "the buttons held, drawn in a bottom corner of the window.", OPT_CHOICE,
       &gHostSettings.inputDisplay, sCorners, 3, 0 },
+    { "speedrun timer", "top right: the level's time, its split against your best, the run's.",
+      OPT_CHOICE, &gHostSettings.speedrunTimer, sTimers, HOST_TIMER_COUNT, 0 },
 };
 
+static const char *const sQualities[] = { "original", "high" };
+
 static const struct Option sAudio[] = {
+    { "quality", "high: smoother, clearer sound. original: the gba's own.", OPT_CHOICE,
+      &gHostSettings.audioQuality, sQualities, 2, HOST_APPLY_AUDIO },
     { "master volume", "everything the game plays.", OPT_PERCENT, &gHostSettings.master, NULL, 0, HOST_APPLY_AUDIO,
       NULL, NULL, NULL, 0, 100 },
     { "music volume", "the music. the pause menu's music setting also applies.", OPT_PERCENT,
@@ -547,11 +557,15 @@ static const struct Option sAudio[] = {
       OPT_PERCENT, &gHostSettings.sfx, NULL, 0, HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
 };
 
+static const char *const sRumbles[] = { "off", "light", "strong" };
+
 static const struct Option sControls[] = {
     { "keyboard", "change the keys.", OPT_ACTION, NULL, NULL, 0, 0, NULL, NULL, OpenKeyboard },
     { "controller", "change the controller's buttons.", OPT_ACTION, NULL, NULL, 0, 0, NULL, NULL, OpenController },
     { "stick deadzone", "how far a stick or trigger must move before it counts.", OPT_PERCENT,
       &gHostSettings.deadzone, NULL, 0, 0, NULL, NULL, NULL, 10, 90 },
+    { "rumble", "the controller buzzes with hits, explosions, crates and bosses.", OPT_CHOICE,
+      &gHostSettings.rumble, sRumbles, 3, 0 },
 };
 
 static const char *const sAutoSaves[HOST_AUTOSAVE_COUNT] = { "off", "slot in use", "slot 4" };
@@ -585,9 +599,9 @@ static const struct Category sCategories[] = {
     { "general", "portable mode, skip intro and quitting", sGeneral, COUNT(sGeneral) },
     { "display", "window, frame rate and scaling", sDisplay, COUNT(sDisplay) },
     { "graphics", "filters and screen effects", sGraphics, COUNT(sGraphics) },
-    { "interface", "fps counter and input display", sInterface, COUNT(sInterface) },
-    { "audio", "master, music and sound fx volume", sAudio, COUNT(sAudio) },
-    { "controls", "keyboard and controller", sControls, COUNT(sControls) },
+    { "interface", "hud, fps counter, input display and timer", sInterface, COUNT(sInterface) },
+    { "audio", "quality, and master, music and sound fx volume", sAudio, COUNT(sAudio) },
+    { "controls", "keyboard, controller and rumble", sControls, COUNT(sControls) },
     { "gameplay", "auto save", sGameplay, COUNT(sGameplay) },
     { "extras", "discord status", sExtras, COUNT(sExtras) },
 };

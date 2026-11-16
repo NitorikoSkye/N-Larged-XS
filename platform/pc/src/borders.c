@@ -58,7 +58,19 @@ enum {
     ICON_POWER_DOUBLE_JUMP,
     ICON_POWER_TORNADO_SPIN,
     ICON_POWER_TURBO_RUN,
+    ICON_HUD_LIVES,
+    ICON_HUD_CRATE,
+    ICON_HUD_WUMPA,
+    ICON_HUD_DIGIT0, /* the HUD's large digits, 0-9 */
+    ICON_HUD_SLASH = ICON_HUD_DIGIT0 + 10,
+    ICON_HUD_COLON,
+    ICON_HUD_DOT,
+    ICON_HUD_SMALL0, /* its small digits, 0-9 */
 };
+
+/* Interface's HUD in "borders": set while the left border has the HUD
+ * (hud_hook.cpp takes it out of the picture only then). */
+extern int gHostHudInBorder;
 
 /* The player's progress: the level state's progress block (its first
  * field, game_progress.hpp), counted by the game's own functions, as the
@@ -114,6 +126,8 @@ struct Bar {
     int level;
     int side;
     struct Stats stats;
+    struct HostHud hud; /* the left bar's HUD panel's numbers (frame 0) */
+    int hudShown;
 };
 
 static struct Stats sStats;
@@ -438,6 +452,84 @@ static void StatsPanel(u32 *c, int w, int h, const struct Stats *st)
     }
 }
 
+/* A number in the HUD's small digits (and '/', ':', '.'), right-aligned
+ * at x1, its glyphs' tops at y. */
+static int GlyphOf(char ch)
+{
+    if (ch >= '0' && ch <= '9') {
+        return ICON_HUD_SMALL0 + (ch - '0');
+    }
+    return ch == '/' ? ICON_HUD_SLASH : ch == ':' ? ICON_HUD_COLON : ch == '.' ? ICON_HUD_DOT : -1;
+}
+
+static void HudNumber(u32 *c, int w, int h, int x1, int y, const char *s)
+{
+    int width = 0;
+    const char *p;
+    int x;
+
+    for (p = s; *p; p++) {
+        int g = GlyphOf(*p);
+
+        width += g >= 0 ? gUiIcons[g].w + 1 : 3;
+    }
+    x = x1 - width;
+    for (p = s; *p; p++) {
+        int g = GlyphOf(*p);
+
+        if (g < 0) {
+            x += 3;
+            continue;
+        }
+        /* Icon centres; the glyphs sit on a common baseline (y + 13) */
+        Icon(c, w, h, g, x + gUiIcons[g].w / 2, y + 13 - gUiIcons[g].h + gUiIcons[g].h / 2, 0);
+        x += gUiIcons[g].w + 1;
+    }
+}
+
+/* The HUD in the left border: lives, wumpa, crates (and the time trial's
+ * clock), with the HUD's own icons and digits, on a plate under the
+ * level's name. */
+static void HudPanel(u32 *c, int w, int h, int x0, int x1, int y, const struct HostHud *hud)
+{
+    char text[24];
+    int rows = 3 + (hud->timeTrial != 0);
+    int i;
+
+    Plate(c, w, h, x0, y, x1, y + 6 + 20 * rows);
+    for (i = 0; i < rows; i++) {
+        int ry = y + 4 + 20 * i;
+
+        switch (i) {
+        case 0:
+            Icon(c, w, h, ICON_HUD_LIVES, x0 + 12, ry + 8, 0);
+            snprintf(text, sizeof(text), "%d", (int)hud->lives);
+            break;
+        case 1:
+            Icon(c, w, h, ICON_HUD_WUMPA, x0 + 12, ry + 8, 0);
+            snprintf(text, sizeof(text), "%d", (int)hud->wumpa);
+            break;
+        case 2:
+            Icon(c, w, h, ICON_HUD_CRATE, x0 + 12, ry + 8, 0);
+            if (hud->crateTotal > 0) {
+                snprintf(text, sizeof(text), "%d/%d", (int)hud->crates, (int)hud->crateTotal);
+            } else {
+                snprintf(text, sizeof(text), "%d", (int)hud->crates);
+            }
+            break;
+        default:
+            snprintf(text, sizeof(text), "%d:%02d.%d", (int)hud->minutes, (int)hud->seconds, (int)hud->tenths);
+            break;
+        }
+        HudNumber(c, w, h, x1 - 4, ry + 1, text);
+    }
+}
+
+static int HudInBorder(void)
+{
+    return gHostSettings.hud == HOST_HUD_BORDERS && gHostPlayingLevel >= 0 && gHostHud.frame != 0;
+}
+
 static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, int side)
 {
     u32 *c = malloc((size_t)w * h * 4);
@@ -461,9 +553,15 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
         if (side == 0 && level >= 0 && level < gUiLevelCount && gUiLevelPicture[level] >= 0) {
             Porthole(c, w, h, cx, cy, gUiLevelPicture[level]);
             Name(c, w, h, cx, cy + 44, gUiLevelNames[level]);
+            if (HudInBorder()) {
+                HudPanel(c, w, h, 2, w - 11, cy + 64, &gHostHud);
+            }
         } else if (side == 0 && level >= 0 && level < gUiLevelCount) {
             Portrait(c, w, h, cx, cy);
             Name(c, w, h, cx, cy + 44, gUiLevelNames[level]);
+            if (HudInBorder()) {
+                HudPanel(c, w, h, 2, w - 11, cy + 64, &gHostHud);
+            }
         } else if (side == 1 && sStats.valid) {
             StatsPanel(c, w, h, &sStats);
         } else {
@@ -484,6 +582,9 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
     bar->level = level;
     bar->side = side;
     bar->stats = sStats;
+    bar->hud = gHostHud;
+    bar->hud.frame = 0;
+    bar->hudShown = HudInBorder();
 }
 
 /* --discord-assets DIR: the Discord application's art assets (discord.c),
@@ -554,6 +655,17 @@ void HostBordersWriteDiscordAssets(const char *dir)
     printf("discord assets: %s (upload them to the application's Rich Presence art assets)\n", dir);
 }
 
+static int HudChanged(const struct Bar *bar)
+{
+    struct HostHud now = gHostHud;
+
+    now.frame = 0;
+    if (bar->hudShown != HudInBorder()) {
+        return 1;
+    }
+    return bar->hudShown && memcmp(&bar->hud, &now, sizeof(now)) != 0;
+}
+
 void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
 {
     int side;
@@ -585,6 +697,7 @@ void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
         return;
     }
     ReadStats(&sStats);
+    gHostHudInBorder = 0;
     for (side = 0; side < 2; side++) {
         int barW = side == 0 ? dst.x : ww - (dst.x + dst.w);
         int unit = barW / 75 > 1 ? barW / 75 : 1;
@@ -597,8 +710,12 @@ void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
         }
         if (sBars[side].tex == NULL || sBars[side].w != w || sBars[side].h != h ||
             sBars[side].level != gHostPlayingLevel || sBars[side].side != side ||
-            (side == 1 && memcmp(&sBars[side].stats, &sStats, sizeof(sStats)) != 0)) {
+            (side == 1 && memcmp(&sBars[side].stats, &sStats, sizeof(sStats)) != 0) ||
+            (side == 0 && HudChanged(&sBars[side]))) {
             MakeBar(&sBars[side], r, w, h, gHostPlayingLevel, side);
+        }
+        if (side == 0 && w >= 75 && HudInBorder()) {
+            gHostHudInBorder = 1;
         }
         /* Each bar meets the picture's edge with its whole pixels. */
         to.w = w * unit;

@@ -10,6 +10,35 @@
 
 #include "gax_host.h"
 
+/* High-quality audio (Audio's Quality, sdl.c sets it; docs/platforms.md,
+ * "High-quality audio"): the voices read between their samples (linear
+ * interpolation) instead of the nearest one, and the mix is kept at 16
+ * bits (gHostHqBlock) for the speakers besides the GBA's 8-bit buffer,
+ * which stays the game's. Off, everything is the GBA's, byte for byte. */
+int gHostAudioHq;
+s16 gHostHqBlock[2048];
+u32 gHostHqLen;
+
+/* A voice's sample at Q11 position `pos`, between two of them; `last`
+ * the index past its data (the loop's end), `loopBack` its loop length in
+ * samples (0: none) for the one after the last. */
+static s32 Between(const s8 *src, s32 pos, s32 last, s32 loopBack)
+{
+    s32 i = pos >> 11;
+    s32 a = src[i];
+    s32 next = i + 1;
+    s32 b;
+
+    if (next >= last) {
+        if (loopBack == 0) {
+            return a;
+        }
+        next -= loopBack;
+    }
+    b = src[next];
+    return a + (((b - a) * (pos & 2047)) >> 11);
+}
+
 /* ARM's `mul`: the low 32 bits of the product. */
 static s32 Mul(s32 a, s32 b)
 {
@@ -59,7 +88,10 @@ void HostGaxResample(struct HostGaxMixItem *item, int storeBackward, int mixBack
                 }
                 pos -= loopLen;
             }
-            *(s16 *)out = (s16)(Mul(src[pos >> 11], volume) >> 8);
+            *(s16 *)out = (s16)(Mul(gHostAudioHq && !storeBackward ? Between(src, pos, end >> 11, loopLen >> 11)
+                                                                       : src[pos >> 11],
+                                     volume) >>
+                                 8);
             out += 2;
             pos = storeBackward ? pos - step : pos + step;
         }
@@ -75,7 +107,11 @@ void HostGaxResample(struct HostGaxMixItem *item, int storeBackward, int mixBack
                 }
                 pos -= loopLen;
             }
-            *(s16 *)out = (s16)((Mul(src[pos >> 11], volume) >> 8) + *(s16 *)out);
+            *(s16 *)out = (s16)((Mul(gHostAudioHq && !mixBackward ? Between(src, pos, end >> 11, loopLen >> 11)
+                                                                  : src[pos >> 11],
+                                     volume) >>
+                                 8) +
+                                *(s16 *)out);
             out += 2;
             pos = mixBackward ? pos - step : pos + step;
         }
@@ -83,7 +119,17 @@ void HostGaxResample(struct HostGaxMixItem *item, int storeBackward, int mixBack
     case 2:
         while (pos < end && out < outEnd) {
             s32 s = Mul(src[pos >> 11], volume) >> 8;
-            u32 both = ((u32)s << 16) | ((u32)s & 0xFFFF);
+            u32 both;
+
+            if (gHostAudioHq) {
+                /* the two outputs at their own positions */
+                s32 s2 = Mul(Between(src, pos + step, end >> 11, 0), volume) >> 8;
+
+                s = Mul(Between(src, pos, end >> 11, 0), volume) >> 8;
+                both = ((u32)s2 << 16) | ((u32)s & 0xFFFF);
+            } else {
+                both = ((u32)s << 16) | ((u32)s & 0xFFFF);
+            }
 
             StoreWord((uintptr_t)out, both + LoadWord((uintptr_t)out));
             out += 4;
@@ -105,6 +151,18 @@ void HostGaxResample(struct HostGaxMixItem *item, int storeBackward, int mixBack
 void HostGaxDownmix(const s16 *src, s8 *dst, u32 samples, u32 gain)
 {
     s8 *end = dst + samples;
+
+    if (gHostAudioHq) {
+        /* the same mix, 8 bits more of it (>> 2, not >> 10) */
+        u32 i;
+
+        for (i = 0; i < samples && i < sizeof(gHostHqBlock) / sizeof(gHostHqBlock[0]); i++) {
+            s32 v = Mul(src[i], gain) >> 2;
+
+            gHostHqBlock[i] = (s16)(v < -32768 ? -32768 : v > 32767 ? 32767 : v);
+        }
+        gHostHqLen = i;
+    }
 
     do {
         s32 v = Mul(*src++, gain) >> 10;

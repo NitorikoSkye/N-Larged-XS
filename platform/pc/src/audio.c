@@ -30,6 +30,13 @@
 
 static s8 sBlock[MAX_BLOCK];
 static u32 sBlockLen;
+/* High-quality audio's 16-bit copy of the block (gax_dsp.c), when there
+ * is one for it */
+extern int gHostAudioHq;
+extern s16 gHostHqBlock[2048];
+extern u32 gHostHqLen;
+static s16 sHqBlock[MAX_BLOCK];
+static int sHq;
 static u32 sRate;
 static int sMixed;
 /* The PC settings' music and sound effects volumes (sdl.c), applied in
@@ -54,6 +61,25 @@ void HostAudioMixed(const s8 *buf, u32 samples, u32 rate)
     }
     memcpy(sBlock, buf, samples);
     sBlockLen = samples;
+    sHq = gHostAudioHq && gHostHqLen == samples;
+    if (sHq) {
+        static FILE *dump;
+        static int checked;
+
+        memcpy(sHqBlock, gHostHqBlock, samples * sizeof(s16));
+        /* HOST_HQ_DUMP=FILE (with HOST_AUDIO_HQ=1, also headless): the
+         * 16-bit blocks as raw samples, for listening to and testing. */
+        if (!checked) {
+            const char *path = getenv("HOST_HQ_DUMP");
+
+            checked = 1;
+            dump = path != NULL ? fopen(path, "wb") : NULL;
+        }
+        if (dump != NULL) {
+            fwrite(sHqBlock, sizeof(s16), samples, dump);
+        }
+    }
+    gHostHqLen = 0;
     sRate = rate;
     sMixed = 1;
     sFresh = 1;
@@ -140,13 +166,18 @@ void HostAudioVBlank(void)
             return;
         }
         memset(sBlock, 0, sBlockLen);
+        memset(sHqBlock, 0, sizeof(sHqBlock));
     }
     sMixed = 0;
     if (gHostOptions.wav != NULL) {
         WavWrite(sBlock, sBlockLen, sRate);
     }
     if (!gHostOptions.headless) {
-        HostFrontendAudio(sBlock, sBlockLen, sRate);
+        if (sHq) {
+            HostFrontendAudio16(sHqBlock, sBlockLen, sRate);
+        } else {
+            HostFrontendAudio(sBlock, sBlockLen, sRate);
+        }
     }
 }
 

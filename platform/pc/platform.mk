@@ -279,6 +279,10 @@ comma := ,
 HOST_WRAPS := _ZN4Game2Ui11LevelSelect3RunEPi _ZN4Game5Level13LevelProgress10SelectRoomEv
 # The themed borders (src/borders.c) know the level being played.
 HOST_WRAPS += _ZN4Game5Level13LevelProgress8PlayRoomEv
+# Rumble (src/rumble.c) follows the game's sound effects.
+HOST_WRAPS += _ZN6Engine5Audio12AudioContext7PlaySfxEjj
+# The HUD setting (src/hud_hook.cpp) wraps the HUD's update.
+HOST_WRAPS += _ZN4Game2Ui3Hud6UpdateEv
 # Skip intro (src/intro_skip.c) wraps the boot's steps after the legal notice.
 HOST_WRAPS += _ZN4Game5Level10LevelState16ShowCompanyLogosEv _ZN4Game5Level10LevelState17PlayIntroCutsceneEv \
 	OpenLanguageSelect RunLanguageSelect CloseLanguageSelect
@@ -388,7 +392,7 @@ $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.S
 $(PLATFORM_BUILDDIR)/src/ppu_hd.o: HOST_CFLAGS += -O2
 
 # sdl.o is rebuilt when HOST_SDL changes (the flags file).
-HOST_SDL_OBJS := $(addprefix $(PLATFORM_BUILDDIR)/src/,sdl.o config.o borders.o discord.o)
+HOST_SDL_OBJS := $(addprefix $(PLATFORM_BUILDDIR)/src/,sdl.o config.o borders.o discord.o timer.o rumble.o)
 $(HOST_SDL_OBJS): HOST_CFLAGS += $(HOST_SDL_CFLAGS)
 $(HOST_SDL_OBJS): $(PLATFORM_BUILDDIR)/sdl_flags
 $(PLATFORM_BUILDDIR)/sdl_flags: FORCE

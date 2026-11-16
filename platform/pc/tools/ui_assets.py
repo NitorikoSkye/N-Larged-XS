@@ -99,7 +99,15 @@ ICONS = [
     ("POWER_DOUBLE_JUMP", 38, 30 + 7, 60, 1),
     ("POWER_TORNADO_SPIN", 38, 0 + 7, 60, 1),
     ("POWER_TURBO_RUN", 38, 15 + 7, 60, 1),
-]
+    # the HUD's own, at their size (the HUD in the left border, borders.c)
+    ("HUD_LIVES", 47, 34, 45, 1),
+    ("HUD_CRATE", 47, 23, 45, 1),
+    ("HUD_WUMPA", 35, 0, 33, 1),
+] + [(f"HUD_DIGIT{d}", 47, d, 33, 0) for d in range(10)] + [
+    ("HUD_SLASH", 47, 24, 33, 0),
+    ("HUD_COLON", 47, 21, 33, 0),
+    ("HUD_DOT", 47, 22, 33, 0),
+] + [(f"HUD_SMALL{d}", 47, 11 + d, 33, 0) for d in range(10)]
 
 
 def jasc(path):

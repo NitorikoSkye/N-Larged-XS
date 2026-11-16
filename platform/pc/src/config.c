@@ -106,7 +106,14 @@ void HostConfigDefaults(struct HostSettings *s)
     s->master = 100;
     s->music = 100;
     s->sfx = 100;
+    s->audioQuality = 1;
     s->deadzone = 35;
+    s->rumble = 2;
+    /* Steam Deck (Steam sets SteamDeck=1 there): the whole screen until
+     * the settings say otherwise. */
+    if (SDL_getenv("SteamDeck") != NULL && SDL_getenv("SteamDeck")[0] == '1') {
+        s->fullscreen = 1;
+    }
     s->autoSave = HOST_AUTOSAVE_IN_USE;
     s->discord = 1;
     s->discordProgress = 1;
@@ -139,10 +146,14 @@ static const struct {
     { "ghosting", &gHostSettings.ghosting, 0, 1 },
     { "show_fps", &gHostSettings.showFps, 0, 1 },
     { "input_display", &gHostSettings.inputDisplay, 0, 2 },
+    { "hud", &gHostSettings.hud, 0, HOST_HUD_COUNT - 1 },
+    { "speedrun_timer", &gHostSettings.speedrunTimer, 0, HOST_TIMER_COUNT - 1 },
     { "master_volume", &gHostSettings.master, 0, 100 },
     { "music_volume", &gHostSettings.music, 0, 100 },
     { "sfx_volume", &gHostSettings.sfx, 0, 100 },
+    { "audio_quality", &gHostSettings.audioQuality, 0, 1 },
     { "stick_deadzone", &gHostSettings.deadzone, 10, 90 },
+    { "rumble", &gHostSettings.rumble, 0, 2 },
     { "auto_save", &gHostSettings.autoSave, 0, HOST_AUTOSAVE_COUNT - 1 },
     { "discord_status", &gHostSettings.discord, 0, 1 },
     { "discord_show_progress", &gHostSettings.discordProgress, 0, 1 },

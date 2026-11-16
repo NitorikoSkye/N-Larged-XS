@@ -264,14 +264,14 @@ the categories in the pause screen's left box, a category's options in
 that box widened across the screen, the selected row in the pause
 menu's white, values as `<75%>`, what can't be used grey. Categories:
 General (portable mode, pause when unfocused, skip intro, quit), Display (window
-mode and size, frame rate, vsync, scaling; widescreen greyed, below),
+mode and size, frame rate, vsync, scaling, borders),
 Graphics (pixels, smooth, sharp smooth, Scale2x, Scale3x, cartoon,
 cartoon soft; scanlines; LCD grid; the GBA screen's colours; LCD
-ghosting), Interface (FPS counter,
-input display), Audio (master, music, sound effects: the last two in
-GAX2's mixer, gHostGaxVolume, on top of the pause menu's), Controls
-(keyboard and controller bindings, two per action, restore defaults;
-stick deadzone), and Gameplay and Extras (empty, grey). `--ui-preview
+ghosting), Interface (HUD, FPS counter,
+input display, speedrun timer), Audio (quality; master, music, sound
+effects: the last two in GAX2's mixer, gHostGaxVolume, on top of the
+pause menu's), Controls (keyboard and controller bindings, two per
+action, restore defaults; stick deadzone; rumble), and Gameplay and Extras (empty, grey). `--ui-preview
 DIR` writes every page as a PNG and reports a help text too long for its
 two lines.
 
@@ -314,6 +314,43 @@ level comes from LevelProgress::PlayRoom, --wrap'ed (src/level_pick.c,
 gHostPlayingLevel). The FPS counter and the input display go into the
 borders when they fit there, at a smaller size if need be, and over the
 picture's corners otherwise.
+
+**HUD** (v0.14; Interface, src/hud_hook.cpp, src/borders.c). On, off, or
+in the left border. The link wraps Hud::Update, which counts and draws
+the HUD: it always runs, and hidden, the sprites it added to the OAM
+buffer and the sprite queue are taken back out (their counts put back).
+"Borders" moves lives, wumpa, crates and the time trial's clock to a
+plate under the level's name in the themed left border, drawn with the
+HUD's own icons and digits (ui_assets.py), read from the level state
+(GetLives, GetWumpa, GetCrateCount, the clock); the HUD stays in the
+picture while the border doesn't show it (other borders, no room), and in
+boss fights and the jetpack levels, whose bars aren't in the border.
+
+**Speedrun timer** (v0.14; Interface, src/timer.c). Top right: the level's
+time in the large font, the run's under it ("level and run"), and for 8
+seconds after a level the split against the best one for it ("pb!" for a
+new best), kept in splits.ini. Time is VBlanks (59.7275 a second); the
+run starts when the title screen is left, a level at its first room and
+ends back in the warp room, with a split if something was earned in it.
+
+**High-quality audio** (v0.14; Audio's Quality, src/gax_dsp.c, src/sdl.c).
+The voices read between their samples (linear interpolation, GAX2 reads
+the nearest), the mix goes to the speakers at 16 bits (the same mix
+before GAX2's downmix to the GBA's 8 bits: gHostHqBlock), and the device
+rate is reached with a cubic (Catmull-Rom) curve instead of a line.
+"Original" is the GBA's, byte for byte. HOST_AUDIO_HQ=1 and
+HOST_HQ_DUMP=FILE write the 16-bit mix headless.
+
+**Rumble** (v0.14; Controls, src/rumble.c). The link wraps
+AudioContext::PlaySfx: hurt, deaths, explosions, boss and vehicle hits,
+body slams, stomps, crates, crystals and gems each have a strength for the
+two motors and a length, scaled by the effect's volume (its distance),
+in levels only, on every controller that rumbles. HOST_RUMBLE_LOG=1 logs
+them.
+
+**Steam** (v0.14; platform/pc/STEAM.md). `--fullscreen` and `--windowed`
+set this launch's window mode (Steam's launch options), and on a Steam
+Deck (SteamDeck=1) the port starts fullscreen by default.
 
 **Skip intro** (v0.13; General, src/intro_skip.c). From the next launch,
 the game boots straight to the title screen: MainLoop's legal notice

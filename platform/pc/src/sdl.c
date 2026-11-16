@@ -91,6 +91,13 @@ void HostFrontendAudio(const s8 *buf, u32 n, u32 rate)
     }
 }
 
+void HostFrontendAudio16(const s16 *buf, u32 n, u32 rate)
+{
+    (void)buf;
+    (void)n;
+    (void)rate;
+}
+
 void HostToast(const char *text)
 {
     (void)text;
@@ -212,7 +219,6 @@ static SDL_AudioDeviceID sAudio;
 static SDL_AudioSpec sAudioSpec;
 static u32 sAudioFrameSamples; /* a frame's time at the device's rate */
 static double sAudioPhase;
-static s32 sAudioLast;
 
 /* GAX2's mixer volumes (gax_note_trigger.c): music, sound effects. */
 extern u32 gHostGaxVolume[2];
@@ -393,10 +399,13 @@ static void ApplyVsync(void)
     }
 }
 
+extern int gHostAudioHq; /* gax_dsp.c */
+
 static void ApplyAudio(void)
 {
     gHostGaxVolume[0] = (u32)gHostSettings.music * 256 / 100;
     gHostGaxVolume[1] = (u32)gHostSettings.sfx * 256 / 100;
+    gHostAudioHq = gHostSettings.audioQuality != 0;
 }
 
 /* The GBA's screen: no backlight, its colours darker and run together.
@@ -564,26 +573,48 @@ static void OpenAudio(void)
     SDL_PauseAudioDevice(sAudio, 0);
 }
 
-void HostFrontendAudio(const s8 *buf, u32 n, u32 rate)
+/* A block of the mix (16-bit, at the GBA's mix rate) to the device's
+ * rate, kept a few frames ahead (the rate nudged by up to 0.5% to stay
+ * there). Linear between samples, as the GBA's DAC near enough does; with
+ * high-quality audio, a cubic (Catmull-Rom) curve through four of them,
+ * which keeps the high notes' shape. */
+static s32 sAudioPrev[2]; /* the last block's last two samples */
+
+static void QueueAudio(const s16 *buf, u32 n, u32 rate)
 {
     static s16 out[16384];
+    static s32 ext[2048 + 3];
     u32 frame = sAudioSpec.channels * sizeof(s16);
     u32 queued;
     u32 target;
     double step;
     double adjust;
     s32 gain = gHostSettings.master * 256 / 100;
+    int cubic = gHostSettings.audioQuality != 0;
     u32 m = 0;
+    u32 k;
 
     if (sAudio == 0 || n == 0) {
         return;
     }
+    if (n > 2048) {
+        n = 2048;
+    }
+    /* the block with the two samples before it: ext[k + 2] is buf[k] */
+    ext[0] = sAudioPrev[0];
+    ext[1] = sAudioPrev[1];
+    for (k = 0; k < n; k++) {
+        ext[k + 2] = buf[k];
+    }
+    ext[n + 2] = buf[n - 1];
+    sAudioPrev[0] = n > 1 ? buf[n - 2] : sAudioPrev[1];
+    sAudioPrev[1] = buf[n - 1];
+
     queued = SDL_GetQueuedAudioSize(sAudio) / frame;
     target = 3 * sAudioFrameSamples;
     if (queued > 4 * target) {
         /* far ahead (fast forward): this block is dropped */
         sAudioPhase = 0;
-        sAudioLast = buf[n - 1];
         return;
     }
     if (queued == 0) {
@@ -602,12 +633,30 @@ void HostFrontendAudio(const s8 *buf, u32 n, u32 rate)
     while (sAudioPhase < n && (m + 1) * sAudioSpec.channels <= sizeof(out) / sizeof(out[0])) {
         u32 i = (u32)sAudioPhase;
         double f = sAudioPhase - i;
-        s32 a = i == 0 ? sAudioLast : buf[i - 1];
-        s32 v = (s32)((a + (buf[i] - a) * f) * 256) * gain / 256;
+        /* between buf[i - 1] (ext[i + 1]) and buf[i] (ext[i + 2]) */
+        double p1 = ext[i + 1];
+        double p2 = ext[i + 2];
+        double v;
+        s32 o;
         u32 c;
 
+        if (cubic) {
+            double p0 = ext[i];
+            double p3 = ext[i + 3];
+
+            v = p1 + 0.5 * f *
+                         (p2 - p0 + f * (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3 + f * (3.0 * (p1 - p2) + p3 - p0)));
+        } else {
+            v = p1 + (p2 - p1) * f;
+        }
+        o = (s32)v * gain / 256;
+        if (o > 32767) {
+            o = 32767;
+        } else if (o < -32768) {
+            o = -32768;
+        }
         for (c = 0; c < sAudioSpec.channels; c++) {
-            out[m * sAudioSpec.channels + c] = (s16)v;
+            out[m * sAudioSpec.channels + c] = (s16)o;
         }
         m++;
         sAudioPhase += step;
@@ -616,8 +665,26 @@ void HostFrontendAudio(const s8 *buf, u32 n, u32 rate)
     if (sAudioPhase < 0) {
         sAudioPhase = 0;
     }
-    sAudioLast = buf[n - 1];
     SDL_QueueAudio(sAudio, out, m * frame);
+}
+
+void HostFrontendAudio(const s8 *buf, u32 n, u32 rate)
+{
+    static s16 wide[2048];
+    u32 i;
+
+    if (n > 2048) {
+        n = 2048;
+    }
+    for (i = 0; i < n; i++) {
+        wide[i] = (s16)(buf[i] * 256);
+    }
+    QueueAudio(wide, n, rate);
+}
+
+void HostFrontendAudio16(const s16 *buf, u32 n, u32 rate)
+{
+    QueueAudio(buf, n, rate);
 }
 
 /* --- Startup ------------------------------------------------------------- */
@@ -690,6 +757,11 @@ void HostFrontendInit(void)
         Fail("SDL_Init");
     }
     HostConfigInit();
+    /* --fullscreen / --windowed: this launch only (not saved unless the
+     * settings change something and are written) */
+    if (gHostOptions.windowMode != 0) {
+        gHostSettings.fullscreen = gHostOptions.windowMode == 2;
+    }
     /* Discord's status: its own thread; the process's end closes its
      * connection, which takes the status off the profile. */
     HostDiscordInit();
@@ -1132,7 +1204,55 @@ void HostToast(const char *text)
     sToastAt = SDL_GetTicks();
 }
 
-static void DrawToast(SDL_Rect dst, int scale)
+#define TIMER_W 200
+#define TIMER_H 40
+static SDL_Texture *sTimerTex;
+
+/* The speedrun timer (timer.c), top right: the time in the large font,
+ * then up to two lines in the small one. Its height (window pixels), for
+ * the message under it. */
+static int DrawTimer(SDL_Rect dst, int scale)
+{
+    static u32 canvas[TIMER_W * TIMER_H];
+    char big[32];
+    char l2[64];
+    char l3[64];
+    int n = HostTimerLines(big, l2, l3);
+    int w;
+    int h;
+    int x;
+    int y;
+
+    if (n == 0) {
+        return 0;
+    }
+    w = HostUiTextWidth(1, big);
+    if (l2[0] && HostUiTextWidth(0, l2) > w) {
+        w = HostUiTextWidth(0, l2);
+    }
+    if (l3[0] && HostUiTextWidth(0, l3) > w) {
+        w = HostUiTextWidth(0, l3);
+    }
+    w += 8;
+    if (w > TIMER_W) {
+        w = TIMER_W;
+    }
+    h = 18 + (l2[0] ? 10 : 0) + (l3[0] ? 10 : 0);
+    memset(canvas, 0, sizeof(canvas));
+    Fill(canvas, TIMER_W, 0, 0, w, h, 0xB0000000);
+    HostUiText(canvas, TIMER_W, TIMER_H, 1, w - 4 - HostUiTextWidth(1, big), 2, big, HOST_UI_PAL_NORMAL);
+    if (l2[0]) {
+        HostUiText(canvas, TIMER_W, TIMER_H, 0, w - 4 - HostUiTextWidth(0, l2), 19, l2, HOST_UI_PAL_WHITE);
+    }
+    if (l3[0]) {
+        HostUiText(canvas, TIMER_W, TIMER_H, 0, w - 4 - HostUiTextWidth(0, l3), 29, l3, HOST_UI_PAL_WHITE);
+    }
+    PlaceOverlay(dst, w, TIMER_H, 1, 0, &scale, &x, &y);
+    PutOverlay(&sTimerTex, canvas, TIMER_W, TIMER_H, x, y, scale);
+    return (h + 2) * scale;
+}
+
+static void DrawToast(SDL_Rect dst, int scale, int below)
 {
     static u32 canvas[TOAST_W * TOAST_H];
     Uint32 age = SDL_GetTicks() - sToastAt;
@@ -1151,6 +1271,7 @@ static void DrawToast(SDL_Rect dst, int scale)
     Fill(canvas, TOAST_W, 0, 0, w, TOAST_H, 0xB0000000);
     HostUiText(canvas, TOAST_W, TOAST_H, 0, 3, 2, sToast, HOST_UI_PAL_NORMAL);
     PlaceOverlay(dst, w, TOAST_H, 1, 0, &scale, &x, &y);
+    y += below;
     if (sToastTex != NULL) {
         Uint32 left = TOAST_MS - age;
 
@@ -1243,6 +1364,7 @@ static void DrawMenu(SDL_Rect dst, const char *banner)
 /* --- Borders --------------------------------------------------------------- */
 
 void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh);
+extern int gHostHudInBorder;
 
 /* Where an overlay `w` x `h` goes: in the border beside the picture
  * (side 0 left, 1 right) when one is wide enough for it at `*scale` or
@@ -1395,6 +1517,7 @@ static void DrawBorders(SDL_Rect dst)
     int wh;
 
     SDL_GetRendererOutputSize(sRenderer, &ww, &wh);
+    gHostHudInBorder = 0; /* the themed borders say if they show the HUD */
     if (dst.w >= ww && dst.h >= wh) {
         return; /* no borders */
     }
@@ -1445,7 +1568,7 @@ static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int m
         if (gHostSettings.inputDisplay) {
             DrawPad(dst, scale, gHostSettings.inputDisplay == 2);
         }
-        DrawToast(dst, scale);
+        DrawToast(dst, scale, DrawTimer(dst, scale));
     }
     SDL_RenderPresent(sRenderer);
     sFpsCount++;
@@ -1908,6 +2031,7 @@ void HostFrontendVBlank(void)
     }
     CheckQuit();
     HostDiscordFrame();
+    HostTimerVBlank();
     Hold(&shot);
     fast = Held(HOST_BIND_FAST_FORWARD, 1, 1);
 
