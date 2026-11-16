@@ -119,6 +119,14 @@ int main(int argc, char **argv)
             gHostAudioHq = 1;
         }
     }
+    /* HOST_HUD=0/1/2: Interface's HUD for a headless run (testing) */
+    {
+        const char *hud = getenv("HOST_HUD");
+
+        if (hud != NULL && hud[0] >= '0' && hud[0] <= '2') {
+            gHostSettings.hud = hud[0] - '0';
+        }
+    }
     int i;
     int checkpointsAsked = 0;
 

@@ -323,8 +323,14 @@ buffer and the sprite queue are taken back out (their counts put back).
 plate under the level's name in the themed left border, drawn with the
 HUD's own icons and digits (ui_assets.py), read from the level state
 (GetLives, GetWumpa, GetCrateCount, the clock); the HUD stays in the
-picture while the border doesn't show it (other borders, no room), and in
-boss fights and the jetpack levels, whose bars aren't in the border.
+picture while the border doesn't show it (other borders, no room).
+"Borders" takes out only the counters' sprites (UpdateLives, UpdateWumpa,
+UpdateCrates, UpdateClock, wrapped: Hud::Update calls them from its own
+file's neighbour): a boss's bar and the jetpack's percentages stay. The
+vehicle rooms (polar bear, jetpack) run in ActorCategory::Init, not
+PlayRoom (game_frame.cpp), which the link wraps too: they count as the
+level for the border, Discord, the timer and rumble (v0.15; before, the
+HUD came back into the picture in the yeti chase).
 
 **Speedrun timer** (v0.14; Interface, src/timer.c). Top right: the level's
 time in the large font, the run's under it ("level and run"), and for 8

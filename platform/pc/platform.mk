@@ -282,7 +282,9 @@ HOST_WRAPS += _ZN4Game5Level13LevelProgress8PlayRoomEv
 # Rumble (src/rumble.c) follows the game's sound effects.
 HOST_WRAPS += _ZN6Engine5Audio12AudioContext7PlaySfxEjj
 # The HUD setting (src/hud_hook.cpp) wraps the HUD's update.
-HOST_WRAPS += _ZN4Game2Ui3Hud6UpdateEv
+HOST_WRAPS += _ZN4Game2Ui3Hud6UpdateEv _ZN6Engine5Actor13ActorCategory4InitEi \
+	_ZN4Game2Ui3Hud11UpdateLivesEv _ZN4Game2Ui3Hud11UpdateWumpaEv _ZN4Game2Ui3Hud12UpdateCratesEv \
+	_ZN4Game2Ui3Hud11UpdateClockEv
 # Skip intro (src/intro_skip.c) wraps the boot's steps after the legal notice.
 HOST_WRAPS += _ZN4Game5Level10LevelState16ShowCompanyLogosEv _ZN4Game5Level10LevelState17PlayIntroCutsceneEv \
 	OpenLanguageSelect RunLanguageSelect CloseLanguageSelect
