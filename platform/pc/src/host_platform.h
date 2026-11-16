@@ -98,7 +98,7 @@ void HostFrontendInit(void);
  * and the Windows executable is CrashBandicootXS-<version>.exe
  * (platform.mk reads the version from here). */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.06"
+#define HOST_PORT_VERSION "v0.07"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);
@@ -129,6 +129,7 @@ void HostSaveFlush(void);
 
 /* A PNG of 8-bit XRGB pixels (png.c). Returns 0 on failure. */
 int HostWritePng(const char *path, const u32 *xrgb, u32 width, u32 height);
+int HostWritePngAlpha(const char *path, const u32 *argb, u32 width, u32 height);
 
 /* The scripted input (input.c): reads the key file. */
 void HostInputInit(void);

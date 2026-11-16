@@ -557,6 +557,24 @@ static const struct Option sControls[] = {
       &gHostSettings.deadzone, NULL, 0, 0, NULL, NULL, NULL, 10, 90 },
 };
 
+static const char *const sDiscordStates[HOST_DISCORD_STATUS_COUNT] = {
+    "off", "no app id", "waiting for discord", "connected", "app id refused",
+};
+
+static int DiscordOn(void)
+{
+    return gHostSettings.discord;
+}
+
+static const struct Option sExtras[] = {
+    { "discord status", "your level and progress on your discord profile, while discord runs.", OPT_CHOICE,
+      &gHostSettings.discord, sOffOn, 2, 0 },
+    { "show progress", "completion, crystals, gems and relics in the status too.", OPT_CHOICE,
+      &gHostSettings.discordProgress, sOffOn, 2, 0, NULL, DiscordOn },
+    { "connection", "the discord app it uses: the discord app id line in settings.ini.", OPT_CHOICE, &gHostDiscordStatus,
+      sDiscordStates, HOST_DISCORD_STATUS_COUNT, 0, NULL, Never },
+};
+
 #define COUNT(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
 static const struct Category sCategories[] = {
@@ -567,7 +585,7 @@ static const struct Category sCategories[] = {
     { "audio", "master, music and sound fx volume", sAudio, COUNT(sAudio) },
     { "controls", "keyboard and controller", sControls, COUNT(sControls) },
     { "gameplay", "nothing here yet", NULL, 0 },
-    { "extras", "nothing here yet", NULL, 0 },
+    { "extras", "discord status", sExtras, COUNT(sExtras) },
 };
 
 static const char *const sBindNames[HOST_BIND_COUNT] = {

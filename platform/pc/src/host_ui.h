@@ -102,8 +102,35 @@ struct HostSettings {
     int deadzone; /* percent */
     int keys[HOST_BIND_COUNT][HOST_BIND_SLOTS]; /* SDL scancodes, 0 none */
     int pad[HOST_BIND_COUNT][HOST_BIND_SLOTS];  /* HOST_PAD_* */
+    /* Extras: Discord Rich Presence (discord.c) */
+    int discord;
+    int discordProgress;
+    char discordAppId[32]; /* the Discord application's id, digits */
 };
 extern struct HostSettings gHostSettings;
+
+/* The Discord application Rich Presence talks as (its name is what the
+ * profile says is being played; its art assets are the pictures), unless
+ * settings.ini's discord_app_id names another. Empty: none built in. */
+#ifndef HOST_DISCORD_APP_ID
+#define HOST_DISCORD_APP_ID ""
+#endif
+
+/* discord.c: Rich Presence. The status, for the settings menu. */
+enum {
+    HOST_DISCORD_OFF,
+    HOST_DISCORD_NO_ID,
+    HOST_DISCORD_NOT_RUNNING,
+    HOST_DISCORD_CONNECTED,
+    HOST_DISCORD_BAD_ID,
+    HOST_DISCORD_STATUS_COUNT
+};
+extern int gHostDiscordStatus;
+extern s32 gHostInWarpRoom;
+void HostDiscordInit(void);
+void HostDiscordQuit(void);
+void HostDiscordFrame(void);
+void HostBordersWriteDiscordAssets(const char *dir); /* borders.c */
 
 /* config.c */
 void HostConfigDefaults(struct HostSettings *s);

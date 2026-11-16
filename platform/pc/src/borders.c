@@ -16,6 +16,7 @@
 
 #ifdef HOST_SDL
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -483,6 +484,74 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
     bar->level = level;
     bar->side = side;
     bar->stats = sStats;
+}
+
+/* --discord-assets DIR: the Discord application's art assets (discord.c),
+ * 512x512 PNGs named as the assets: each world's porthole and Crash's
+ * portrait, drawn as in the borders, 7 times their pixels, on nothing. */
+static void WriteAsset(const char *dir, const char *name, const u32 *c, int w, int h)
+{
+    static u32 out[512 * 512];
+    char path[1024];
+    int k = 7;
+    int ox = (512 - w * k) / 2;
+    int oy = (512 - h * k) / 2;
+    int x;
+    int y;
+
+    memset(out, 0, sizeof(out));
+    for (y = 0; y < h * k; y++) {
+        for (x = 0; x < w * k; x++) {
+            out[(oy + y) * 512 + ox + x] = c[(y / k) * w + x / k];
+        }
+    }
+    snprintf(path, sizeof(path), "%s/%s.png", dir, name);
+    if (!HostWritePngAlpha(path, out, 512, 512)) {
+        fprintf(stderr, "can't write %s\n", path);
+    }
+}
+
+void HostBordersWriteDiscordAssets(const char *dir)
+{
+    static const char *const names[10] = {
+        "world_snow", "world_jungle", "world_sewer", "world_underwater", "world_sky",
+        "world_space", "boss_tiny", "boss_dingodile", "boss_ngin", "boss_cortex",
+    };
+    u32 c[72 * 72];
+    u32 p[52 * 69];
+    int i;
+
+    for (i = 0; i < 10; i++) {
+        memset(c, 0, sizeof(c));
+        Porthole(c, 72, 72, 36, 36, i);
+        WriteAsset(dir, names[i], c, 72, 72);
+    }
+    /* Crash: his portrait in a porthole too (Discord shows the small
+     * picture in a circle). */
+    memset(p, 0, sizeof(p));
+    Portrait(p, 52, 69, 26, 34);
+    memset(c, 0, sizeof(c));
+    {
+        int x;
+        int y;
+
+        for (y = 0; y < 72; y++) {
+            for (x = 0; x < 72; x++) {
+                int dx = 2 * x - 71;
+                int dy = 2 * y - 71;
+                int sx = x - 36 + 26;
+                int sy = y - 36 + 33;
+
+                if (dx * dx + dy * dy > 60 * 60) {
+                    continue;
+                }
+                c[y * 72 + x] = sx >= 0 && sx < 52 && sy >= 0 && sy < 69 ? p[sy * 52 + sx] : 0xFF101830;
+            }
+        }
+    }
+    Ring(c, 72, 72, 36, 36, 30);
+    WriteAsset(dir, "crash", c, 72, 72);
+    printf("discord assets: %s (upload them to the application's Rich Presence art assets)\n", dir);
 }
 
 void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)

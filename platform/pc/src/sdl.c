@@ -690,6 +690,9 @@ void HostFrontendInit(void)
         Fail("SDL_Init");
     }
     HostConfigInit();
+    /* Discord's status: its own thread; the process's end closes its
+     * connection, which takes the status off the profile. */
+    HostDiscordInit();
     gHostUiKeyName = KeyName;
     gHostUiPadName = PadName;
     sWindow = SDL_CreateWindow(HOST_PORT_NAME " - " HOST_PORT_VERSION, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -1774,6 +1777,7 @@ void HostFrontendVBlank(void)
         CommonEvent(&e, &shot);
     }
     CheckQuit();
+    HostDiscordFrame();
     Hold(&shot);
     fast = Held(HOST_BIND_FAST_FORWARD, 1, 1);
 

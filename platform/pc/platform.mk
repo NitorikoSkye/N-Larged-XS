@@ -363,8 +363,9 @@ $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.S
 $(PLATFORM_BUILDDIR)/src/ppu_hd.o: HOST_CFLAGS += -O2
 
 # sdl.o is rebuilt when HOST_SDL changes (the flags file).
-$(PLATFORM_BUILDDIR)/src/sdl.o $(PLATFORM_BUILDDIR)/src/config.o $(PLATFORM_BUILDDIR)/src/borders.o: HOST_CFLAGS += $(HOST_SDL_CFLAGS)
-$(PLATFORM_BUILDDIR)/src/sdl.o $(PLATFORM_BUILDDIR)/src/config.o $(PLATFORM_BUILDDIR)/src/borders.o: $(PLATFORM_BUILDDIR)/sdl_flags
+HOST_SDL_OBJS := $(addprefix $(PLATFORM_BUILDDIR)/src/,sdl.o config.o borders.o discord.o)
+$(HOST_SDL_OBJS): HOST_CFLAGS += $(HOST_SDL_CFLAGS)
+$(HOST_SDL_OBJS): $(PLATFORM_BUILDDIR)/sdl_flags
 $(PLATFORM_BUILDDIR)/sdl_flags: FORCE
 	@mkdir -p $(dir $@)
 	@echo '$(HOST_SDL_CFLAGS) $(HOST_SDL_LIBS)' | cmp -s - $@ || echo '$(HOST_SDL_CFLAGS) $(HOST_SDL_LIBS)' > $@

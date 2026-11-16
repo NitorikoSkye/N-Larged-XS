@@ -314,6 +314,23 @@ gHostPlayingLevel). The FPS counter and the input display go into the
 borders when they fit there, at a smaller size if need be, and over the
 picture's corners otherwise.
 
+**Discord** (v0.07; Extras, src/discord.c). Rich Presence over Discord's
+local IPC, with no SDK: the named pipe `\\.\pipe\discord-ipc-N` on
+Windows, the `discord-ipc-N` Unix socket elsewhere (the runtime directory,
+and the Flatpak and Snap ones). A handshake with the application's id, then
+`SET_ACTIVITY` when what to show changes, at most every 5 seconds. Shown:
+the level with its world's emoji and picture (the level select's, in its
+porthole; a boss with "Boss:"), the warp room, or the menus, how long
+since that started, and the progress (completion, crystals /20, gems /28,
+relics /20, as the stats panel counts them). The id is built in with
+`-DHOST_DISCORD_APP_ID='"..."'`, or settings.ini's `discord_app_id`. The
+application's name is what Discord says is being played; its Rich
+Presence art assets are the pictures, named world_snow, world_jungle,
+world_sewer, world_underwater, world_sky, world_space, boss_tiny,
+boss_dingodile, boss_ngin, boss_cortex and crash: `--discord-assets DIR`
+writes them (512x512). Extras also shows the connection: off, no app id,
+waiting for discord, connected, app id refused.
+
 **Widescreen** is not in v0.02. A prototype built with
 `DISPLAY_WIDTH=288` runs (the HUD, camera, culling and activation follow
 screen.h), but BgLayer keeps the level map in a 256-pixel-wide BG

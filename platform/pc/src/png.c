@@ -76,14 +76,14 @@ static void ChunkEnd(struct Chunk *c)
     fwrite(crc, 1, sizeof(crc), c->f);
 }
 
-int HostWritePng(const char *path, const u32 *xrgb, u32 width, u32 height)
+static int WritePng(const char *path, const u32 *xrgb, u32 width, u32 height, u32 ch)
 {
     static const u8 signature[8] = { 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n' };
-    u32 rowBytes = 1 + 3 * width;
+    u32 rowBytes = 1 + ch * width;
     u32 raw = rowBytes * height;
     /* One stored block per row (a row is at most 65535 bytes). */
     u32 idat = 2 + raw + 5 * height + 4;
-    static u8 row[1 + 3 * 4096];
+    static u8 row[1 + 4 * 4096];
     u8 ihdr[13];
     u32 a = 1;
     u32 b = 0;
@@ -106,7 +106,7 @@ int HostWritePng(const char *path, const u32 *xrgb, u32 width, u32 height)
     Be32(ihdr, width);
     Be32(ihdr + 4, height);
     ihdr[8] = 8;  /* bits per channel */
-    ihdr[9] = 2;  /* RGB */
+    ihdr[9] = ch == 4 ? 6 : 2; /* RGBA or RGB */
     ihdr[10] = 0; /* deflate */
     ihdr[11] = 0; /* adaptive filtering (each row's filter byte: none) */
     ihdr[12] = 0; /* not interlaced */
@@ -123,9 +123,12 @@ int HostWritePng(const char *path, const u32 *xrgb, u32 width, u32 height)
         for (x = 0; x < width; x++) {
             u32 p = xrgb[y * width + x];
 
-            row[1 + 3 * x] = p >> 16;
-            row[2 + 3 * x] = p >> 8;
-            row[3 + 3 * x] = p;
+            row[1 + ch * x] = p >> 16;
+            row[2 + ch * x] = p >> 8;
+            row[3 + ch * x] = p;
+            if (ch == 4) {
+                row[4 + ch * x] = p >> 24;
+            }
         }
         block[0] = y == height - 1;
         block[1] = rowBytes & 0xFF;
@@ -150,4 +153,15 @@ int HostWritePng(const char *path, const u32 *xrgb, u32 width, u32 height)
     ChunkStart(&c, f, "IEND", 0);
     ChunkEnd(&c);
     return fclose(f) == 0;
+}
+
+int HostWritePng(const char *path, const u32 *xrgb, u32 width, u32 height)
+{
+    return WritePng(path, xrgb, width, height, 3);
+}
+
+/* With the pixels' top bytes as alpha. */
+int HostWritePngAlpha(const char *path, const u32 *argb, u32 width, u32 height)
+{
+    return WritePng(path, argb, width, height, 4);
 }

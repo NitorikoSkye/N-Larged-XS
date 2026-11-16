@@ -25,6 +25,7 @@
 
 #include "gba/gba.h"
 #include "host_platform.h"
+#include "host_ui.h"
 
 /* LevelProgress's first fields (engine/include/game/level/level_state.hpp):
  * two s32s, at the same offsets on any host. */
@@ -43,7 +44,12 @@ static int sRoomPicked;
 
 s32 __wrap__ZN4Game2Ui11LevelSelect3RunEPi(s32 *level)
 {
-    s32 result = __real__ZN4Game2Ui11LevelSelect3RunEPi(level);
+    s32 result;
+
+    /* The warp room, for Discord's status (discord.c). */
+    gHostInWarpRoom = 1;
+    result = __real__ZN4Game2Ui11LevelSelect3RunEPi(level);
+    gHostInWarpRoom = 0;
 
     if (gHostOptions.level >= 0 && !sLevelPicked) {
         sLevelPicked = 1;

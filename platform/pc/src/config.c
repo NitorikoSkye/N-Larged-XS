@@ -107,6 +107,9 @@ void HostConfigDefaults(struct HostSettings *s)
     s->music = 100;
     s->sfx = 100;
     s->deadzone = 35;
+    s->discord = 1;
+    s->discordProgress = 1;
+    snprintf(s->discordAppId, sizeof(s->discordAppId), "%s", HOST_DISCORD_APP_ID);
     HostConfigDefaultKeys(s);
     HostConfigDefaultPad(s);
 }
@@ -137,6 +140,8 @@ static const struct {
     { "music_volume", &gHostSettings.music, 0, 100 },
     { "sfx_volume", &gHostSettings.sfx, 0, 100 },
     { "stick_deadzone", &gHostSettings.deadzone, 10, 90 },
+    { "discord_status", &gHostSettings.discord, 0, 1 },
+    { "discord_show_progress", &gHostSettings.discordProgress, 0, 1 },
 };
 
 static const char *const sBindKeys[HOST_BIND_COUNT] = {
@@ -202,6 +207,9 @@ static int WriteSettings(const char *dir, int portable)
         }
         fprintf(f, "%s=%d\n", sInts[i].name, *sInts[i].value);
     }
+    /* The Discord application's id (Rich Presence, discord.c): the one
+     * built in unless this line names another. */
+    fprintf(f, "discord_app_id=%s\n", gHostSettings.discordAppId);
     for (b = 0; b < HOST_BIND_COUNT; b++) {
         fprintf(f, "key_%s=", sBindKeys[b]);
         for (s = 0; s < HOST_BIND_SLOTS; s++) {
@@ -261,6 +269,19 @@ static int ReadSettings(const char *dir)
         value[strcspn(value, "\r\n")] = '\0';
         if (strcmp(line, "portable") == 0) {
             portable = atoi(value) != 0;
+            continue;
+        }
+        if (strcmp(line, "discord_app_id") == 0) {
+            size_t k;
+            char id[sizeof(gHostSettings.discordAppId)];
+
+            /* digits only (it goes into JSON as is); empty: the built-in one */
+            for (k = 0; value[k] >= '0' && value[k] <= '9' && k + 1 < sizeof(id); k++) {
+                id[k] = value[k];
+            }
+            id[k] = '\0';
+            snprintf(gHostSettings.discordAppId, sizeof(gHostSettings.discordAppId), "%s",
+                     id[0] ? id : HOST_DISCORD_APP_ID);
             continue;
         }
         if (strcmp(line, "frame_rate") == 0) {
