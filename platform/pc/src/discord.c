@@ -81,7 +81,7 @@ static const struct {
 #define EMOJI_WARP     "\xF0\x9F\x8C\x80"   /* cyclone */
 #define EMOJI_MENU     "\xF0\x9F\x8E\xAE"   /* game controller */
 #define EMOJI_PERCENT  "\xF0\x9F\x92\xAF"   /* hundred points */
-#define EMOJI_CRYSTAL  "\xF0\x9F\x94\xAE"   /* crystal ball */
+#define EMOJI_CRYSTAL  "\xF0\x9F\x92\x9C"   /* purple heart: the crystals are purple */
 #define EMOJI_GEM      "\xF0\x9F\x92\x8E"   /* gem stone */
 #define EMOJI_RELIC    "\xF0\x9F\x8F\x86"   /* trophy */
 #define DOT            " \xC2\xB7 "         /* middle dot */
