@@ -1278,14 +1278,14 @@ static void DrawToast(SDL_Rect dst, int scale, int below)
     PutOverlay(&sToastTex, canvas, TOAST_W, TOAST_H, x, y, scale);
 }
 
-/* The input display (Interface's Input display): the buttons held, drawn
- * as the lower half of a GBA SP - its red shell, the D-pad in its round
- * well, A and B on their slanted pad, Start and Select, the shoulder
- * buttons, the speaker and the power light - with what is held lit. It is
- * drawn smooth (each shape's edge by its distance, at twice the size it
- * is shown at, then scaled with filtering), 84x74 in the window's units. */
+/* The input display (Interface's Input display): the buttons held, as a
+ * line drawing of a handheld - the body on a see-through dark panel, the
+ * shoulder buttons over its corners, the D-pad's cross, A and B rising to
+ * the right, Start and Select - outlined in white, what is held filled
+ * amber. Drawn smooth (each shape's edge by its distance, at twice the
+ * size it is shown at, then scaled with filtering), 84x72 in units. */
 #define PAD_W 84
-#define PAD_H 74
+#define PAD_H 72
 #define PAD_SS 2 /* the canvas's pixels per unit */
 #define PAD_CW (PAD_W * PAD_SS)
 #define PAD_CH (PAD_H * PAD_SS)
@@ -1408,12 +1408,40 @@ static void PadFill(const struct PadShape *sh, u32 color, double relief, double 
     }
 }
 
-static void PadDisc(double x, double y, double r, u32 color, double relief)
+/* A shape's outline, `width` units wide, centred on its edge. */
+static void PadStroke(const struct PadShape *sh, u32 color, double width, double alpha)
 {
-    struct PadShape sh = { SHAPE_DISC, x, y, 0, 0, r };
+    struct PadShape grown = *sh;
+    double minx;
+    double maxx;
+    double miny;
+    double maxy;
+    int px;
+    int py;
 
-    PadFill(&sh, color, relief, 1, 0, 0);
+    grown.r += width;
+    if (grown.kind == SHAPE_BOX) {
+        grown.x0 -= width;
+        grown.y0 -= width;
+        grown.x1 += width;
+        grown.y1 += width;
+    }
+    minx = (grown.kind == SHAPE_DISC ? grown.x0 - grown.r : (grown.x0 < grown.x1 ? grown.x0 : grown.x1) - grown.r) - 1;
+    maxx = (grown.kind == SHAPE_DISC ? grown.x0 + grown.r : (grown.x0 > grown.x1 ? grown.x0 : grown.x1) + grown.r) + 1;
+    miny = (grown.kind == SHAPE_DISC ? grown.y0 - grown.r : (grown.y0 < grown.y1 ? grown.y0 : grown.y1) - grown.r) - 1;
+    maxy = (grown.kind == SHAPE_DISC ? grown.y0 + grown.r : (grown.y0 > grown.y1 ? grown.y0 : grown.y1) + grown.r) + 1;
+    for (py = (int)(miny * PAD_SS); py <= (int)(maxy * PAD_SS); py++) {
+        for (px = (int)(minx * PAD_SS); px <= (int)(maxx * PAD_SS); px++) {
+            double d = ShapeDistance(sh, (px + 0.5) / PAD_SS, (py + 0.5) / PAD_SS);
+            double cover = 0.5 - (fabs(d) - width / 2) * PAD_SS;
+
+            if (cover > 0) {
+                PadBlend(px, py, color, alpha * (cover > 1 ? 1 : cover));
+            }
+        }
+    }
 }
+
 
 /* The letters printed on the SP (L, R, A, B), drawn as strokes in a
  * box 4 wide and 6 high (`size` units per box unit), centred at (cx, cy). */
@@ -1457,111 +1485,106 @@ static void PadLetter(char ch, double cx, double cy, double size, u32 color)
 
 static void DrawPad(SDL_Rect dst, int scale, int right)
 {
-    static const u32 shell = 0xC4141E; /* the red SP */
-    static const u32 key = 0x4A4A50;   /* its grey buttons */
-    static const u32 lit = 0xFFD84A;   /* held */
+    static const u32 line = 0xF2F2F2; /* the outlines */
+    static const u32 lit = 0xFFC83C;  /* what is held: filled */
+    static const double stroke = 1.5;
     u16 k = sKeys;
     struct PadShape sh;
+    int i;
 
     /* TEST_PAD_KEYS=bits: shows those held, for pictures of it */
     if (SDL_getenv("TEST_PAD_KEYS") != NULL) {
         k = (u16)strtol(SDL_getenv("TEST_PAD_KEYS"), NULL, 0);
     }
-    int i;
-
     memset(sPadCanvas, 0, sizeof(sPadCanvas));
 
-    /* L and R: the shoulders, behind the shell's top corners */
+    /* The shoulders: two pills over the top corners */
     for (i = 0; i < 2; i++) {
         int held = (k & (i ? R_BUTTON : L_BUTTON)) != 0;
-        double x0 = i ? PAD_W - 22 : 1;
+        double x0 = i ? PAD_W - 26 : 4;
 
-        sh = (struct PadShape){ SHAPE_BOX, x0, 0.5, x0 + 21, 12, 3 };
-        PadFill(&sh, held ? lit : Shade(shell, -0.3), 0.5, 1, 0, 0);
-        PadLetter(i ? 'R' : 'L', x0 + (i ? 14.5 : 6.5), 3.6, 0.55, held ? 0x5A3C00 : 0xF0D8D8);
+        sh = (struct PadShape){ SHAPE_BOX, x0, 2, x0 + 22, 8.5, 3.2 };
+        PadFill(&sh, held ? lit : 0x000000, 0, held ? 1 : 0.4, 0, 0);
+        PadStroke(&sh, 0x000000, stroke + 1.4, 0.45);
+        PadStroke(&sh, line, stroke, 1);
     }
-    /* the shell */
-    sh = (struct PadShape){ SHAPE_BOX, 0.5, 6.5, PAD_W - 0.5, PAD_H - 0.5, 7 };
-    PadFill(&sh, shell, 0.35, 0.94, 0, 0);
-    sh = (struct PadShape){ SHAPE_BOX, 1.5, 7.5, PAD_W - 1.5, 10.5, 2 };
-    PadFill(&sh, Shade(shell, 0.25), 0, 0.35, 0, 0);
+    /* The body: a dark see-through panel, outlined */
+    sh = (struct PadShape){ SHAPE_BOX, 2, 11, PAD_W - 2, PAD_H - 2, 5 };
+    PadFill(&sh, 0x000000, 0, 0.45, 0, 0);
+    PadStroke(&sh, 0x000000, stroke + 1.4, 0.45);
+    PadStroke(&sh, line, stroke, 1);
 
-    /* the power light, and the charge light at the side */
-    PadDisc(PAD_W / 2.0, 11, 1.8, 0x2A2A2A, 0.4);
-    PadDisc(PAD_W - 2, 15, 0.9, 0x40E060, 0.5);
-
-    /* the D-pad's well */
-    sh = (struct PadShape){ SHAPE_DISC, 21, 38, 0, 0, 17 };
-    PadFill(&sh, Shade(shell, -0.18), -0.5, 1, 0, 0);
-    /* the cross: its shadow, then each arm (lit when held) and the middle */
+    /* The D-pad: a cross, its held arms filled */
     {
         static const struct {
             u16 bit;
             double x0, y0, x1, y1;
         } arms[4] = {
-            { DPAD_UP, 21, 31, 21, 25.5 },
-            { DPAD_DOWN, 21, 45, 21, 50.5 },
-            { DPAD_LEFT, 14, 38, 8.5, 38 },
-            { DPAD_RIGHT, 28, 38, 33.5, 38 },
+            { DPAD_UP, 18.5, 24, 25.5, 34.5 },
+            { DPAD_DOWN, 18.5, 41.5, 25.5, 52 },
+            { DPAD_LEFT, 8, 34.5, 18.5, 41.5 },
+            { DPAD_RIGHT, 25.5, 34.5, 36, 41.5 },
         };
+        struct PadShape vert = { SHAPE_BOX, 18.5, 24, 25.5, 52, 2.6 };
+        struct PadShape horiz = { SHAPE_BOX, 8, 34.5, 36, 41.5, 2.6 };
 
-        sh = (struct PadShape){ SHAPE_BOX, 16.5, 23.5, 25.5, 52.5, 2 };
-        PadFill(&sh, 0x000000, 0, 0.35, 0.7, 1.2);
-        sh = (struct PadShape){ SHAPE_BOX, 7, 33.5, 35, 42.5, 2 };
-        PadFill(&sh, 0x000000, 0, 0.35, 0.7, 1.2);
-        sh = (struct PadShape){ SHAPE_BOX, 16.5, 23.5, 25.5, 52.5, 2 };
-        PadFill(&sh, key, 0.45, 1, 0, 0);
-        sh = (struct PadShape){ SHAPE_BOX, 7, 33.5, 35, 42.5, 2 };
-        PadFill(&sh, key, 0.45, 1, 0, 0);
         for (i = 0; i < 4; i++) {
             if (k & arms[i].bit) {
-                double ax = arms[i].x0 < arms[i].x1 ? arms[i].x0 : arms[i].x1;
-                double bx = arms[i].x0 < arms[i].x1 ? arms[i].x1 : arms[i].x0;
-                double ay = arms[i].y0 < arms[i].y1 ? arms[i].y0 : arms[i].y1;
-                double by = arms[i].y0 < arms[i].y1 ? arms[i].y1 : arms[i].y0;
-
-                sh = (struct PadShape){ SHAPE_BOX, ax - 3.6, ay - 3.6, bx + 3.6, by + 3.6, 1.5 };
-                PadFill(&sh, lit, 0.4, 1, 0, 0);
+                sh = (struct PadShape){ SHAPE_BOX, arms[i].x0, arms[i].y0, arms[i].x1, arms[i].y1, 2.4 };
+                PadFill(&sh, lit, 0, 1, 0, 0);
             }
         }
-        /* the middle's dimple */
-        sh = (struct PadShape){ SHAPE_DISC, 21, 38, 0, 0, 4.2 };
-        PadFill(&sh, Shade(key, -0.2), -0.4, 1, 0, 0);
-    }
+        /* the outline of the cross: each bar's, but not inside the other */
+        {
+            int px;
+            int py;
 
-    /* A and B on their pad, slanted up to the right */
-    sh = (struct PadShape){ SHAPE_CAPSULE, 55, 43, 71, 35, 9.5 };
-    PadFill(&sh, Shade(shell, -0.18), -0.5, 1, 0, 0);
-    for (i = 0; i < 2; i++) {
-        int held = (k & (i ? A_BUTTON : B_BUTTON)) != 0;
-        double x = i ? 71 : 55;
-        double y = i ? 35 : 43;
+            for (py = (int)(22 * PAD_SS); py <= (int)(54 * PAD_SS); py++) {
+                for (px = (int)(6 * PAD_SS); px <= (int)(38 * PAD_SS); px++) {
+                    double x = (px + 0.5) / PAD_SS;
+                    double y = (py + 0.5) / PAD_SS;
+                    double a = ShapeDistance(&vert, x, y);
+                    double b = ShapeDistance(&horiz, x, y);
+                    double d = a < b ? a : b; /* the union's edge */
+                    double halo = 0.5 - (fabs(d) - (stroke + 1.4) / 2) * PAD_SS;
+                    double cover = 0.5 - (fabs(d) - stroke / 2) * PAD_SS;
 
-        sh = (struct PadShape){ SHAPE_DISC, x, y, 0, 0, 6.6 };
-        PadFill(&sh, 0x000000, 0, 0.4, 0.6, 1.1);
-        PadFill(&sh, held ? lit : key, 0.5, 1, 0, 0);
-        PadLetter(i ? 'A' : 'B', x, y, 0.62, held ? 0x5A3C00 : 0xD8D8E0);
-    }
-
-    /* the speaker: a diamond of holes */
-    {
-        static const signed char holes[][2] = { { 0, -2 }, { -1, -1 }, { 1, -1 }, { -2, 0 }, { 0, 0 }, { 2, 0 },
-                                                { -1, 1 },  { 1, 1 },   { 0, 2 },  { -2, 2 }, { 2, 2 }, { -1, 3 },
-                                                { 1, 3 } };
-
-        for (i = 0; i < (int)(sizeof(holes) / sizeof(holes[0])); i++) {
-            PadDisc(PAD_W / 2.0 + holes[i][0] * 2.6, 56 + holes[i][1] * 2.3, 0.75, Shade(shell, -0.65), 0);
+                    if (halo > 0) {
+                        PadBlend(px, py, 0x000000, 0.45 * (halo > 1 ? 1 : halo));
+                    }
+                    if (cover > 0) {
+                        PadBlend(px, py, line, cover > 1 ? 1 : cover);
+                    }
+                }
+            }
         }
     }
 
-    /* Select and Start: two small round buttons, their names above */
+    /* B and A: two rings, rising to the right, their letters inside */
+    for (i = 0; i < 2; i++) {
+        int held = (k & (i ? A_BUTTON : B_BUTTON)) != 0;
+        double x = i ? 70 : 54;
+        double y = i ? 34 : 43;
+
+        sh = (struct PadShape){ SHAPE_DISC, x, y, 0, 0, 6.8 };
+        if (held) {
+            PadFill(&sh, lit, 0, 1, 0, 0);
+        }
+        PadStroke(&sh, 0x000000, stroke + 1.4, 0.45);
+        PadStroke(&sh, line, stroke, 1);
+        PadLetter(i ? 'A' : 'B', x, y, 0.62, held ? 0x3A2A00 : line);
+    }
+
+    /* Select and Start: two small rings */
     for (i = 0; i < 2; i++) {
         int held = (k & (i ? START_BUTTON : SELECT_BUTTON)) != 0;
-        double x = i ? 49 : 35;
 
-        sh = (struct PadShape){ SHAPE_DISC, x, 68, 0, 0, 3.1 };
-        PadFill(&sh, 0x000000, 0, 0.4, 0.4, 0.8);
-        PadFill(&sh, held ? lit : key, 0.5, 1, 0, 0);
+        sh = (struct PadShape){ SHAPE_DISC, i ? 50 : 34, 63, 0, 0, 3.2 };
+        if (held) {
+            PadFill(&sh, lit, 0, 1, 0, 0);
+        }
+        PadStroke(&sh, 0x000000, stroke * 0.85 + 1.4, 0.45);
+        PadStroke(&sh, line, stroke * 0.85, 1);
     }
 
     {

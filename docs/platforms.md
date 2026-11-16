@@ -315,12 +315,13 @@ gHostPlayingLevel). The FPS counter and the input display go into the
 borders when they fit there, at a smaller size if need be, and over the
 picture's corners otherwise.
 
-**Input display** (v0.19; Interface, src/sdl.c DrawPad). The buttons held,
-as the lower half of a red GBA SP: the D-pad in its well, A and B on their
-slanted pad, Start and Select, the shoulders with L and R, the speaker
-and the lights, held ones lit amber. Drawn smooth: each shape by its
-signed distance at twice the size, lit from the top, then scaled with
-filtering to a quarter of the picture's height, in the border beside it
+**Input display** (v0.19, redrawn in v0.20; Interface, src/sdl.c DrawPad).
+The buttons held, as a line drawing of a handheld: the body on a
+see-through dark panel, the shoulder buttons over its corners, the
+D-pad's cross, A and B rising to the right, Start and Select, outlined in
+white over a soft dark halo; what is held filled amber. Drawn smooth (each
+shape by its signed distance at twice the size, then scaled with
+filtering), a quarter of the picture's height, in the border beside it
 when there's room, else in the picture's bottom corner.
 TEST_PAD_KEYS=bits shows those keys held.
 
