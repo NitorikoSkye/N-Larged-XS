@@ -271,7 +271,7 @@ ghosting), Interface (HUD, FPS counter,
 input display, speedrun timer), Audio (quality; master, music, sound
 effects: the last two in GAX2's mixer, gHostGaxVolume, on top of the
 pause menu's), Controls (keyboard and controller bindings, two per
-action, restore defaults; stick deadzone; rumble), and Gameplay and Extras (empty, grey). `--ui-preview
+action, restore defaults; stick deadzone; rumble; button prompts), and Gameplay and Extras (empty, grey). `--ui-preview
 DIR` writes every page as a PNG and reports a help text too long for its
 two lines.
 
@@ -361,6 +361,26 @@ before GAX2's downmix to the GBA's 8 bits: gHostHqBlock), and the device
 rate is reached with a cubic (Catmull-Rom) curve instead of a line.
 "Original" is the GBA's, byte for byte. HOST_AUDIO_HQ=1 and
 HOST_HQ_DUMP=FILE write the 16-bit mix headless.
+
+**Button prompts** (v0.22; Controls, src/prompts.c, src/prompt_hook.cpp).
+The game's text draws the GBA's A, B, L and R as glyphs (the small
+font's last four: the power dialogs' help, the link messages). They are
+drawn as what they are bound to instead: auto (the default) follows the
+device used last (before any, the first pad plugged in, else the
+keyboard) and its kind (SDL_GameControllerGetType); or always gba (the
+game's glyphs), xbox (coloured A B X Y, LB RB LT RT), playstation (the
+four symbols, L1 R1 L2 R2), nintendo (letters by label, L R ZL ZR) or
+keyboard (keys: one character, or a short name such as SHF or SPC). A
+binding the glyph's space can't show (A and B are 7 pixels wide: a
+shoulder or a long key name) keeps the game's glyph. The pictures are
+made at the GBA's size from a few shapes and a 3x5 font, so the filters
+and the frame interpolation treat them as the game's pixels: the link
+wraps Font::DrawGlyph to learn where the font's button tiles are in OBJ
+VRAM and in which palette, and ppu.c and ppu_hd.c draw an OBJ of those
+tiles in that palette from gHostPrompts' picture and colours. Nothing
+the game reads changes. `HOST_PROMPTS=xbox|playstation|nintendo|keyboard`
+does it in headless runs with the default bindings (the Dingodile test's
+super body slam dialog, frame 13850).
 
 **Rumble** (v0.14; Controls, src/rumble.c). The link wraps
 AudioContext::PlaySfx: hurt, deaths, explosions, boss and vehicle hits,

@@ -107,6 +107,7 @@ struct HostSettings {
     /* Controls */
     int deadzone; /* percent */
     int rumble;   /* 0 off, 1 light, 2 strong (rumble.c) */
+    int prompts;  /* HOST_PROMPTS_* */
     int keys[HOST_BIND_COUNT][HOST_BIND_SLOTS]; /* SDL scancodes, 0 none */
     int pad[HOST_BIND_COUNT][HOST_BIND_SLOTS];  /* HOST_PAD_* */
     /* Gameplay */
@@ -161,6 +162,23 @@ int HostTimerLines(char big[32], char line2[64], char line3[64]);
 
 /* intro_skip.c: General's Skip intro, as this launch has it. */
 int HostSkipIntro(void);
+
+/* prompts.c: Controls' Button prompts. */
+enum {
+    HOST_PROMPTS_AUTO, /* the style of what was used last */
+    HOST_PROMPTS_GBA,  /* the game's own glyphs */
+    HOST_PROMPTS_XBOX,
+    HOST_PROMPTS_PLAYSTATION,
+    HOST_PROMPTS_NINTENDO,
+    HOST_PROMPTS_KEYBOARD,
+    HOST_PROMPTS_COUNT
+};
+/* Slot 0-3 (A, B, L, R) shows `binding` (HOST_PAD_*) in a pad style, or
+ * the key SDL names `name`; `labels`: SDL's button names are the pad's
+ * labels (a Nintendo pad). 0: nothing fits, the slot is left as it was. */
+int HostPromptForPad(int slot, int style, int binding, int labels);
+int HostPromptForKey(int slot, const char *name);
+void HostPromptOff(int slot);
 
 /* autosave.c: Gameplay's Auto save. */
 enum {

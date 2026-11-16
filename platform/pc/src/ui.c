@@ -559,6 +559,9 @@ static const struct Option sAudio[] = {
 
 static const char *const sRumbles[] = { "off", "light", "strong" };
 
+static const char *const sPrompts[HOST_PROMPTS_COUNT] = { "auto", "gba", "xbox", "playstation", "nintendo",
+                                                          "keyboard" };
+
 static const struct Option sControls[] = {
     { "keyboard", "change the keys.", OPT_ACTION, NULL, NULL, 0, 0, NULL, NULL, OpenKeyboard },
     { "controller", "change the controller's buttons.", OPT_ACTION, NULL, NULL, 0, 0, NULL, NULL, OpenController },
@@ -566,6 +569,8 @@ static const struct Option sControls[] = {
       &gHostSettings.deadzone, NULL, 0, 0, NULL, NULL, NULL, 10, 90 },
     { "rumble", "the controller buzzes with hits, explosions, crates and bosses.", OPT_CHOICE,
       &gHostSettings.rumble, sRumbles, 3, 0 },
+    { "button prompts", "the game's a, b, l and r buttons drawn as your controller's or keys.",
+      OPT_CHOICE, &gHostSettings.prompts, sPrompts, HOST_PROMPTS_COUNT, 0 },
 };
 
 static const char *const sAutoSaves[HOST_AUTOSAVE_COUNT] = { "off", "slot in use", "slot 4" };
@@ -601,7 +606,7 @@ static const struct Category sCategories[] = {
     { "graphics", "filters and screen effects", sGraphics, COUNT(sGraphics) },
     { "interface", "hud, fps counter, input display and timer", sInterface, COUNT(sInterface) },
     { "audio", "quality, and master, music and sound fx volume", sAudio, COUNT(sAudio) },
-    { "controls", "keyboard, controller and rumble", sControls, COUNT(sControls) },
+    { "controls", "keyboard, controller, rumble and button prompts", sControls, COUNT(sControls) },
     { "gameplay", "auto save", sGameplay, COUNT(sGameplay) },
     { "extras", "discord status", sExtras, COUNT(sExtras) },
 };

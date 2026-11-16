@@ -321,6 +321,26 @@ static inline void PutObjPixel(const struct HdFrame *f, struct ObjPixel *line, u
     }
 }
 
+/* A button prompt's pixel (prompts.c): its own picture and colours. */
+static inline void PutPromptPixel(struct ObjPixel *line, s32 x, int prompt, u32 lx, u32 ly, u32 attr0, u32 priority,
+                                  u32 flags)
+{
+    u32 index = lx < 16 && ly < 16 ? gHostPrompts.art[prompt][ly][lx] : 0;
+    struct ObjPixel *p = &line[x];
+
+    if (((attr0 >> 10) & 3) == 2 || priority >= p->priority) {
+        return;
+    }
+    if (index) {
+        p->color = gHostPrompts.pal[prompt][index] & 0x7FFF;
+        p->priority = priority;
+        p->flags = flags;
+    } else if (!(p->flags & OBJ_UNWRITTEN)) {
+        p->priority = priority;
+        p->flags = flags;
+    }
+}
+
 static void ObjLine(const struct HdView *v, s32 Y, u32 dispcnt, struct ObjPixel *line, u8 *window, s32 outW)
 {
     const struct HdFrame *f = v->frame;
@@ -406,12 +426,17 @@ static void ObjLine(const struct HdView *v, s32 Y, u32 dispcnt, struct ObjPixel 
             }
         } else {
             u32 ly = (attr1 & (1 << 13)) ? height - 1 - inY : (u32)inY;
+            int prompt = HostPromptGlyph(attr0, attr2);
 
             for (X = xa; X < xb; X++) {
                 s32 lx = FloorDiv(X - X0, S);
 
                 if (attr1 & (1 << 12)) {
                     lx = width - 1 - lx;
+                }
+                if (prompt >= 0) {
+                    PutPromptPixel(line, X, prompt, (u32)lx, ly, attr0, priority, flags);
+                    continue;
                 }
                 PutObjPixel(f, line, window, X, ObjTexel(f, attr0, attr2, width, lx, ly, map1D), attr0, attr2,
                             priority, flags);

@@ -154,6 +154,7 @@ static const struct {
     { "audio_quality", &gHostSettings.audioQuality, 0, 1 },
     { "stick_deadzone", &gHostSettings.deadzone, 10, 90 },
     { "rumble", &gHostSettings.rumble, 0, 2 },
+    { "button_prompts", &gHostSettings.prompts, 0, HOST_PROMPTS_COUNT - 1 },
     { "auto_save", &gHostSettings.autoSave, 0, HOST_AUTOSAVE_COUNT - 1 },
     { "discord_status", &gHostSettings.discord, 0, 1 },
     { "discord_show_progress", &gHostSettings.discordProgress, 0, 1 },

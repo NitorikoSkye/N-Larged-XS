@@ -392,6 +392,25 @@ static void PutObjPixel(u32 x, u32 index, u32 attr0, u32 attr2, u32 priority, u3
     }
 }
 
+/* A button prompt's pixel (prompts.c): its own picture and colours. */
+static void PutPromptPixel(u32 x, int prompt, u32 lx, u32 ly, u32 attr0, u32 priority, u32 flags)
+{
+    u32 index = lx < 16 && ly < 16 ? gHostPrompts.art[prompt][ly][lx] : 0;
+    struct ObjPixel *p = &sObjLine[x];
+
+    if (((attr0 >> 10) & 3) == 2 || priority >= p->priority) {
+        return;
+    }
+    if (index) {
+        p->color = gHostPrompts.pal[prompt][index] & 0x7FFF;
+        p->priority = priority;
+        p->flags = flags;
+    } else if (!(p->flags & OBJ_UNWRITTEN)) {
+        p->priority = priority;
+        p->flags = flags;
+    }
+}
+
 static void ObjLine(u32 y, u32 dispcnt)
 {
     u16 mosaicReg = Io16(REG_OFFSET_MOSAIC);
@@ -485,6 +504,7 @@ static void ObjLine(u32 y, u32 dispcnt)
             }
         } else {
             u32 ly = (attr1 & (1 << 13)) ? height - 1 - inY : inY;
+            int prompt = HostPromptGlyph(attr0, attr2);
 
             for (x = 0; x < (s32)width; x++) {
                 s32 sx = objX + x;
@@ -502,6 +522,10 @@ static void ObjLine(u32 y, u32 dispcnt)
                 }
                 if (attr1 & (1 << 12)) {
                     lx = width - 1 - lx;
+                }
+                if (prompt >= 0) {
+                    PutPromptPixel(sx, prompt, lx, ly, attr0, priority, flags);
+                    continue;
                 }
                 PutObjPixel(sx, ObjTexel(attr0, attr2, width, lx, ly, map1D), attr0, attr2,
                             priority, flags);

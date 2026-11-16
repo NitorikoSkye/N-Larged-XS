@@ -1970,6 +1970,84 @@ static int Held(int b, int useKeys, int usePads)
     return 0;
 }
 
+/* --- Button prompts (prompts.c) ------------------------------------------ */
+
+static SDL_JoystickID sLastPad = -1; /* the pad used last; -1 the keyboard */
+static int sKeyboardUsed;
+
+static int PadStyle(SDL_GameController *pad)
+{
+    switch (SDL_GameControllerGetType(pad)) {
+    case SDL_CONTROLLER_TYPE_PS3:
+    case SDL_CONTROLLER_TYPE_PS4:
+    case SDL_CONTROLLER_TYPE_PS5:
+        return HOST_PROMPTS_PLAYSTATION;
+    case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO:
+    case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT:
+    case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT:
+    case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR:
+        return HOST_PROMPTS_NINTENDO;
+    default:
+        return HOST_PROMPTS_XBOX;
+    }
+}
+
+/* The pad whose buttons to show: the one used last, or before anything
+ * was used, the first plugged in. */
+static SDL_GameController *PromptPad(void)
+{
+    SDL_GameController *pad = sLastPad >= 0 ? SDL_GameControllerFromInstanceID(sLastPad) : NULL;
+    int i;
+
+    if (pad != NULL || sKeyboardUsed) {
+        return pad;
+    }
+    for (i = 0; i < SDL_NumJoysticks(); i++) {
+        if (SDL_IsGameController(i) &&
+            (pad = SDL_GameControllerFromInstanceID(SDL_JoystickGetDeviceInstanceID(i))) != NULL) {
+            return pad;
+        }
+    }
+    return NULL;
+}
+
+/* Each frame: the A, B, L and R glyphs as the style shows the first
+ * binding of each that has a picture there. */
+static void UpdatePrompts(void)
+{
+    SDL_GameController *pad = PromptPad();
+    int style = gHostSettings.prompts;
+    int labels = 0;
+    int slot;
+
+    if (style == HOST_PROMPTS_AUTO) {
+        style = pad != NULL ? PadStyle(pad) : HOST_PROMPTS_KEYBOARD;
+    }
+    /* SDL names a Nintendo pad's buttons by their labels unless told not
+     * to (SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS). */
+    if (style == HOST_PROMPTS_NINTENDO && pad != NULL && PadStyle(pad) == HOST_PROMPTS_NINTENDO) {
+        labels = SDL_GetHintBoolean(SDL_HINT_GAMECONTROLLER_USE_BUTTON_LABELS, SDL_TRUE);
+    }
+    for (slot = 0; slot < 4; slot++) {
+        int bind = HOST_BIND_A + slot;
+        int done = 0;
+        int s;
+
+        for (s = 0; s < HOST_BIND_SLOTS && !done && style != HOST_PROMPTS_GBA; s++) {
+            if (style == HOST_PROMPTS_KEYBOARD) {
+                int key = gHostSettings.keys[bind][s];
+
+                done = key > 0 && HostPromptForKey(slot, SDL_GetScancodeName((SDL_Scancode)key));
+            } else {
+                done = HostPromptForPad(slot, style, gHostSettings.pad[bind][s], labels);
+            }
+        }
+        if (!done) {
+            HostPromptOff(slot);
+        }
+    }
+}
+
 static u16 GameKeys(void)
 {
     static const u16 bits[HOST_BIND_GBA_COUNT] = {
@@ -1983,6 +2061,7 @@ static u16 GameKeys(void)
             keys |= bits[b];
         }
     }
+    UpdatePrompts();
     return keys;
 }
 
@@ -2133,6 +2212,8 @@ static void CommonEvent(const SDL_Event *e, int *shot)
         if (e->key.repeat || HostUiCapturing()) {
             break;
         }
+        sLastPad = -1;
+        sKeyboardUsed = 1;
         if ((e->key.keysym.scancode == SDL_SCANCODE_RETURN && (e->key.keysym.mod & KMOD_ALT)) ||
             KeyIs(e->key.keysym.scancode, HOST_BIND_FULLSCREEN)) {
             ToggleFullscreen();
@@ -2142,7 +2223,13 @@ static void CommonEvent(const SDL_Event *e, int *shot)
             sMenuRequest = 1;
         }
         break;
+    case SDL_CONTROLLERAXISMOTION:
+        if (e->caxis.value > 16000 || e->caxis.value < -16000) {
+            sLastPad = e->caxis.which;
+        }
+        break;
     case SDL_CONTROLLERBUTTONDOWN:
+        sLastPad = e->cbutton.which;
         if (!HostUiIsOpen() && !HostUiCapturing() && PadIs(HOST_PAD_BUTTON(e->cbutton.button), HOST_BIND_MENU)) {
             sMenuRequest = 1;
         }

@@ -99,7 +99,7 @@ void HostFrontendInit(void);
  * and the Windows executable is CrashBandicootXS-<version>.exe
  * (platform.mk reads the version from here). */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.21"
+#define HOST_PORT_VERSION "v0.22"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);
@@ -142,6 +142,35 @@ void HostCheckEmptyFrames(void);
 
 /* The game frame: how many times the game has read REG_KEYINPUT. */
 u32 HostFrame(void);
+
+/* Button prompts (prompts.c): the small font's A, B, L, R glyphs drawn as
+ * the bound buttons. `tile` is the first of their 8 OBJ tiles (2 each, in
+ * that order), `palette` the font's OBJ palette, `frame` when the font
+ * last drew one; art and pal are a slot's picture (a 16x16 grid of
+ * colour indices: A and B use rows 8-15 of an 8x16 OBJ, L and R rows
+ * 0-7 of a 16x8 one) and its colours (BGR555). */
+struct HostPrompts {
+    u32 tile;
+    u32 palette;
+    u32 frame;
+    u8 on[4];
+    u8 art[4][16][16];
+    u16 pal[4][16];
+};
+extern struct HostPrompts gHostPrompts;
+
+/* Which button glyph an OBJ is (0-3: A, B, L, R), or -1: not one, or one
+ * whose slot keeps the game's glyph. */
+static inline int HostPromptGlyph(u32 attr0, u32 attr2)
+{
+    u32 t = (attr2 & 0x3FF) - gHostPrompts.tile;
+
+    if (t >= 8 || (t & 1) || (attr0 & (1 << 13)) || (attr2 >> 12) != gHostPrompts.palette ||
+        !gHostPrompts.on[t >> 1] || HostFrame() - gHostPrompts.frame > 4) {
+        return -1;
+    }
+    return (int)(t >> 1);
+}
 
 /* Ends the run: prints how it ended and exits with `status`. */
 void HostExit(int status, const char *how);
