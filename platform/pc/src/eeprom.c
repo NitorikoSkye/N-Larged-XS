@@ -74,6 +74,25 @@ void HostSaveFlush(void)
     }
 }
 
+/* Before an auto save (autosave.c): the save as it is, to <save>.bak. */
+void HostSaveBackup(void)
+{
+    char path[1100];
+    FILE *f;
+
+    if (gHostOptions.save == NULL || gEepromConfig == NULL) {
+        return;
+    }
+    snprintf(path, sizeof(path), "%s.bak", gHostOptions.save);
+    f = fopen(path, "wb");
+    if (f == NULL || fwrite(sEeprom, 1, gEepromConfig->size, f) != gEepromConfig->size) {
+        fprintf(stderr, "%s: can't write the backup\n", path);
+    }
+    if (f != NULL) {
+        fclose(f);
+    }
+}
+
 /* The watchdog timer's handler: nothing to time out on the host. */
 static void EepromTimerIntr(void)
 {

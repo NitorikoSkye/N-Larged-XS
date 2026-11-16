@@ -557,6 +557,13 @@ static const struct Option sControls[] = {
       &gHostSettings.deadzone, NULL, 0, 0, NULL, NULL, NULL, 10, 90 },
 };
 
+static const char *const sAutoSaves[HOST_AUTOSAVE_COUNT] = { "off", "slot in use", "slot 4" };
+
+static const struct Option sGameplay[] = {
+    { "auto save", "after a level with something new: save to the slot in use, or slot 4.",
+      OPT_CHOICE, &gHostSettings.autoSave, sAutoSaves, HOST_AUTOSAVE_COUNT, 0 },
+};
+
 static const char *const sDiscordStates[HOST_DISCORD_STATUS_COUNT] = {
     "off", "no app id", "waiting for discord", "connected", "app id refused",
 };
@@ -584,7 +591,7 @@ static const struct Category sCategories[] = {
     { "interface", "fps counter and input display", sInterface, COUNT(sInterface) },
     { "audio", "master, music and sound fx volume", sAudio, COUNT(sAudio) },
     { "controls", "keyboard and controller", sControls, COUNT(sControls) },
-    { "gameplay", "nothing here yet", NULL, 0 },
+    { "gameplay", "auto save", sGameplay, COUNT(sGameplay) },
     { "extras", "discord status", sExtras, COUNT(sExtras) },
 };
 

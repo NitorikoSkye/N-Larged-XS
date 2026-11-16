@@ -85,6 +85,8 @@ static void Usage(const char *argv0)
         "                        nothing moved, and compare it with the PPU's picture\n"
         "  --ui-preview DIR      write each page of the settings menu to DIR as a PNG\n"
         "  --discord-assets DIR  write the Discord application's art assets to DIR (discord.c)\n"
+        "  --auto-save MODE      off, slot (the slot in use) or 4: auto save as Gameplay's setting\n"
+        "                        would, also headless (autosave.c)\n"
         "  --stream              (built without SDL) pictures and sound to stdout, keys from stdin\n"
         "                        (the Android app's way to run the game, stream.c)\n"
         "  --quiet               don't print the checkpoints or the sound's hash (the window's default)\n",
@@ -161,6 +163,10 @@ int main(int argc, char **argv)
         } else if (strcmp(arg, "--ui-preview") == 0) {
             HostUiPreview(value);
             return 0;
+        } else if (strcmp(arg, "--auto-save") == 0) {
+            gHostAutosaveForce = strcmp(value, "off") == 0    ? HOST_AUTOSAVE_OFF
+                                 : strcmp(value, "slot") == 0 ? HOST_AUTOSAVE_IN_USE
+                                                              : HOST_AUTOSAVE_SLOT4;
         } else if (strcmp(arg, "--discord-assets") == 0) {
             HostBordersWriteDiscordAssets(value);
             return 0;

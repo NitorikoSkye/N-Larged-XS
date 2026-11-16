@@ -107,6 +107,7 @@ void HostConfigDefaults(struct HostSettings *s)
     s->music = 100;
     s->sfx = 100;
     s->deadzone = 35;
+    s->autoSave = HOST_AUTOSAVE_IN_USE;
     s->discord = 1;
     s->discordProgress = 1;
     snprintf(s->discordAppId, sizeof(s->discordAppId), "%s", HOST_DISCORD_APP_ID);
@@ -140,6 +141,7 @@ static const struct {
     { "music_volume", &gHostSettings.music, 0, 100 },
     { "sfx_volume", &gHostSettings.sfx, 0, 100 },
     { "stick_deadzone", &gHostSettings.deadzone, 10, 90 },
+    { "auto_save", &gHostSettings.autoSave, 0, HOST_AUTOSAVE_COUNT - 1 },
     { "discord_status", &gHostSettings.discord, 0, 1 },
     { "discord_show_progress", &gHostSettings.discordProgress, 0, 1 },
 };

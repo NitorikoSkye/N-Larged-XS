@@ -91,6 +91,11 @@ void HostFrontendAudio(const s8 *buf, u32 n, u32 rate)
     }
 }
 
+void HostToast(const char *text)
+{
+    (void)text;
+}
+
 /* The menu's needs, for --ui-preview without SDL. */
 struct HostSettings gHostSettings;
 
@@ -1033,6 +1038,49 @@ static void DrawFps(SDL_Rect dst, int scale)
     }
 }
 
+/* A message in the top right corner for a few seconds (auto save's,
+ * autosave.c), fading out over its last half second. */
+#define TOAST_W 200
+#define TOAST_H 12
+#define TOAST_MS 3000
+
+static char sToast[48];
+static Uint32 sToastAt;
+static SDL_Texture *sToastTex;
+
+void HostToast(const char *text)
+{
+    snprintf(sToast, sizeof(sToast), "%s", text);
+    sToastAt = SDL_GetTicks();
+}
+
+static void DrawToast(SDL_Rect dst, int scale)
+{
+    static u32 canvas[TOAST_W * TOAST_H];
+    Uint32 age = SDL_GetTicks() - sToastAt;
+    int w;
+    int x;
+    int y;
+
+    if (sToast[0] == '\0' || age >= TOAST_MS) {
+        return;
+    }
+    w = HostUiTextWidth(0, sToast) + 6;
+    if (w > TOAST_W) {
+        w = TOAST_W;
+    }
+    memset(canvas, 0, sizeof(canvas));
+    Fill(canvas, TOAST_W, 0, 0, w, TOAST_H, 0xB0000000);
+    HostUiText(canvas, TOAST_W, TOAST_H, 0, 3, 2, sToast, HOST_UI_PAL_NORMAL);
+    PlaceOverlay(dst, w, TOAST_H, 1, 0, &scale, &x, &y);
+    if (sToastTex != NULL) {
+        Uint32 left = TOAST_MS - age;
+
+        SDL_SetTextureAlphaMod(sToastTex, left < 500 ? (Uint8)(left * 255 / 500) : 255);
+    }
+    PutOverlay(&sToastTex, canvas, TOAST_W, TOAST_H, x, y, scale);
+}
+
 /* The GBA's buttons, lit while held: the D-pad, A and B (the font's
  * button icons), L and R, Select and Start. */
 static void DrawPad(SDL_Rect dst, int scale, int right)
@@ -1319,6 +1367,7 @@ static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int m
         if (gHostSettings.inputDisplay) {
             DrawPad(dst, scale, gHostSettings.inputDisplay == 2);
         }
+        DrawToast(dst, scale);
     }
     SDL_RenderPresent(sRenderer);
     sFpsCount++;

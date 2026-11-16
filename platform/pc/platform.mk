@@ -263,6 +263,8 @@ comma := ,
 HOST_WRAPS := _ZN4Game2Ui11LevelSelect3RunEPi _ZN4Game5Level13LevelProgress10SelectRoomEv
 # The themed borders (src/borders.c) know the level being played.
 HOST_WRAPS += _ZN4Game5Level13LevelProgress8PlayRoomEv
+# Auto save (src/autosave_hooks.cpp) follows the save menu and the title.
+HOST_WRAPS += _ZN4Game2Ui11TitleScreen3RunEv _ZN4Game2Ui8SaveMenu3RunEjj
 # --cutscene (src/cutscene_pick.c) wraps the boot's cutscene.
 HOST_WRAPS += _ZN4Game5Level10LevelState16PlayBootCutsceneEv
 # --gax-log (src/gax_trace.c) wraps GAX2's API.

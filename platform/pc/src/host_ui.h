@@ -102,6 +102,8 @@ struct HostSettings {
     int deadzone; /* percent */
     int keys[HOST_BIND_COUNT][HOST_BIND_SLOTS]; /* SDL scancodes, 0 none */
     int pad[HOST_BIND_COUNT][HOST_BIND_SLOTS];  /* HOST_PAD_* */
+    /* Gameplay */
+    int autoSave; /* HOST_AUTOSAVE_* */
     /* Extras: Discord Rich Presence (discord.c) */
     int discord;
     int discordProgress;
@@ -115,6 +117,24 @@ extern struct HostSettings gHostSettings;
 #ifndef HOST_DISCORD_APP_ID
 #define HOST_DISCORD_APP_ID "1571726745764110526"
 #endif
+
+/* autosave.c: Gameplay's Auto save. */
+enum {
+    HOST_AUTOSAVE_OFF,
+    HOST_AUTOSAVE_IN_USE, /* the slot loaded from or last saved to */
+    HOST_AUTOSAVE_SLOT4,  /* always the fourth */
+    HOST_AUTOSAVE_COUNT
+};
+extern int gHostAutosaveForce; /* --auto-save; -1 none */
+void HostAutosaveSessionStart(void);
+void HostAutosaveLoaded(int row); /* -1: not from a cartridge slot */
+void HostAutosaveSaved(int row);
+int HostAutosaveSlotInUse(void);
+void HostAutosaveSlotGone(void);
+void HostAutosaveWarpRoom(void);
+int HostAutosaveWrite(int row); /* autosave_hooks.cpp */
+void HostSaveBackup(void);      /* eeprom.c: the save file to <save>.bak */
+void HostToast(const char *text); /* sdl.c: a few seconds in a corner */
 
 /* discord.c: Rich Presence. The status, for the settings menu. */
 enum {

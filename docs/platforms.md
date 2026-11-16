@@ -314,6 +314,25 @@ gHostPlayingLevel). The FPS counter and the input display go into the
 borders when they fit there, at a smaller size if need be, and over the
 picture's corners otherwise.
 
+**Auto save** (v0.11; Gameplay, src/autosave.c and src/autosave_hooks.cpp).
+Each time the warp room starts (the LevelSelect::Run wrap), if what was
+earned (completion, crystals, gems, relics, the coloured gems and powers:
+not the lives) differs from the session's last known state (the game
+loaded, the last save, a new game's first warp room), the game is saved:
+to the slot in use (the one loaded from or last saved to; none for a new
+game until its first manual save) or always to slot 4. The SaveMenu::Run
+wrap follows the menu: the slots kept before it, a load (`gameLoaded`,
+`cursor`), a slot that changed to this game's progress (a save), a slot
+in use deleted. (LoadInput and SaveToSlot are called from their own file,
+out of --wrap's reach.) The write is SaveMenu::SaveToSlot's: the record
+loaded (reset if bad, as LoadData), the slot written, Store with its
+retries, the old slot put back if it fails. The save file goes to
+`<save>.bak` first; a message in the top right corner says "auto saved to
+slot N". `--auto-save off|slot|4` sets the mode, also headless (it prints
+what it does); with the Dingodile keys shifted after a load of slot 1, the
+fight's win auto saves slot 1, the same bytes on Linux and Windows, and
+the game's own load menu loads it.
+
 **Discord** (v0.07; Extras, src/discord.c). Rich Presence over Discord's
 local IPC, with no SDK: the named pipe `\\.\pipe\discord-ipc-N` on
 Windows, the `discord-ipc-N` Unix socket elsewhere (the runtime directory,
