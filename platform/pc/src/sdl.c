@@ -1414,12 +1414,12 @@ static void DrawPad(SDL_Rect dst, int scale, int right)
     PadShape(PAD_ROUND, 4, 9, 53, 40, 4);
     PadDraw(line, 0);
     /* the D-pad: the cross, its held arms lit */
-    PadShape(PAD_CROSS, 17, 24, 3, 0, 8);
+    PadShape(PAD_CROSS, 17, 22, 3, 0, 8);
     PadDraw(line, 0);
-    for (y = 17; y <= 31; y++) {
+    for (y = 15; y <= 29; y++) {
         for (x = 10; x <= 24; x++) {
             int dx = x - 17;
-            int dy = y - 24;
+            int dy = y - 22;
             int arm = (dy < -3 && (k & DPAD_UP)) || (dy > 3 && (k & DPAD_DOWN)) || (dx < -3 && (k & DPAD_LEFT)) ||
                       (dx > 3 && (k & DPAD_RIGHT));
 
@@ -1432,9 +1432,10 @@ static void DrawPad(SDL_Rect dst, int scale, int right)
     for (i = 0; i < 2; i++) {
         int held = (k & (i ? B_BUTTON : A_BUTTON)) != 0;
         /* the pair centred on the D-pad's height, 4 pixels clear of the
-         * cross, of the body's edge and of each other, B above Start */
+         * cross, of the body's edge and of each other, and B 4 above Start
+         * (the D-pad 4 below the body's top) */
         int cx = i ? 34 : 44;
-        int cy = i ? 27 : 20;
+        int cy = i ? 25 : 18;
 
         PadShape(PAD_CIRCLE, cx, cy, 0, 0, 4);
         PadDraw(held ? litLine : line, held ? lit : 0);
