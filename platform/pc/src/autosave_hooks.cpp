@@ -46,6 +46,7 @@ s32 __real__ZN4Game2Ui11TitleScreen3RunEv(TitleScreen *self);
 u8 __real__ZN4Game2Ui8SaveMenu3RunEjj(u32 state, u32 cursor);
 
 extern "C" int gHostStatsShown; /* level_pick.c */
+extern "C" TitleScreen *gHostTitleScreen; /* mouse_hooks.cpp */
 
 s32 __wrap__ZN4Game2Ui11TitleScreen3RunEv(TitleScreen *self)
 {
@@ -53,13 +54,15 @@ s32 __wrap__ZN4Game2Ui11TitleScreen3RunEv(TitleScreen *self)
 
     HostAutosaveSessionStart();
     gHostStatsShown = 0; /* no game under way: no stats in the border */
+    gHostTitleScreen = self; /* for the mouse (mouse_hooks.cpp) */
     result = __real__ZN4Game2Ui11TitleScreen3RunEv(self);
+    gHostTitleScreen = NULL;
     /* the title left: a run starts (the speedrun timer, timer.c) */
     HostTimerRunStart();
     return result;
 }
 
-u8 __wrap__ZN4Game2Ui8SaveMenu3RunEjj(u32 state, u32 cursor)
+static u8 SaveMenuRun(u32 state, u32 cursor)
 {
     static struct save_slot before[4];
     u8 emptyBefore[4];
@@ -130,3 +133,16 @@ int HostAutosaveWrite(int row)
 }
 
 } /* extern "C" */
+
+/* The save menu, for the mouse (mouse_hooks.cpp): up while this runs. */
+extern "C" int gHostInSaveMenu;
+
+extern "C" u8 __wrap__ZN4Game2Ui8SaveMenu3RunEjj(u32 state, u32 cursor)
+{
+    u8 result;
+
+    gHostInSaveMenu = 1;
+    result = SaveMenuRun(state, cursor);
+    gHostInSaveMenu = 0;
+    return result;
+}

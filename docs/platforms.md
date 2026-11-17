@@ -509,6 +509,31 @@ left 32 pixels show stale columns. It needs BgLayer and the streamer on
 512x256 BGs, and the game built twice into the executable (one per
 width) to switch without a second program.
 
+**Mouse** (v0.33; src/ui.c HostUiMouse, src/mouse_hooks.cpp, src/sdl.c).
+The settings menu: moving over a category, a row or a binding highlights
+it, the left button does what A does (on a value its left half steps it
+back, its right half on), the right button what B does, the wheel steps
+the value under it or scrolls the rows, and the arrows above and below
+the rows scroll them; a question's "A yes / B no" halves answer it. The
+game's menus play through the GBA's buttons, so the game does what it
+always does with them: over the title screen's, the language select's,
+the save menu's (its main page, the four slots and cancel, yes and no)
+and the pause menu's rows, moving the mouse puts the cursor there (with
+the game's move sound), the left button is A and the right B (Start in
+the pause menu, which B doesn't leave; the music and sound rows take the
+left button's halves and the wheel as Left and Right). In the warp room
+a click on a level's pad walks the cursor there a pad at a time (one
+Left or Right tap per pad once the last is selected: held, the game
+walks on without putting each pad's picture up, and A wants it up), a
+click on the pad it is on enters the level (A, once the picture is up),
+and the world arrows and the wheel are Up and Down. Gameplay ignores the
+mouse. The screen up is known from the wrappers around the title
+screen's, the save menu's and the warp room's Run, gLanguageSelect, and
+PauseMenu::Draw (wrapped for its `this`). The cursor shows for two
+seconds after the mouse moves, and SDL's touch-as-mouse makes a
+touchscreen (a Steam Deck's) tap the same. HOST_LINK_GAME keeps the save
+menu's five rows for the mouse too.
+
 **Controls.** Keyboard: the arrows are the D-pad, X is A, Z is B, A and
 S are L and R, Enter is Start, Backspace (or right Shift) is Select. A
 gamepad (SDL's game controller layout): the D-pad or the left stick, the

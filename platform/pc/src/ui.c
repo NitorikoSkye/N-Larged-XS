@@ -885,6 +885,144 @@ void HostUiInput(int action)
     }
 }
 
+static void ValueText(const struct Option *o, char *out, int size);
+
+/* --- The mouse --------------------------------------------------------------- */
+
+/* The row of the options and bindings pages under y, or -1. */
+static int RowAt(int y, int count)
+{
+    int k;
+
+    if (y < ROWS_TOP || y >= ROWS_TOP + ROW_PITCH * ROW_COUNT) {
+        return -1;
+    }
+    k = sTop + (y - ROWS_TOP) / ROW_PITCH;
+    return k < count ? k : -1;
+}
+
+/* The mouse at (x, y) on the menu's canvas (sdl.c maps the window to it):
+ * moving it highlights what is under it, the left button does what A
+ * does there (on a value, its left half steps it back and its right half
+ * on), the right button what B does, and the wheel steps a value under it
+ * or scrolls the rows. */
+void HostUiMouse(int event, int x, int y)
+{
+    if (!sOpen || sCapturing) {
+        return;
+    }
+    if (sConfirm) {
+        /* "A yes     B no": its halves, and the right button for no */
+        if (event == HOST_UI_MOUSE_LEFT && y >= 82 && y < 100) {
+            HostUiInput(x < W / 2 ? HOST_UI_OK : HOST_UI_BACK);
+        } else if (event == HOST_UI_MOUSE_RIGHT) {
+            HostUiInput(HOST_UI_BACK);
+        }
+        return;
+    }
+    if (event == HOST_UI_MOUSE_RIGHT) {
+        HostUiInput(HOST_UI_BACK);
+        return;
+    }
+    switch (sPage) {
+    case PAGE_CATEGORIES: {
+        int i = (y - 0x44) / 10;
+        int over = x < 0x64 && y >= 0x44 && i >= 0 && i < COUNT(sCategories);
+
+        if (event == HOST_UI_MOUSE_WHEEL_UP || event == HOST_UI_MOUSE_WHEEL_DOWN) {
+            HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_UP : HOST_UI_DOWN);
+        } else if (over) {
+            sCategory = i;
+            if (event == HOST_UI_MOUSE_LEFT) {
+                HostUiInput(HOST_UI_OK);
+            }
+        }
+        break;
+    }
+    case PAGE_OPTIONS: {
+        const struct Category *cat = &sCategories[sCategory];
+        int i = RowAt(y, cat->count);
+        int onValue = 0;
+        int left = 0;
+
+        if (i >= 0) {
+            char value[48];
+            int vw;
+
+            ValueText(&cat->options[i], value, sizeof(value));
+            vw = HostUiTextWidth(0, value);
+            onValue = value[0] != '\0' && x >= W - 18 - vw - 4 && x < W - 12;
+            left = x < W - 18 - vw / 2;
+        }
+        if (event == HOST_UI_MOUSE_WHEEL_UP || event == HOST_UI_MOUSE_WHEEL_DOWN) {
+            if (onValue) {
+                sCursor[sCategory] = i;
+                HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_RIGHT : HOST_UI_LEFT);
+            } else {
+                HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_UP : HOST_UI_DOWN);
+            }
+            break;
+        }
+        if (event == HOST_UI_MOUSE_LEFT && i < 0) {
+            /* the arrows above and below the rows scroll them */
+            if (y < ROWS_TOP && y >= ROWS_TOP - 8) {
+                HostUiInput(HOST_UI_UP);
+            } else if (y >= ROWS_TOP + ROW_PITCH * ROW_COUNT && y < ROWS_TOP + ROW_PITCH * ROW_COUNT + 10) {
+                HostUiInput(HOST_UI_DOWN);
+            }
+            break;
+        }
+        if (i < 0) {
+            break;
+        }
+        sCursor[sCategory] = i;
+        if (event == HOST_UI_MOUSE_LEFT) {
+            const struct Option *o = &cat->options[i];
+
+            if (onValue && o->type != OPT_ACTION) {
+                HostUiInput(left ? HOST_UI_LEFT : HOST_UI_RIGHT);
+            } else {
+                HostUiInput(HOST_UI_OK);
+            }
+        }
+        break;
+    }
+    case PAGE_BINDINGS: {
+        int i = RowAt(y, HOST_BIND_COUNT + 1);
+
+        if (event == HOST_UI_MOUSE_WHEEL_UP || event == HOST_UI_MOUSE_WHEEL_DOWN) {
+            HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_UP : HOST_UI_DOWN);
+            break;
+        }
+        if (i < 0) {
+            if (event == HOST_UI_MOUSE_LEFT && y < ROWS_TOP && y >= ROWS_TOP - 8) {
+                HostUiInput(HOST_UI_UP);
+            } else if (event == HOST_UI_MOUSE_LEFT && y >= ROWS_TOP + ROW_PITCH * ROW_COUNT &&
+                       y < ROWS_TOP + ROW_PITCH * ROW_COUNT + 10) {
+                HostUiInput(HOST_UI_DOWN);
+            }
+            break;
+        }
+        sBindRow = i;
+        if (i < HOST_BIND_COUNT) {
+            if (x >= 108 && x < 170) {
+                sBindSlot = 0;
+            } else if (x >= 170) {
+                sBindSlot = 1;
+            } else if (event == HOST_UI_MOUSE_LEFT) {
+                break; /* the action's name: nothing to change there */
+            }
+        }
+        if (event == HOST_UI_MOUSE_LEFT) {
+            HostUiInput(HOST_UI_OK);
+        }
+        break;
+    }
+    default:
+        break;
+    }
+}
+
 /* --- Drawing the pages --------------------------------------------------- */
 
 static void DrawHelp(const char *s, int pal)

@@ -285,6 +285,8 @@ HOST_WRAPS += _ZN6Engine5Audio12AudioContext7PlaySfxEjj
 HOST_WRAPS += _ZN4Game5Level6Camera6UpdateEv
 # The save menu without "load link game" (src/save_menu_hook.cpp).
 HOST_WRAPS += _ZN4Game2Ui8SaveMenu8DrawMainEv
+# The mouse in the game's menus (src/mouse_hooks.cpp): the pause menu's this.
+HOST_WRAPS += _ZN4Game2Ui9PauseMenu4DrawEv
 # Button prompts (src/prompt_hook.cpp) follow the font's glyphs.
 HOST_WRAPS += _ZN6Engine4Text4Font9DrawGlyphEh
 # The HUD setting (src/hud_hook.cpp) wraps the HUD's update.

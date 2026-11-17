@@ -169,6 +169,21 @@ int HostSkipIntro(void);
 #define HOST_PAD_ART_W 58
 #define HOST_PAD_ART_H 44
 
+/* The mouse over the game's picture, in its pixels (sdl.c; mouse_hooks.cpp
+ * reads it): where it is, whether it moved since the last frame, and the
+ * clicks and wheel steps since then. */
+struct HostMouse {
+    int inside; /* over the picture */
+    int x;
+    int y;
+    int moved;
+    int left;
+    int right;
+    int wheel; /* + up, - down */
+};
+extern struct HostMouse gHostMouse;
+u16 HostMouseGameKeys(void); /* the buttons the mouse adds this frame */
+
 /* steam.c: Extras' Add to steam (a toast says how it went). */
 void HostSteamAdd(void);
 int HostSteamCanAdd(void); /* Steam found and closed: the row isn't grey */
@@ -268,7 +283,16 @@ enum {
 
 void HostUiOpen(void);
 int HostUiIsOpen(void);
-int HostUiOnBindings(void); /* a bindings page: Delete clears there */
+int HostUiOnBindings(void);
+/* The mouse on the menu's canvas (HOST_UI_WIDTH x HOST_UI_HEIGHT). */
+enum {
+    HOST_UI_MOUSE_MOVE,
+    HOST_UI_MOUSE_LEFT,
+    HOST_UI_MOUSE_RIGHT,
+    HOST_UI_MOUSE_WHEEL_UP,
+    HOST_UI_MOUSE_WHEEL_DOWN,
+};
+void HostUiMouse(int event, int x, int y); /* a bindings page: Delete clears there */
 void HostUiInput(int action);
 /* While a binding waits for its key or button: which (0 none, 1 a key,
  * 2 a controller's), and the answer. */

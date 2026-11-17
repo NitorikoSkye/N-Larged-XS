@@ -196,6 +196,8 @@ static int sMaskH;
 static SDL_Texture *sMenuTex;
 static SDL_Texture *sFpsTex;
 static SDL_Texture *sPadTex;
+static SDL_Rect sMenuRect;   /* where the settings menu was last drawn (the mouse) */
+static Uint32 sMouseMovedAt; /* the cursor shows for a while after a move */
 static u32 *sWork;
 static u32 *sWork2;
 static size_t sWorkSize;
@@ -1505,6 +1507,9 @@ static void DrawMenu(SDL_Rect dst, const char *banner)
         r.y = dst.y + (dst.h - r.h) / 2;
     }
     SDL_RenderCopy(sRenderer, sMenuTex, NULL, &r);
+    if (banner == NULL) {
+        sMenuRect = r; /* for the mouse */
+    }
 }
 
 /* --- Borders --------------------------------------------------------------- */
@@ -1683,6 +1688,8 @@ static int sMenuPeek;
 
 /* One picture to the window: the game's (`src`, w x h, the game's own
  * frame or an interpolated one), then what goes over it. */
+static void UpdateCursor(void);
+
 static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int menu, const char *banner)
 {
     SDL_Rect dst = GameRect();
@@ -1718,6 +1725,7 @@ static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int m
         }
         DrawToast(dst, scale, DrawTimer(dst, scale));
     }
+    UpdateCursor();
     SDL_RenderPresent(sRenderer);
     sFpsCount++;
     now = SDL_GetPerformanceCounter();
@@ -1912,7 +1920,7 @@ static u16 GameKeys(void)
         }
     }
     UpdatePrompts();
-    return keys;
+    return keys | HostMouseGameKeys();
 }
 
 static int KeyIs(int scancode, int bind)
@@ -1968,9 +1976,114 @@ static int PadDirection(void)
  * count until it has come back. */
 static int sAxisWasOut[SDL_CONTROLLER_AXIS_MAX];
 
+/* --- The mouse ------------------------------------------------------------ */
+
+
+/* A mouse position in the window to a point on `r` that is w x h units
+ * across; 0 if it is outside. */
+static int MouseOn(int mx, int my, SDL_Rect r, int w, int h, int *ux, int *uy)
+{
+    int ww;
+    int wh;
+    int ow;
+    int oh;
+
+    if (r.w <= 0 || r.h <= 0) {
+        return 0;
+    }
+    /* window points to the renderer's pixels (high-DPI displays) */
+    SDL_GetWindowSize(sWindow, &ww, &wh);
+    SDL_GetRendererOutputSize(sRenderer, &ow, &oh);
+    if (ww > 0 && wh > 0) {
+        mx = mx * ow / ww;
+        my = my * oh / wh;
+    }
+    if (mx < r.x || my < r.y || mx >= r.x + r.w || my >= r.y + r.h) {
+        return 0;
+    }
+    *ux = (mx - r.x) * w / r.w;
+    *uy = (my - r.y) * h / r.h;
+    return 1;
+}
+
+/* The cursor: shown while the mouse is in use (moved in the last two
+ * seconds, or the settings menu open after it moved), hidden otherwise
+ * so it never sits over the game. */
+static void UpdateCursor(void)
+{
+    static int sShown = -1;
+    int show = sMouseMovedAt != 0 && SDL_GetTicks() - sMouseMovedAt < 2000;
+
+    if (show != sShown) {
+        SDL_ShowCursor(show ? SDL_ENABLE : SDL_DISABLE);
+        sShown = show;
+    }
+}
+
+/* The settings menu's mouse events. */
+static void MenuMouse(const SDL_Event *e)
+{
+    int x;
+    int y;
+    int event;
+
+    switch (e->type) {
+    case SDL_MOUSEMOTION:
+        if (!MouseOn(e->motion.x, e->motion.y, sMenuRect, HOST_UI_WIDTH, HOST_UI_HEIGHT, &x, &y)) {
+            return;
+        }
+        event = HOST_UI_MOUSE_MOVE;
+        break;
+    case SDL_MOUSEBUTTONDOWN:
+        if (e->button.which == SDL_TOUCH_MOUSEID && e->button.button != SDL_BUTTON_LEFT) {
+            return;
+        }
+        if (!MouseOn(e->button.x, e->button.y, sMenuRect, HOST_UI_WIDTH, HOST_UI_HEIGHT, &x, &y)) {
+            /* outside the menu: the right button still goes back */
+            if (e->button.button == SDL_BUTTON_RIGHT) {
+                HostUiInput(HOST_UI_BACK);
+            }
+            return;
+        }
+        if (e->button.button == SDL_BUTTON_LEFT) {
+            /* the move first, so a touch selects what it taps */
+            HostUiMouse(HOST_UI_MOUSE_MOVE, x, y);
+            event = HOST_UI_MOUSE_LEFT;
+        } else if (e->button.button == SDL_BUTTON_RIGHT) {
+            event = HOST_UI_MOUSE_RIGHT;
+        } else {
+            return;
+        }
+        break;
+    case SDL_MOUSEWHEEL: {
+        int mx;
+        int my;
+
+        SDL_GetMouseState(&mx, &my);
+        if (e->wheel.y == 0 || !MouseOn(mx, my, sMenuRect, HOST_UI_WIDTH, HOST_UI_HEIGHT, &x, &y)) {
+            return;
+        }
+        event = (e->wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -e->wheel.y : e->wheel.y) > 0
+                    ? HOST_UI_MOUSE_WHEEL_UP
+                    : HOST_UI_MOUSE_WHEEL_DOWN;
+        break;
+    }
+    default:
+        return;
+    }
+    HostUiMouse(event, x, y);
+}
+
 static void MenuEvent(const SDL_Event *e)
 {
     int capturing = HostUiCapturing();
+
+    if (e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEWHEEL) {
+        if (!capturing) {
+            MenuMouse(e);
+        }
+        return;
+    }
 
     if (e->type == SDL_KEYDOWN) {
         SDL_Scancode k = e->key.keysym.scancode;
@@ -2045,9 +2158,57 @@ static void MenuEvent(const SDL_Event *e)
 }
 
 /* The events every loop reads: the window's, the pads', the hotkeys. */
+/* The mouse over the game's picture (mouse_hooks.cpp uses it in the game's
+ * menus), in the game screen's pixels. */
+static void GameMouse(const SDL_Event *e)
+{
+    SDL_Rect r = GameRect();
+    int x;
+    int y;
+    int mx;
+    int my;
+
+    if (e->type == SDL_MOUSEWHEEL) {
+        int dy = e->wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -e->wheel.y : e->wheel.y;
+
+        if (gHostMouse.inside && dy != 0) {
+            gHostMouse.wheel += dy > 0 ? 1 : -1;
+        }
+        return;
+    }
+    mx = e->type == SDL_MOUSEMOTION ? e->motion.x : e->button.x;
+    my = e->type == SDL_MOUSEMOTION ? e->motion.y : e->button.y;
+    gHostMouse.inside = MouseOn(mx, my, r, HOST_SCREEN_WIDTH, HOST_SCREEN_HEIGHT, &x, &y);
+    if (!gHostMouse.inside) {
+        return;
+    }
+    if (x != gHostMouse.x || y != gHostMouse.y || e->type == SDL_MOUSEBUTTONDOWN) {
+        gHostMouse.moved = 1;
+    }
+    gHostMouse.x = x;
+    gHostMouse.y = y;
+    if (e->type == SDL_MOUSEBUTTONDOWN) {
+        if (e->button.button == SDL_BUTTON_LEFT) {
+            gHostMouse.left = 1;
+        } else if (e->button.button == SDL_BUTTON_RIGHT) {
+            gHostMouse.right = 1;
+        }
+    }
+}
+
 static void CommonEvent(const SDL_Event *e, int *shot)
 {
     switch (e->type) {
+    case SDL_MOUSEMOTION:
+    case SDL_MOUSEBUTTONDOWN:
+    case SDL_MOUSEWHEEL:
+        if (e->type != SDL_MOUSEWHEEL) {
+            sMouseMovedAt = SDL_GetTicks() | 1;
+        }
+        if (!HostUiIsOpen()) {
+            GameMouse(e);
+        }
+        break;
     case SDL_QUIT:
         sQuit = 1;
         break;
