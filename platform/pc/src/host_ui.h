@@ -171,6 +171,7 @@ int HostSkipIntro(void);
 
 /* steam.c: Extras' Add to steam (a toast says how it went). */
 void HostSteamAdd(void);
+int HostSteamCanAdd(void); /* Steam found and closed: the row isn't grey */
 
 /* prompts.c: Controls' Button prompts. */
 enum {

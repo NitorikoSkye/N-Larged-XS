@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -871,6 +872,24 @@ static int AddForAccount(const char *steam, unsigned int account, const char *ex
     ok = WriteAll(tmp, out.buf, out.size) && ReplaceU8(tmp, path);
     free(out.buf);
     return ok ? 1 + updated : 0;
+}
+
+/* Can it be done now (the menu greys the row otherwise): Steam there,
+ * closed, and not under Wine or Proton. Looked at once a second, as the
+ * menu asks every frame. */
+int HostSteamCanAdd(void)
+{
+    static time_t sAt;
+    static int sCan;
+    time_t now = time(NULL);
+
+    if (now != sAt) {
+        char steam[1024];
+
+        sAt = now;
+        sCan = !UnderWine() && FindSteam(steam, sizeof(steam)) && !SteamRunning(steam);
+    }
+    return sCan;
 }
 
 /* The settings menu's action: says how it went in a toast. */

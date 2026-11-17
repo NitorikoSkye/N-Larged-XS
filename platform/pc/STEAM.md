@@ -6,7 +6,7 @@ support (Steam Input) and Big Picture / Steam Deck all work with it.
 ## Adding it: the quick way
 
 In the port's settings (~), **Extras → Add to steam**, with Steam closed
-(Steam → Exit). It adds "Crash Bandicoot XS" to the library of the Steam
+(Steam → Exit; the row is grey while Steam runs). It adds "Crash Bandicoot XS" to the library of the Steam
 account that logged in last, with its capsule, wide capsule, hero, logo
 and icon (built into the .exe), and says so in a toast; open Steam and
 it's there. Done again from a newer version, it points the same

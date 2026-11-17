@@ -1188,7 +1188,7 @@ static void DrawFps(SDL_Rect dst, int scale)
 
 /* A message in the top right corner for a few seconds (auto save's,
  * autosave.c), fading out over its last half second. */
-#define TOAST_W 200
+#define TOAST_W 320
 #define TOAST_H 12
 #define TOAST_MS 3000
 
@@ -1704,6 +1704,8 @@ static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int m
     }
     if (menu && !sMenuPeek) {
         DrawMenu(dst, NULL);
+        /* a message from the menu's own actions (add to steam) */
+        DrawToast(dst, scale, 0);
     } else {
         if (banner != NULL) {
             DrawMenu(dst, banner);

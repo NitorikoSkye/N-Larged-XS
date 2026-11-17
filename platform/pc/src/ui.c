@@ -598,8 +598,8 @@ static const struct Option sExtras[] = {
       &gHostSettings.discordProgress, sOffOn, 2, 0, NULL, DiscordOn },
     { "connection", "the discord app it uses: the discord app id line in settings.ini.", OPT_CHOICE, &gHostDiscordStatus,
       sDiscordStates, HOST_DISCORD_STATUS_COUNT, 0, NULL, Never },
-    { "add to steam", "puts the game in your steam library with its pictures. close steam first.", OPT_ACTION,
-      NULL, NULL, 0, 0, NULL, NULL, HostSteamAdd },
+    { "add to steam", "puts the game in your steam library with its art. grey while steam runs.",
+      OPT_ACTION, NULL, NULL, 0, 0, NULL, HostSteamCanAdd, HostSteamAdd },
 };
 
 #define COUNT(a) ((int)(sizeof(a) / sizeof((a)[0])))

@@ -416,7 +416,10 @@ folder under that id. Windows finds Steam in the registry (SteamPath,
 ActiveProcess's pid) and uses UTF-8 paths throughout; Linux looks in
 ~/.steam/steam, ~/.local/share/Steam and Flatpak's, and steam.pid. Under
 Wine or Proton it declines (that registry's Steam isn't the real one)
-unless `HOST_STEAM_IGNORE_WINE=1` (the tests' fake Steam).
+unless `HOST_STEAM_IGNORE_WINE=1` (the tests' fake Steam). Since v0.31 the
+row is grey unless it can be done (HostSteamCanAdd, looked at once a
+second: Steam found and closed, not under Wine), and its toast shows over
+the settings menu too.
 
 **Skip intro** (v0.13; General, src/intro_skip.c). From the next launch,
 the game boots straight to the title screen: MainLoop's legal notice
