@@ -268,6 +268,7 @@ enum {
 
 void HostUiOpen(void);
 int HostUiIsOpen(void);
+int HostUiOnBindings(void); /* a bindings page: Delete clears there */
 void HostUiInput(int action);
 /* While a binding waits for its key or button: which (0 none, 1 a key,
  * 2 a controller's), and the answer. */

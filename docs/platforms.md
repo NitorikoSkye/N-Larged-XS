@@ -271,7 +271,11 @@ ghosting), Interface (HUD, FPS counter,
 input display, speedrun timer), Audio (quality; master, music, sound
 effects: the last two in GAX2's mixer, gHostGaxVolume, on top of the
 pause menu's), Controls (keyboard and controller bindings, two per
-action, restore defaults; stick deadzone; rumble; button prompts), and Gameplay and Extras (empty, grey). `--ui-preview
+action, restore defaults; stick deadzone; rumble; button prompts), and Gameplay and Extras (empty, grey). Holding Delete
+shows the game behind the menu while it is held, to judge the graphics
+settings (until v0.32 the R button did, which games' own controls could
+set off; Delete is on no binding, and on the bindings pages it clears a
+binding instead). `--ui-preview
 DIR` writes every page as a PNG and reports a help text too long for its
 two lines.
 

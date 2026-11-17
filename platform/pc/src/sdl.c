@@ -2204,7 +2204,11 @@ static void Hold(int *shot)
                 HostUiInput(dir);
                 sRepeatAt = now + 90;
             }
-            sMenuPeek = Held(HOST_BIND_R, 1, 1);
+            /* Delete held: the game behind the menu, to judge the
+             * graphics settings (a fixed key, on no binding, so nothing
+             * shows it by accident); not on the bindings pages, where
+             * Delete clears a binding */
+            sMenuPeek = SDL_GetKeyboardState(NULL)[SDL_SCANCODE_DELETE] != 0 && !HostUiOnBindings();
         } else {
             sMenuPeek = 0;
         }

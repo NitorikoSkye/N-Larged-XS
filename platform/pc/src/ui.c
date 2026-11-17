@@ -641,6 +641,12 @@ void HostUiOpen(void)
     sMessageTime = 0;
 }
 
+/* On a bindings page, where Delete clears a binding (sdl.c's peek waits). */
+int HostUiOnBindings(void)
+{
+    return HostUiIsOpen() && sPage == PAGE_BINDINGS;
+}
+
 int HostUiIsOpen(void)
 {
     return sOpen;
