@@ -99,12 +99,17 @@ struct Stats {
     int flags;
 };
 
+extern int gHostStatsShown; /* level_pick.c */
+
 static void ReadStats(struct Stats *st)
 {
     const u8 *progress = gLevelState;
 
     memset(st, 0, sizeof(*st));
-    if (progress == NULL) {
+    /* Only once a game is under way: from the first warp room on, until
+     * the title screen again (level_pick.c). Before it the progress is
+     * the title's, not a game's. */
+    if (progress == NULL || !gHostStatsShown) {
         return;
     }
     st->valid = 1;
@@ -378,7 +383,7 @@ static void StatsPanel(u32 *c, int w, int h, const struct Stats *st)
     int x0 = 9 + 2;
     int x1 = w - 2;
     int cx = (x0 + x1) / 2;
-    int y = h / 2 - 150;
+    int y = h / 2 - 165;
     char text[32];
     static const struct {
         int flag;
@@ -416,16 +421,17 @@ static void StatsPanel(u32 *c, int w, int h, const struct Stats *st)
     snprintf(text, sizeof(text), "%d/%d", st->crystals, 20);
     Centered(c, w, h, 1, cx + 7, y + 17, text);
     y += 44;
-    /* Gems */
-    Plate(c, w, h, x0, y, x1, y + 50);
+    /* Gems: the clear ones' count, then the four coloured ones in a
+     * square (four in a row are wider than the bar's plate) */
+    Plate(c, w, h, x0, y, x1, y + 64);
     Centered(c, w, h, 0, cx, y + 4, "gems");
     Icon(c, w, h, ICON_GEM_CLEAR, x0 + 10, y + 22, 0);
     snprintf(text, sizeof(text), "%d/%d", st->gems, 28);
     Centered(c, w, h, 1, cx + 7, y + 15, text);
     for (i = 0; i < 4; i++) {
-        Icon(c, w, h, gems[i].icon, cx - 24 + 16 * i, y + 41, !(st->flags & gems[i].flag));
+        Icon(c, w, h, gems[i].icon, cx - 9 + 18 * (i & 1), y + 40 + 15 * (i >> 1), !(st->flags & gems[i].flag));
     }
-    y += 56;
+    y += 70;
     /* Relics */
     Plate(c, w, h, x0, y, x1, y + 72);
     Centered(c, w, h, 0, cx, y + 4, "relics");
@@ -446,10 +452,10 @@ static void StatsPanel(u32 *c, int w, int h, const struct Stats *st)
     }
     y += 78;
     /* Powers */
-    Plate(c, w, h, x0, y, x1, y + 34);
+    Plate(c, w, h, x0, y, x1, y + 50);
     Centered(c, w, h, 0, cx, y + 4, "powers");
     for (i = 0; i < 4; i++) {
-        Icon(c, w, h, powers[i].icon, cx - 24 + 16 * i, y + 23, !(st->flags & powers[i].flag));
+        Icon(c, w, h, powers[i].icon, cx - 9 + 18 * (i & 1), y + 22 + 16 * (i >> 1), !(st->flags & powers[i].flag));
     }
 }
 

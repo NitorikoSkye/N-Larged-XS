@@ -308,8 +308,12 @@ frame averaged to 30x20, blurred, eased towards over a quarter of a
 second, stretched behind the picture and dimmed); or themed (a warp
 room's wall from the pause screen's metal and rivets, with a porthole of
 the level's theme picture and its name on the left and Crash's pause
-portrait on the left outside a level; on the right, v0.05's stats panel:
-completion, crystals, gems with the four coloured ones grey until found,
+portrait on the left outside a level; on the right, v0.05's stats panel (from v0.25 only once a game is under
+way: from its first warp room, LevelSelect::Run, until the title screen
+again; Crash's portrait before that):
+completion, crystals, gems with the four coloured ones grey until found
+(in a square, as are the powers, since v0.25: four in a row were wider
+than the panel),
 the relics of each kind and the powers grey until earned, counted by the
 game's own GameProgress functions from gLevelState's progress block, as
 the pause menu counts them, with the pause pages' icons in their own

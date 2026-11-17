@@ -45,11 +45,14 @@ extern "C" {
 s32 __real__ZN4Game2Ui11TitleScreen3RunEv(TitleScreen *self);
 u8 __real__ZN4Game2Ui8SaveMenu3RunEjj(u32 state, u32 cursor);
 
+extern "C" int gHostStatsShown; /* level_pick.c */
+
 s32 __wrap__ZN4Game2Ui11TitleScreen3RunEv(TitleScreen *self)
 {
     s32 result;
 
     HostAutosaveSessionStart();
+    gHostStatsShown = 0; /* no game under way: no stats in the border */
     result = __real__ZN4Game2Ui11TitleScreen3RunEv(self);
     /* the title left: a run starts (the speedrun timer, timer.c) */
     HostTimerRunStart();

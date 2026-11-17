@@ -42,6 +42,10 @@ void _ZN4Game5Level13LevelProgress16EnterGemPathRoomEv(struct LevelProgressHead 
 static int sLevelPicked;
 static int sRoomPicked;
 
+/* The right border shows the stats: from the first warp room of a game
+ * until the title screen (autosave_hooks.cpp clears it; borders.c). */
+int gHostStatsShown;
+
 s32 __wrap__ZN4Game2Ui11LevelSelect3RunEPi(s32 *level)
 {
     s32 result;
@@ -52,6 +56,8 @@ s32 __wrap__ZN4Game2Ui11LevelSelect3RunEPi(s32 *level)
     HostAutosaveWarpRoom();
     /* The warp room, for Discord's status (discord.c). */
     gHostInWarpRoom = 1;
+    /* A game is under way: the right border's stats show (borders.c). */
+    gHostStatsShown = 1;
     result = __real__ZN4Game2Ui11LevelSelect3RunEPi(level);
     gHostInWarpRoom = 0;
 
