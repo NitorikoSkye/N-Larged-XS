@@ -324,6 +324,11 @@ gHostPlayingLevel). The FPS counter and the input display go into the
 borders when they fit there, at a smaller size if need be, and over the
 picture's corners otherwise.
 
+With integer scaling the picture leaves gaps above and below as well as
+beside it: themed, they get the wall too (v0.26), at the side bars' pixel
+size, with the riveted plate turned on its side along the picture's top
+and bottom edges; the side bars, drawn after, cover the strips' ends.
+
 **Input display** (v0.19, redrawn in v0.20; Interface, src/sdl.c DrawPad).
 The buttons held, as a line drawing of a handheld: the body on a
 see-through dark panel, the shoulder buttons over its corners, the

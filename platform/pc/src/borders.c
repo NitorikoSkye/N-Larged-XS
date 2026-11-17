@@ -138,7 +138,7 @@ struct Bar {
 
 static struct Stats sStats;
 
-static struct Bar sBars[2];
+static struct Bar sBars[3]; /* left, right, above and below */
 
 static inline u32 Color15(u32 c)
 {
@@ -171,7 +171,13 @@ static u32 Dark(u32 c, int num, int den)
  * pause box's left edge, art columns 0-8 of rows 64-150) down the side
  * that meets the picture. The wall is a little darker than the art, so
  * that the picture stays in front. */
-static void Wall(u32 *c, int w, int h, int innerRight)
+enum {
+    PLATE_RIGHT,  /* the left bar: the plate down its right side */
+    PLATE_LEFT,   /* the right bar */
+    PLATE_BOTTOM, /* above the picture: along its bottom (flipped, below) */
+};
+
+static void Wall(u32 *c, int w, int h, int plate)
 {
     int x;
     int y;
@@ -185,11 +191,23 @@ static void Wall(u32 *c, int w, int h, int innerRight)
             c[y * w + x] = Dark(px, 3, 4);
         }
     }
+    if (plate == PLATE_BOTTOM) {
+        /* The same plate turned on its side: its first column (the one
+         * meeting the picture) along the bottom row. */
+        for (x = 0; x < w; x++) {
+            int ay = 64 + x % 87;
+
+            for (y = 0; y < 9 && y < h; y++) {
+                c[(h - 1 - y) * w + x] = Art(y, ay);
+            }
+        }
+        return;
+    }
     for (y = 0; y < h; y++) {
         int ay = 64 + y % 87;
 
         for (x = 0; x < 9 && x < w; x++) {
-            int cx = innerRight ? w - 1 - x : x;
+            int cx = plate == PLATE_RIGHT ? w - 1 - x : x;
 
             c[y * w + cx] = Art(x, ay);
         }
@@ -623,8 +641,8 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
             cy = 37;
         }
     }
-    Wall(c, w, h, innerRight);
-    if (w >= 75) {
+    Wall(c, w, h, side == 0 ? PLATE_RIGHT : side == 1 ? PLATE_LEFT : PLATE_BOTTOM);
+    if (w >= 75 && side < 2) {
         if (side == 0 && level >= 0 && level < gUiLevelCount && gUiLevelPicture[level] >= 0) {
             Porthole(c, w, h, cx, cy, gUiLevelPicture[level]);
             Name(c, w, h, cx, cy + 44, gUiLevelNames[level]);
@@ -756,8 +774,8 @@ void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
         if (h <= 0) {
             return;
         }
-        if (sBars[0].tex == NULL || sBars[0].w != w || sBars[0].h != h || sBars[0].side != 2) {
-            MakeBar(&sBars[0], r, w, h, -1, 2);
+        if (sBars[2].tex == NULL || sBars[2].w != w || sBars[2].h != h || sBars[2].side != 2) {
+            MakeBar(&sBars[2], r, w, h, -1, 2);
         }
         top.x = 0;
         top.y = dst.y - h * unit;
@@ -765,14 +783,38 @@ void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
         top.h = h * unit;
         bottom = top;
         bottom.y = dst.y + dst.h;
-        if (sBars[0].tex != NULL) {
-            SDL_RenderCopy(r, sBars[0].tex, NULL, &top);
-            SDL_RenderCopyEx(r, sBars[0].tex, NULL, &bottom, 0, NULL, SDL_FLIP_VERTICAL);
+        if (sBars[2].tex != NULL) {
+            SDL_RenderCopy(r, sBars[2].tex, NULL, &top);
+            SDL_RenderCopyEx(r, sBars[2].tex, NULL, &bottom, 0, NULL, SDL_FLIP_VERTICAL);
         }
         return;
     }
     ReadStats(&sStats);
     gHostHudInBorder = 0;
+    /* Above and below the picture too (integer scaling leaves both): the
+     * wall across, at the side bars' pixel size, with the plate along the
+     * picture's edge; the side bars, drawn after, cover its ends. */
+    if (dst.y > 0) {
+        int unit = dst.x / 75 > 1 ? dst.x / 75 : 1;
+        int w = (dst.w + unit - 1) / unit;
+        int h = (dst.y + unit - 1) / unit;
+        SDL_Rect top;
+        SDL_Rect bottom;
+
+        if (sBars[2].tex == NULL || sBars[2].w != w || sBars[2].h != h || sBars[2].side != 2) {
+            MakeBar(&sBars[2], r, w, h, -1, 2);
+        }
+        top.x = dst.x + (dst.w - w * unit) / 2;
+        top.y = dst.y - h * unit;
+        top.w = w * unit;
+        top.h = h * unit;
+        bottom = top;
+        bottom.y = dst.y + dst.h;
+        if (sBars[2].tex != NULL) {
+            SDL_RenderCopy(r, sBars[2].tex, NULL, &top);
+            SDL_RenderCopyEx(r, sBars[2].tex, NULL, &bottom, 0, NULL, SDL_FLIP_VERTICAL);
+        }
+    }
     for (side = 0; side < 2; side++) {
         int barW = side == 0 ? dst.x : ww - (dst.x + dst.w);
         int unit = barW / 75 > 1 ? barW / 75 : 1;
