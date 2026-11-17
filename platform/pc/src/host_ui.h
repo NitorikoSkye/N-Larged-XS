@@ -164,6 +164,11 @@ int HostTimerLines(char big[32], char line2[64], char line3[64]);
 /* intro_skip.c: General's Skip intro, as this launch has it. */
 int HostSkipIntro(void);
 
+/* The input display's size in pixels (sdl.c): borders.c keeps that much
+ * room at the bottom of the border it is in. */
+#define HOST_PAD_ART_W 58
+#define HOST_PAD_ART_H 44
+
 /* steam.c: Extras' Add to steam (a toast says how it went). */
 void HostSteamAdd(void);
 

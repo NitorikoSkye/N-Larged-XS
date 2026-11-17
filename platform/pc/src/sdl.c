@@ -1278,351 +1278,196 @@ static void DrawToast(SDL_Rect dst, int scale, int below)
     PutOverlay(&sToastTex, canvas, TOAST_W, TOAST_H, x, y, scale);
 }
 
-/* The input display (Interface's Input display): the buttons held, as a
- * line drawing of a handheld - the body on a see-through dark panel, the
- * shoulder buttons over its corners, the D-pad's cross, A and B rising to
- * the right, Start and Select - outlined in white, what is held filled
- * amber. Drawn smooth (each shape's edge by its distance, at twice the
- * size it is shown at, then scaled with filtering), 84x72 in units. */
-#define PAD_W 84
-#define PAD_H 72
-#define PAD_SS 2 /* the canvas's pixels per unit */
-#define PAD_CW (PAD_W * PAD_SS)
-#define PAD_CH (PAD_H * PAD_SS)
+/* The input display (Interface's Input display): the buttons held, as
+ * pixel art in the borders' style - a handheld's outline (its shoulders,
+ * the D-pad's cross, A and B rising to the right, Select and Start) in
+ * pale steel with the font's dark shadow, on the stats panels' dark,
+ * blue-rimmed plate, what is held filled with the game's amber. It is
+ * HOST_PAD_ART_W x HOST_PAD_ART_H pixels, shown at the borders' pixel
+ * size at the bottom of the chosen border (borders.c moves its panels up
+ * to make room), or where that border is too narrow, over the picture's
+ * bottom corner at the game's pixel size. */
+#define PAD_W HOST_PAD_ART_W
+#define PAD_H HOST_PAD_ART_H
 
-static u32 sPadCanvas[PAD_CW * PAD_CH];
+static u32 sPadCanvas[PAD_W * PAD_H];
+static u8 sPadMask[PAD_H][PAD_W];
 
-/* Over the canvas: `color` (0xRRGGBB) at `alpha` (0-1) times coverage. */
-static void PadBlend(int x, int y, u32 color, double alpha)
-{
-    u32 *d;
-    double da;
-    double oa;
-    u32 r;
-    u32 g;
-    u32 b;
-
-    if (x < 0 || y < 0 || x >= PAD_CW || y >= PAD_CH || alpha <= 0) {
-        return;
-    }
-    if (alpha > 1) {
-        alpha = 1;
-    }
-    d = &sPadCanvas[y * PAD_CW + x];
-    da = (*d >> 24) / 255.0;
-    oa = alpha + da * (1 - alpha);
-    if (oa <= 0) {
-        return;
-    }
-    r = (u32)((((color >> 16) & 0xFF) * alpha + ((*d >> 16) & 0xFF) * da * (1 - alpha)) / oa + 0.5);
-    g = (u32)((((color >> 8) & 0xFF) * alpha + ((*d >> 8) & 0xFF) * da * (1 - alpha)) / oa + 0.5);
-    b = (u32)(((color & 0xFF) * alpha + (*d & 0xFF) * da * (1 - alpha)) / oa + 0.5);
-    *d = (u32)(oa * 255 + 0.5) << 24 | r << 16 | g << 8 | b;
-}
-
-/* A colour lighter (k > 0) or darker (k < 0), k in -1..1. */
-static u32 Shade(u32 c, double k)
-{
-    int ch[3];
-    int i;
-
-    for (i = 0; i < 3; i++) {
-        double v = (c >> (16 - 8 * i)) & 0xFF;
-
-        v = k > 0 ? v + (255 - v) * k : v * (1 + k);
-        ch[i] = v < 0 ? 0 : v > 255 ? 255 : (int)(v + 0.5);
-    }
-    return (u32)(ch[0] << 16 | ch[1] << 8 | ch[2]);
-}
-
-/* The shapes, in units, by their signed distance (negative inside). */
-enum { SHAPE_DISC, SHAPE_BOX, SHAPE_CAPSULE };
-
-struct PadShape {
-    int kind;
-    double x0, y0, x1, y1; /* disc: centre (x0, y0); box: corners; capsule: the ends */
-    double r;              /* disc and capsule: radius; box: corner radius */
+enum {
+    PAD_ROUND,  /* a box with corners rounded by r */
+    PAD_CIRCLE, /* centre (x0, y0), radius r */
+    PAD_CROSS,  /* the D-pad: centre (x0, y0), arms r out, 2 * x1 + 1 wide */
 };
 
-static double ShapeDistance(const struct PadShape *sh, double x, double y)
+/* The shape's pixels into sPadMask. */
+static void PadShape(int kind, int x0, int y0, int x1, int y1, int r)
 {
-    switch (sh->kind) {
-    case SHAPE_DISC:
-        return hypot(x - sh->x0, y - sh->y0) - sh->r;
-    case SHAPE_BOX: {
-        double cx = (sh->x0 + sh->x1) / 2;
-        double cy = (sh->y0 + sh->y1) / 2;
-        double hx = (sh->x1 - sh->x0) / 2 - sh->r;
-        double hy = (sh->y1 - sh->y0) / 2 - sh->r;
-        double qx = fabs(x - cx) - hx;
-        double qy = fabs(y - cy) - hy;
-        double ox = qx > 0 ? qx : 0;
-        double oy = qy > 0 ? qy : 0;
-        double in = qx > qy ? qx : qy;
+    int x;
+    int y;
 
-        return hypot(ox, oy) + (in < 0 ? in : 0) - sh->r;
-    }
-    default: {
-        double dx = sh->x1 - sh->x0;
-        double dy = sh->y1 - sh->y0;
-        double t = ((x - sh->x0) * dx + (y - sh->y0) * dy) / (dx * dx + dy * dy);
+    memset(sPadMask, 0, sizeof(sPadMask));
+    for (y = 0; y < PAD_H; y++) {
+        for (x = 0; x < PAD_W; x++) {
+            int in = 0;
 
-        t = t < 0 ? 0 : t > 1 ? 1 : t;
-        return hypot(x - (sh->x0 + t * dx), y - (sh->y0 + t * dy)) - sh->r;
-    }
+            if (kind == PAD_ROUND) {
+                if (x >= x0 && x <= x1 && y >= y0 && y <= y1) {
+                    int cx = x < x0 + r ? x0 + r : x > x1 - r ? x1 - r : x;
+                    int cy = y < y0 + r ? y0 + r : y > y1 - r ? y1 - r : y;
+
+                    in = (x - cx) * (x - cx) + (y - cy) * (y - cy) <= r * r + r / 2;
+                }
+            } else if (kind == PAD_CIRCLE) {
+                in = (x - x0) * (x - x0) + (y - y0) * (y - y0) <= r * r + r;
+            } else {
+                int dx = x - x0 < 0 ? x0 - x : x - x0;
+                int dy = y - y0 < 0 ? y0 - y : y - y0;
+
+                in = (dx <= x1 && dy <= r) || (dy <= x1 && dx <= r);
+            }
+            sPadMask[y][x] = (u8)in;
+        }
     }
 }
 
-/* A shape filled with `color`, lit from the top left (`relief`: how much,
- * negative for a hollow), at `alpha`, moved by (dx, dy) units. */
-static void PadFill(const struct PadShape *sh, u32 color, double relief, double alpha, double dx, double dy)
+static int PadIn(int x, int y)
 {
-    double minx = (sh->kind == SHAPE_DISC ? sh->x0 - sh->r : (sh->x0 < sh->x1 ? sh->x0 : sh->x1) - sh->r) + dx - 1;
-    double maxx = (sh->kind == SHAPE_DISC ? sh->x0 + sh->r : (sh->x0 > sh->x1 ? sh->x0 : sh->x1) + sh->r) + dx + 1;
-    double miny = (sh->kind == SHAPE_DISC ? sh->y0 - sh->r : (sh->y0 < sh->y1 ? sh->y0 : sh->y1) - sh->r) + dy - 1;
-    double maxy = (sh->kind == SHAPE_DISC ? sh->y0 + sh->r : (sh->y0 > sh->y1 ? sh->y0 : sh->y1) + sh->r) + dy + 1;
-    double top = miny;
-    double height = maxy - miny;
-    int px;
-    int py;
+    return x >= 0 && y >= 0 && x < PAD_W && y < PAD_H && sPadMask[y][x];
+}
 
-    for (py = (int)(miny * PAD_SS); py <= (int)(maxy * PAD_SS); py++) {
-        for (px = (int)(minx * PAD_SS); px <= (int)(maxx * PAD_SS); px++) {
-            double ux = (px + 0.5) / PAD_SS - dx;
-            double uy = (py + 0.5) / PAD_SS - dy;
-            double d = ShapeDistance(sh, ux, uy) * PAD_SS;
-            double cover = 0.5 - d;
-            double k;
+/* The mask drawn: its edge in `line` with a shadow down and right of it,
+ * inside filled with `fill` (0: left as it is). */
+static void PadDraw(u32 line, u32 fill)
+{
+    int x;
+    int y;
 
-            if (cover <= 0) {
+    for (y = 0; y < PAD_H; y++) {
+        for (x = 0; x < PAD_W; x++) {
+            int edge;
+
+            if (!sPadMask[y][x]) {
+                if (PadIn(x - 1, y - 1) && !PadIn(x, y)) {
+                    sPadCanvas[y * PAD_W + x] = 0xFF080810;
+                }
                 continue;
             }
-            /* lighter at the top, darker at the bottom; a rim of light
-             * just inside the top edge */
-            k = relief * (0.5 - (uy + dy - top) / height);
-            if (relief != 0 && d > -1.6 * PAD_SS && uy + dy - top < height * 0.5) {
-                k += relief * 0.35;
-            }
-            PadBlend(px, py, Shade(color, k), alpha * (cover > 1 ? 1 : cover));
-        }
-    }
-}
-
-/* A shape's outline, `width` units wide, centred on its edge. */
-static void PadStroke(const struct PadShape *sh, u32 color, double width, double alpha)
-{
-    struct PadShape grown = *sh;
-    double minx;
-    double maxx;
-    double miny;
-    double maxy;
-    int px;
-    int py;
-
-    grown.r += width;
-    if (grown.kind == SHAPE_BOX) {
-        grown.x0 -= width;
-        grown.y0 -= width;
-        grown.x1 += width;
-        grown.y1 += width;
-    }
-    minx = (grown.kind == SHAPE_DISC ? grown.x0 - grown.r : (grown.x0 < grown.x1 ? grown.x0 : grown.x1) - grown.r) - 1;
-    maxx = (grown.kind == SHAPE_DISC ? grown.x0 + grown.r : (grown.x0 > grown.x1 ? grown.x0 : grown.x1) + grown.r) + 1;
-    miny = (grown.kind == SHAPE_DISC ? grown.y0 - grown.r : (grown.y0 < grown.y1 ? grown.y0 : grown.y1) - grown.r) - 1;
-    maxy = (grown.kind == SHAPE_DISC ? grown.y0 + grown.r : (grown.y0 > grown.y1 ? grown.y0 : grown.y1) + grown.r) + 1;
-    for (py = (int)(miny * PAD_SS); py <= (int)(maxy * PAD_SS); py++) {
-        for (px = (int)(minx * PAD_SS); px <= (int)(maxx * PAD_SS); px++) {
-            double d = ShapeDistance(sh, (px + 0.5) / PAD_SS, (py + 0.5) / PAD_SS);
-            double cover = 0.5 - (fabs(d) - width / 2) * PAD_SS;
-
-            if (cover > 0) {
-                PadBlend(px, py, color, alpha * (cover > 1 ? 1 : cover));
+            edge = !PadIn(x - 1, y) || !PadIn(x + 1, y) || !PadIn(x, y - 1) || !PadIn(x, y + 1);
+            if (edge) {
+                sPadCanvas[y * PAD_W + x] = line;
+            } else if (fill != 0) {
+                /* the top row of a lit button a shade lighter */
+                sPadCanvas[y * PAD_W + x] = PadIn(x, y - 2) ? fill : 0xFFFFD860;
             }
         }
     }
 }
 
-
-/* The letters printed on the SP (L, R, A, B), drawn as strokes in a
- * box 4 wide and 6 high (`size` units per box unit), centred at (cx, cy). */
-static void PadLetter(char ch, double cx, double cy, double size, u32 color)
+/* A letter of the 3x5 font in the middle of a button. */
+static void PadLetter(int cx, int cy, const char *rows, u32 color)
 {
-    static const struct {
-        char ch;
-        signed char n;
-        signed char seg[8][4];
-    } letters[] = {
-        { 'L', 2, { { 0, 0, 0, 6 }, { 0, 6, 4, 6 } } },
-        { 'R', 7, { { 0, 6, 0, 0 }, { 0, 0, 3, 0 }, { 3, 0, 4, 1 }, { 4, 1, 4, 2 }, { 4, 2, 3, 3 }, { 3, 3, 0, 3 },
-                    { 2, 3, 4, 6 } } },
-        { 'A', 3, { { 0, 6, 2, 0 }, { 2, 0, 4, 6 }, { 1, 4, 3, 4 } } },
-        { 'B', 8, { { 0, 6, 0, 0 }, { 0, 0, 3, 0 }, { 3, 0, 4, 1 }, { 4, 1, 3, 3 }, { 0, 3, 3, 3 }, { 3, 3, 4, 4 },
-                    { 4, 4, 4, 5 }, { 4, 5, 3, 6 } } },
-    };
-    size_t i;
-    int j;
+    int x;
+    int y;
 
-    for (i = 0; i < sizeof(letters) / sizeof(letters[0]); i++) {
-        if (letters[i].ch != ch) {
-            continue;
-        }
-        for (j = 0; j < letters[i].n; j++) {
-            const signed char *g = letters[i].seg[j];
-            struct PadShape sh = { SHAPE_CAPSULE, cx + (g[0] - 2) * size, cy + (g[1] - 3) * size,
-                                   cx + (g[2] - 2) * size, cy + (g[3] - 3) * size, size * 0.42 };
-
-            PadFill(&sh, color, 0, 1, 0, 0);
-        }
-        /* B's last stroke closes its lower bowl */
-        if (ch == 'B') {
-            struct PadShape sh = { SHAPE_CAPSULE, cx + (3 - 2) * size, cy + (6 - 3) * size, cx - 2 * size,
-                                   cy + (6 - 3) * size, size * 0.42 };
-
-            PadFill(&sh, color, 0, 1, 0, 0);
+    for (y = 0; y < 5; y++) {
+        for (x = 0; x < 3; x++) {
+            if (rows[y * 3 + x] == '#') {
+                sPadCanvas[(cy - 2 + y) * PAD_W + cx - 1 + x] = color;
+            }
         }
     }
 }
 
 static void DrawPad(SDL_Rect dst, int scale, int right)
 {
-    static const u32 line = 0xF2F2F2; /* the outlines */
-    static const u32 lit = 0xFFC83C;  /* what is held: filled */
-    static const double stroke = 1.5;
+    static const u32 line = 0xFFD0D8EC;   /* pale steel */
+    static const u32 litLine = 0xFFFFF0A0; /* a held button's edge */
+    static const u32 lit = 0xFFF0A818;     /* the game's amber */
     u16 k = sKeys;
-    struct PadShape sh;
+    int x;
+    int y;
+    int unit;
+    int ww;
+    int wh;
+    int bar;
     int i;
 
     /* TEST_PAD_KEYS=bits: shows those held, for pictures of it */
     if (SDL_getenv("TEST_PAD_KEYS") != NULL) {
         k = (u16)strtol(SDL_getenv("TEST_PAD_KEYS"), NULL, 0);
     }
-    memset(sPadCanvas, 0, sizeof(sPadCanvas));
+    /* the plate: dark, see-through, rimmed as the stats panels */
+    for (y = 0; y < PAD_H; y++) {
+        for (x = 0; x < PAD_W; x++) {
+            int rim = x == 0 || y == 0 || x == PAD_W - 1 || y == PAD_H - 1;
 
-    /* The shoulders: two pills over the top corners */
+            sPadCanvas[y * PAD_W + x] = rim ? 0xFF384890 : 0xC80C1020;
+        }
+    }
+    /* the shoulders, then the body */
     for (i = 0; i < 2; i++) {
         int held = (k & (i ? R_BUTTON : L_BUTTON)) != 0;
-        double x0 = i ? PAD_W - 26 : 4;
 
-        sh = (struct PadShape){ SHAPE_BOX, x0, 2, x0 + 22, 8.5, 3.2 };
-        PadFill(&sh, held ? lit : 0x000000, 0, held ? 1 : 0.4, 0, 0);
-        PadStroke(&sh, 0x000000, stroke + 1.4, 0.45);
-        PadStroke(&sh, line, stroke, 1);
+        PadShape(PAD_ROUND, i ? 38 : 7, 3, i ? 50 : 19, 7, 2);
+        PadDraw(held ? litLine : line, held ? lit : 0);
     }
-    /* The body: a dark see-through panel, outlined */
-    sh = (struct PadShape){ SHAPE_BOX, 2, 11, PAD_W - 2, PAD_H - 2, 5 };
-    PadFill(&sh, 0x000000, 0, 0.45, 0, 0);
-    PadStroke(&sh, 0x000000, stroke + 1.4, 0.45);
-    PadStroke(&sh, line, stroke, 1);
+    PadShape(PAD_ROUND, 4, 9, 53, 40, 4);
+    PadDraw(line, 0);
+    /* the D-pad: the cross, its held arms lit */
+    PadShape(PAD_CROSS, 17, 24, 3, 0, 8);
+    PadDraw(line, 0);
+    for (y = 17; y <= 31; y++) {
+        for (x = 10; x <= 24; x++) {
+            int dx = x - 17;
+            int dy = y - 24;
+            int arm = (dy < -3 && (k & DPAD_UP)) || (dy > 3 && (k & DPAD_DOWN)) || (dx < -3 && (k & DPAD_LEFT)) ||
+                      (dx > 3 && (k & DPAD_RIGHT));
 
-    /* The D-pad: a cross, its held arms filled */
-    {
-        static const struct {
-            u16 bit;
-            double x0, y0, x1, y1;
-        } arms[4] = {
-            { DPAD_UP, 18.5, 24, 25.5, 34.5 },
-            { DPAD_DOWN, 18.5, 41.5, 25.5, 52 },
-            { DPAD_LEFT, 8, 34.5, 18.5, 41.5 },
-            { DPAD_RIGHT, 25.5, 34.5, 36, 41.5 },
-        };
-        struct PadShape vert = { SHAPE_BOX, 18.5, 24, 25.5, 52, 2.6 };
-        struct PadShape horiz = { SHAPE_BOX, 8, 34.5, 36, 41.5, 2.6 };
-
-        for (i = 0; i < 4; i++) {
-            if (k & arms[i].bit) {
-                sh = (struct PadShape){ SHAPE_BOX, arms[i].x0, arms[i].y0, arms[i].x1, arms[i].y1, 2.4 };
-                PadFill(&sh, lit, 0, 1, 0, 0);
-            }
-        }
-        /* the outline of the cross: each bar's, but not inside the other */
-        {
-            int px;
-            int py;
-
-            for (py = (int)(22 * PAD_SS); py <= (int)(54 * PAD_SS); py++) {
-                for (px = (int)(6 * PAD_SS); px <= (int)(38 * PAD_SS); px++) {
-                    double x = (px + 0.5) / PAD_SS;
-                    double y = (py + 0.5) / PAD_SS;
-                    double a = ShapeDistance(&vert, x, y);
-                    double b = ShapeDistance(&horiz, x, y);
-                    double d = a < b ? a : b; /* the union's edge */
-                    double halo = 0.5 - (fabs(d) - (stroke + 1.4) / 2) * PAD_SS;
-                    double cover = 0.5 - (fabs(d) - stroke / 2) * PAD_SS;
-
-                    if (halo > 0) {
-                        PadBlend(px, py, 0x000000, 0.45 * (halo > 1 ? 1 : halo));
-                    }
-                    if (cover > 0) {
-                        PadBlend(px, py, line, cover > 1 ? 1 : cover);
-                    }
-                }
+            if (arm && PadIn(x, y) && PadIn(x - 1, y) && PadIn(x + 1, y) && PadIn(x, y - 1) && PadIn(x, y + 1)) {
+                sPadCanvas[y * PAD_W + x] = lit;
             }
         }
     }
-
-    /* B and A: two rings, rising to the right, their letters inside */
+    /* A and B */
     for (i = 0; i < 2; i++) {
-        int held = (k & (i ? A_BUTTON : B_BUTTON)) != 0;
-        double x = i ? 70 : 54;
-        double y = i ? 34 : 43;
+        int held = (k & (i ? B_BUTTON : A_BUTTON)) != 0;
+        int cx = i ? 36 : 45;
+        int cy = i ? 29 : 21;
 
-        sh = (struct PadShape){ SHAPE_DISC, x, y, 0, 0, 6.8 };
-        if (held) {
-            PadFill(&sh, lit, 0, 1, 0, 0);
-        }
-        PadStroke(&sh, 0x000000, stroke + 1.4, 0.45);
-        PadStroke(&sh, line, stroke, 1);
-        PadLetter(i ? 'A' : 'B', x, y, 0.62, held ? 0x3A2A00 : line);
+        PadShape(PAD_CIRCLE, cx, cy, 0, 0, 4);
+        PadDraw(held ? litLine : line, held ? lit : 0);
+        PadLetter(cx, cy, i ? "##." "#.#" "##." "#.#" "##." : ".#." "#.#" "###" "#.#" "#.#", held ? 0xFF201008 : line);
     }
-
-    /* Select and Start: two small rings */
+    /* Select and Start */
     for (i = 0; i < 2; i++) {
         int held = (k & (i ? START_BUTTON : SELECT_BUTTON)) != 0;
 
-        sh = (struct PadShape){ SHAPE_DISC, i ? 50 : 34, 63, 0, 0, 3.2 };
-        if (held) {
-            PadFill(&sh, lit, 0, 1, 0, 0);
-        }
-        PadStroke(&sh, 0x000000, stroke * 0.85 + 1.4, 0.45);
-        PadStroke(&sh, line, stroke * 0.85, 1);
+        PadShape(PAD_ROUND, i ? 30 : 21, 34, i ? 35 : 26, 37, 1);
+        PadDraw(held ? litLine : line, held ? lit : 0);
     }
 
+    /* Where: the border's bottom, beside its riveted plate (themed), at the
+     * border's pixel size; else the picture's corner at the game's. */
+    (void)scale;
+    SDL_GetRendererOutputSize(sRenderer, &ww, &wh);
+    bar = right ? ww - (dst.x + dst.w) : dst.x;
+    unit = bar / 75 > 1 ? bar / 75 : 1;
     {
-        int x;
-        int y;
-        SDL_Rect r;
+        int strip = gHostSettings.borders == HOST_BORDERS_THEMED ? 9 * unit : 0;
+        int room = bar - strip;
 
-        int ww;
-        int wh;
-        int bar;
+        if (room >= (PAD_W + 4) * unit) {
+            int from = right ? dst.x + dst.w + strip : 0;
 
-        /* a quarter of the picture's height; in the border beside it when
-         * that has room, else in the picture's bottom corner */
-        (void)scale;
-        SDL_GetRendererOutputSize(sRenderer, &ww, &wh);
-        r.h = dst.h / 4 < 60 ? 60 : dst.h / 4;
-        r.w = r.h * PAD_W / PAD_H;
-        bar = right ? ww - (dst.x + dst.w) : dst.x;
-        if (bar >= r.w + 16) {
-            x = (right ? dst.x + dst.w : 0) + (bar - r.w) / 2;
+            x = from + (room - PAD_W * unit) / 2;
+            y = wh - (PAD_H + 4) * unit;
         } else {
-            x = right ? dst.x + dst.w - r.w - 8 : dst.x + 8;
+            unit = dst.h / HOST_SCREEN_HEIGHT > 1 ? dst.h / HOST_SCREEN_HEIGHT : 1;
+            x = right ? dst.x + dst.w - (PAD_W + 4) * unit : dst.x + 4 * unit;
+            y = dst.y + dst.h - (PAD_H + 4) * unit;
         }
-        y = dst.y + dst.h - r.h - 8;
-        r.x = x;
-        r.y = y;
-        if (sPadTex == NULL) {
-            sPadTex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, PAD_CW,
-                                        PAD_CH);
-            if (sPadTex == NULL) {
-                return;
-            }
-            SDL_SetTextureBlendMode(sPadTex, SDL_BLENDMODE_BLEND);
-            SDL_SetTextureScaleMode(sPadTex, SDL_ScaleModeLinear);
-        }
-        SDL_UpdateTexture(sPadTex, NULL, sPadCanvas, PAD_CW * 4);
-        SDL_RenderCopy(sRenderer, sPadTex, NULL, &r);
     }
+    PutOverlay(&sPadTex, sPadCanvas, PAD_W, PAD_H, x, y, unit);
 }
 
 /* The menu's canvas over the game's place, or `banner` (a word on a

@@ -134,6 +134,7 @@ struct Bar {
     struct Stats stats;
     struct HostHud hud; /* the left bar's HUD panel's numbers (frame 0) */
     int hudShown;
+    int pad; /* the input display's setting it was made for */
 };
 
 static struct Stats sStats;
@@ -396,7 +397,7 @@ static void Centered(u32 *c, int w, int h, int large, int cx, int y, const char 
  * relics of each kind and the powers (grey until earned); the section
  * titles in the small font as the pause pages' titles, the numbers in
  * the large one as their counts. */
-static void StatsPanel(u32 *c, int w, int h, const struct Stats *st)
+static void StatsPanel(u32 *c, int w, int h, const struct Stats *st, int reserve)
 {
     int x0 = 9 + 2;
     int x1 = w - 2;
@@ -423,6 +424,10 @@ static void StatsPanel(u32 *c, int w, int h, const struct Stats *st)
     };
     int i;
 
+    /* 278: the five plates and their gaps; above the input display */
+    if (y + 278 > h - reserve) {
+        y = h - reserve - 278;
+    }
     if (y < 4) {
         y = 4;
     }
@@ -624,9 +629,15 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
         cx = w - 35;
     }
     int cy = h * 2 / 5;
+    /* the input display's room at the bottom of its border (sdl.c) */
+    int reserve = side < 2 && gHostSettings.inputDisplay == side + 1 ? HOST_PAD_ART_H + 8 : 0;
 
     if (c == NULL) {
         return;
+    }
+    /* the porthole (or portrait) and the name above it */
+    if (cy + 56 > h - reserve) {
+        cy = h - reserve - 56;
     }
     /* The left bar with the HUD: the porthole, the name and the panel
      * (from cy - 33 to cy + 64 + its height) kept inside the bar. */
@@ -634,8 +645,8 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
         struct HudLayout l;
 
         LayOutHud(&l, 2, w - 11, &gHostHud);
-        if (cy > h - 4 - 64 - l.height) {
-            cy = h - 4 - 64 - l.height;
+        if (cy > h - 4 - 64 - l.height - reserve) {
+            cy = h - 4 - 64 - l.height - reserve;
         }
         if (cy < 37) {
             cy = 37;
@@ -656,7 +667,7 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
                 HudPanel(c, w, h, 2, w - 11, cy + 64, &gHostHud);
             }
         } else if (side == 1 && sStats.valid) {
-            StatsPanel(c, w, h, &sStats);
+            StatsPanel(c, w, h, &sStats, reserve);
         } else {
             Portrait(c, w, h, cx, cy);
         }
@@ -678,6 +689,7 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
     bar->hud = gHostHud;
     bar->hud.frame = 0;
     bar->hudShown = HudInBorder();
+    bar->pad = gHostSettings.inputDisplay;
 }
 
 /* --discord-assets DIR: the Discord application's art assets (discord.c),
@@ -827,6 +839,7 @@ void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
         }
         if (sBars[side].tex == NULL || sBars[side].w != w || sBars[side].h != h ||
             sBars[side].level != gHostPlayingLevel || sBars[side].side != side ||
+            sBars[side].pad != gHostSettings.inputDisplay ||
             (side == 1 && memcmp(&sBars[side].stats, &sStats, sizeof(sStats)) != 0) ||
             (side == 0 && HudChanged(&sBars[side]))) {
             MakeBar(&sBars[side], r, w, h, gHostPlayingLevel, side);

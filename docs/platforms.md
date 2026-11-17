@@ -329,15 +329,18 @@ beside it: themed, they get the wall too (v0.26), at the side bars' pixel
 size, with the riveted plate turned on its side along the picture's top
 and bottom edges; the side bars, drawn after, cover the strips' ends.
 
-**Input display** (v0.19, redrawn in v0.20; Interface, src/sdl.c DrawPad).
-The buttons held, as a line drawing of a handheld: the body on a
-see-through dark panel, the shoulder buttons over its corners, the
-D-pad's cross, A and B rising to the right, Start and Select, outlined in
-white over a soft dark halo; what is held filled amber. Drawn smooth (each
-shape by its signed distance at twice the size, then scaled with
-filtering), a quarter of the picture's height, in the border beside it
-when there's room, else in the picture's bottom corner.
-TEST_PAD_KEYS=bits shows those keys held.
+**Input display** (v0.19, redrawn in v0.20 and v0.28; Interface, src/sdl.c
+DrawPad). The buttons held, as pixel art in the borders' style: a
+handheld's outline (the shoulders, the D-pad's cross, A and B rising to
+the right, Select and Start) in pale steel with a dark shadow, on the
+stats panels' dark, blue-rimmed plate, what is held filled with the
+game's amber. It is HOST_PAD_ART_W x HOST_PAD_ART_H (58x44) pixels, shown
+at the borders' pixel size (a 75th of the border's width) at the bottom
+of the chosen border, beside the themed wall's riveted plate; borders.c
+moves that border's panels up to keep the room (the stats, the porthole
+and the HUD). Where that border is too narrow it goes over the picture's
+bottom corner at the game's pixel size, scaled without smoothing either
+way. TEST_PAD_KEYS=bits shows those keys held.
 
 **HUD** (v0.14; Interface, src/hud_hook.cpp, src/borders.c). On, off, or
 in the left border. The link wraps Hud::Update, which counts and draws
