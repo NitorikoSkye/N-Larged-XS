@@ -1431,8 +1431,10 @@ static void DrawPad(SDL_Rect dst, int scale, int right)
     /* A and B */
     for (i = 0; i < 2; i++) {
         int held = (k & (i ? B_BUTTON : A_BUTTON)) != 0;
-        int cx = i ? 36 : 45;
-        int cy = i ? 29 : 21;
+        /* the pair centred on the D-pad's height, 4 pixels clear of the
+         * cross, of the body's edge and of each other, B above Start */
+        int cx = i ? 34 : 44;
+        int cy = i ? 27 : 20;
 
         PadShape(PAD_CIRCLE, cx, cy, 0, 0, 4);
         PadDraw(held ? litLine : line, held ? lit : 0);
