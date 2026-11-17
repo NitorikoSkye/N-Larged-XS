@@ -400,7 +400,20 @@ them.
 
 **Steam** (v0.14; platform/pc/STEAM.md). `--fullscreen` and `--windowed`
 set this launch's window mode (Steam's launch options), and on a Steam
-Deck (SteamDeck=1) the port starts fullscreen by default.
+Deck (SteamDeck=1) the port starts fullscreen by default. Extras' **Add to
+steam** (v0.27, src/steam.c, the art in platform/pc/steam-art/ built in by
+src/steam_art.S) adds the port to the library as a non-Steam game: with
+Steam closed (it writes shortcuts.vdf from memory when it quits), the
+shortcut "Crash Bandicoot XS" in the most recent account's
+userdata/<id>/config/shortcuts.vdf (binary VDF, read and written whole,
+backed up first) is made or pointed at this executable, keeping its app
+id (CRC-32 of the quoted exe and the name, top bit set, for a new one),
+and the capsule, wide capsule, hero, logo and icon go in its grid/
+folder under that id. Windows finds Steam in the registry (SteamPath,
+ActiveProcess's pid) and uses UTF-8 paths throughout; Linux looks in
+~/.steam/steam, ~/.local/share/Steam and Flatpak's, and steam.pid. Under
+Wine or Proton it declines (that registry's Steam isn't the real one)
+unless `HOST_STEAM_IGNORE_WINE=1` (the tests' fake Steam).
 
 **Skip intro** (v0.13; General, src/intro_skip.c). From the next launch,
 the game boots straight to the title screen: MainLoop's legal notice

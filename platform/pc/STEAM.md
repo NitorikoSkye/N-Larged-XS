@@ -3,7 +3,19 @@
 The PC port runs as a non-Steam game: Steam's overlay, its controller
 support (Steam Input) and Big Picture / Steam Deck all work with it.
 
-## Adding it
+## Adding it: the quick way
+
+In the port's settings (~), **Extras → Add to steam**, with Steam closed
+(Steam → Exit). It adds "Crash Bandicoot XS" to the library of the Steam
+account that logged in last, with its capsule, wide capsule, hero, logo
+and icon (built into the .exe), and says so in a toast; open Steam and
+it's there. Done again from a newer version, it points the same
+shortcut at the new .exe and keeps its play time, launch options and
+collections. Steam's shortcuts.vdf is backed up as shortcuts.vdf.bak
+first. On a Steam Deck or Linux, use the Linux build for this (under
+Proton the game can't see your real Steam), or add the .exe by hand.
+
+## Adding it by hand
 
 1. In Steam: **Games → Add a Non-Steam Game to My Library… → Browse…**,
    pick `CrashBandicootXS-vX.XX.exe`, **Add Selected Programs**.
@@ -20,11 +32,11 @@ support (Steam Input) and Big Picture / Steam Deck all work with it.
 ## The library's pictures
 
 Right-click the game → **Manage → Set custom artwork** for the library
-capsule (`grid_portrait_600x900.png`), and on the game's page right-click
-the banner → **Set custom background** (`hero.png`) and **Set custom
-logo** (`logo.png`). The wide capsule (`grid_wide_920x430.png`) is what
+capsule (`grid_portrait.jpg`), and on the game's page right-click
+the banner → **Set custom background** (`hero.jpg`) and **Set custom
+logo** (`logo.png`). The wide capsule (`grid_wide.jpg`) is what
 recent-games rows show (SteamGridDB-style tools set it). The pictures
-come from the game itself, through the port's cartoon filter.
+are the game's box art and logo.
 
 ## Controllers
 

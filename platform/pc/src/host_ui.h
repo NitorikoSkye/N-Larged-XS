@@ -164,6 +164,9 @@ int HostTimerLines(char big[32], char line2[64], char line3[64]);
 /* intro_skip.c: General's Skip intro, as this launch has it. */
 int HostSkipIntro(void);
 
+/* steam.c: Extras' Add to steam (a toast says how it went). */
+void HostSteamAdd(void);
+
 /* prompts.c: Controls' Button prompts. */
 enum {
     HOST_PROMPTS_AUTO, /* the style of what was used last */

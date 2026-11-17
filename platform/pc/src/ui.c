@@ -598,6 +598,8 @@ static const struct Option sExtras[] = {
       &gHostSettings.discordProgress, sOffOn, 2, 0, NULL, DiscordOn },
     { "connection", "the discord app it uses: the discord app id line in settings.ini.", OPT_CHOICE, &gHostDiscordStatus,
       sDiscordStates, HOST_DISCORD_STATUS_COUNT, 0, NULL, Never },
+    { "add to steam", "puts the game in your steam library with its pictures. close steam first.", OPT_ACTION,
+      NULL, NULL, 0, 0, NULL, NULL, HostSteamAdd },
 };
 
 #define COUNT(a) ((int)(sizeof(a) / sizeof((a)[0])))
@@ -610,7 +612,7 @@ static const struct Category sCategories[] = {
     { "audio", "quality, and master, music and sound fx volume", sAudio, COUNT(sAudio) },
     { "controls", "keyboard, controller, rumble and button prompts", sControls, COUNT(sControls) },
     { "gameplay", "auto save and looking up and down", sGameplay, COUNT(sGameplay) },
-    { "extras", "discord status", sExtras, COUNT(sExtras) },
+    { "extras", "discord status and adding to steam", sExtras, COUNT(sExtras) },
 };
 
 static const char *const sBindNames[HOST_BIND_COUNT] = {
