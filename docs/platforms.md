@@ -227,6 +227,16 @@ executable without a window, and that executable, started without
 built before SDL2 was installed keeps running headless: `make
 PLATFORM=pc` rebuilds `sdl.c` and relinks once pkg-config finds it.
 
+**The launcher** (v0.37; platform/pc/LAUNCHER.md, platform/pc/launcher/,
+tools/make_package.py). NLargedXSLauncher.exe makes "Crash Bandicoot
+XS.exe" from the player's ROM: it carries the game as a package of
+operations (runs copied from the ROM, the code as it is, everything else
+XORed with a key stream made from the ROM), checks the ROM's and the
+result's SHA-1, and holds no ROM data itself, so it can be published. Its
+window reads the game's fonts and pause art out of the built game, and
+draws a look-alike of its own before that; a command line does it all
+without a window.
+
 **Windows.** The same platform builds a single self-contained Windows
 executable with MinGW-w64 (cross from Linux, or on Windows) and SDL2's
 MinGW development files, linked statically:
