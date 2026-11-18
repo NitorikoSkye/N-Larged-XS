@@ -188,10 +188,10 @@ def turbo():
     segs = [L((40, 46), (56, 42)), ((56, 42), (62, 54), (72, 58), (84, 60)), L((84, 60), (110, 68)),
             ((110, 68), (122, 72), (122, 86), (110, 88)), L((110, 88), (42, 88)),
             ((42, 88), (36, 88), (34, 82), (36, 76)), L((36, 76), (40, 46))]
-    parts.append('<g transform="translate(78 64) rotate(-10) scale(0.9) translate(-78 -64)">%s</g>'
+    parts.append('<g transform="translate(81 64) rotate(-10) scale(0.86) translate(-78 -64)">%s</g>'
                  % closed_brush(segs, lambda x, y: 5 + 9 * max(0.0, min(1.0, (y - 44) / 44)) + (3 if x > 104 else 0)))
     # speed: wedges streaming back off it, each its own length
-    for base, tip, w in (((34, 44), (4, 48), 10), ((30, 62), (0, 63), 12), ((34, 80), (8, 79), 9)):
+    for base, tip, w in (((24, 46), (2, 49), 10), ((20, 63), (0, 64), 12), ((24, 80), (6, 79), 9)):
         parts.append(wedge(base, tip, w))
     return svg("L: turbo run. A sneaker leaning into a sprint, speed streaming off it.", parts)
 

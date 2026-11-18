@@ -34,7 +34,9 @@ import java.nio.ByteBuffer;
  * The settings button sits at the top middle. A controller in use hides
  * the buttons until the screen is touched again. The buttons show what
  * they do (icons/*.svg, white): A jumps, B spins, R crouches and slams, L
- * is the turbo run, Start pauses, Select shows the counters.
+ * is the turbo run, Start pauses, Select shows the counters. Holding the
+ * turbo run's button for a moment locks it on (Auto, for the time
+ * trials): it stays held, in levels, until the button is tapped again.
  *
  * Beside the picture, the borders: black, ambient (the picture's colours,
  * blurred and darkened, across the screen) or themed (the core's bars,
@@ -89,8 +91,23 @@ public class GameView extends View {
     private float aX, aY, bX, bY, btnR;
     private float gearX, gearY, gearR;
     private final RectF lRect = new RectF(), rRect = new RectF(), selRect = new RectF(), startRect = new RectF();
-    private int keys;
+    private int keys;        /* sent: the fingers' and the lock's */
+    private int touchKeys;   /* the fingers' alone */
     private boolean controllerHidden;
+
+    /* Auto: L locked on by holding its button (TURBO_HOLD_MS). */
+    private static final int TURBO_HOLD_MS = 600;
+    private boolean turboLocked;
+    private final Runnable turboHold = new Runnable() {
+        public void run() {
+            if ((touchKeys & MainActivity.KEY_L) != 0 && !turboLocked) {
+                turboLocked = true;
+                performHapticFeedback(HapticFeedbackConstants.LONG_PRESS,
+                        HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING);
+                sendKeys();
+            }
+        }
+    };
 
     /* A finger over the picture with the buttons hidden: a tap or a swipe. */
     private int swipeId = -1;
@@ -154,11 +171,28 @@ public class GameView extends View {
 
     void setMode(int m) {
         mode = m;
-        if (!controlsShown()) {
-            keys = 0;
-            activity.setTouchKeys(0);
+        post(new Runnable() {
+            public void run() {
+                if (!controlsShown()) {
+                    touchKeys = 0;
+                }
+                sendKeys();
+            }
+        });
+    }
+
+    /** The keys to the game: the fingers', and L while it is locked on in a
+     * level. */
+    private void sendKeys() {
+        int k = touchKeys;
+        if (turboLocked && mode == MODE_PLAY && !controllerHidden) {
+            k |= MainActivity.KEY_L;
         }
-        postInvalidate();
+        if (k != keys) {
+            keys = k;
+            activity.setTouchKeys(k);
+        }
+        invalidate();
     }
 
     void setSettings(int[] v) {
@@ -180,7 +214,11 @@ public class GameView extends View {
     void controllerUsed() {
         if (!controllerHidden) {
             controllerHidden = true;
-            postInvalidate();
+            post(new Runnable() {
+                public void run() {
+                    sendKeys();
+                }
+            });
         }
     }
 
@@ -405,6 +443,18 @@ public class GameView extends View {
         button(c, aX, aY, iconJump, "A", (keys & MainActivity.KEY_A) != 0);
         button(c, bX, bY, iconSpin, "B", (keys & MainActivity.KEY_B) != 0);
         pill(c, lRect, iconTurbo, "L", (keys & MainActivity.KEY_L) != 0);
+        if (turboLocked) {
+            /* Auto: an orange rim and the word under the button */
+            float rad = lRect.height() / 2;
+            Paint rim = new Paint(line);
+            rim.setColor(Color.argb(255, 255, 156, 66));
+            rim.setStrokeWidth(line.getStrokeWidth() * 2);
+            c.drawRoundRect(lRect, rad, rad, rim);
+            Paint t = new Paint(text);
+            t.setColor(Color.argb(255, 255, 196, 120));
+            t.setTextSize(text.getTextSize() * 0.8f);
+            c.drawText("AUTO", lRect.centerX(), lRect.bottom + t.getTextSize() * 1.1f, t);
+        }
         pill(c, rRect, iconSlam, "R", (keys & MainActivity.KEY_R) != 0);
         pill(c, selRect, iconCounters, "SELECT", (keys & MainActivity.KEY_SELECT) != 0);
         pill(c, startRect, iconPause, "START", (keys & MainActivity.KEY_START) != 0);
@@ -523,7 +573,7 @@ public class GameView extends View {
         }
         if (controllerHidden) {
             controllerHidden = false;
-            invalidate();
+            sendKeys(); /* the lock holds again */
         }
         activity.touchUsed();
         /* the settings button */
@@ -557,13 +607,24 @@ public class GameView extends View {
                 }
             }
         }
-        if ((k & ~keys) != 0) {
+        if ((k & ~touchKeys) != 0) {
             buzz();
         }
-        if (k != keys) {
-            keys = k;
-            activity.setTouchKeys(k);
-            invalidate();
+        int lDown = k & ~touchKeys & MainActivity.KEY_L;
+        int lUp = touchKeys & ~k & MainActivity.KEY_L;
+        if (lDown != 0) {
+            if (turboLocked) {
+                turboLocked = false; /* a tap lets it go */
+            } else {
+                postDelayed(turboHold, TURBO_HOLD_MS);
+            }
+        }
+        if (lUp != 0) {
+            removeCallbacks(turboHold);
+        }
+        if (k != touchKeys) {
+            touchKeys = k;
+            sendKeys();
         }
         /* a finger on the picture that isn't on a button: a tap there, or a
          * swipe that scrolls */
