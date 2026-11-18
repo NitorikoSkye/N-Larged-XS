@@ -22,6 +22,7 @@
  * (autosave_hooks.cpp), the warp room while LevelSelect::Run does
  * (level_pick.c). */
 
+#include "engine/text/font.hpp"
 #include "game/ui/frontend.hpp"
 #include "game/ui/menus.hpp"
 #include "game/ui/save_menu.hpp"
@@ -70,6 +71,51 @@ void __wrap__ZN4Game2Ui9PauseMenu4DrawEv(PauseMenu *self)
     sPause = self;
     sPauseFrame = HostFrame();
     __real__ZN4Game2Ui9PauseMenu4DrawEv(self);
+}
+
+/* The continue prompt (game over's "continue?"): its cursor, drawn as
+ * ">" (gContinuePromptCursorText) by Font::DrawText beside "yes" or "no",
+ * says which is selected (the prompt's instance is out of reach: Run
+ * makes it, all in one object). */
+static u32 sContinueFrame;
+static int sContinueSel;
+static int sContinueTarget = -1;
+
+void __real__ZN6Engine4Text4Font8DrawTextEPKh(Engine::Text::Font *self, const u8 *text);
+
+void __wrap__ZN6Engine4Text4Font8DrawTextEPKh(Engine::Text::Font *self, const u8 *text)
+{
+    if (text == gContinuePromptCursorText) {
+        sContinueFrame = HostFrame();
+        sContinueSel = self->posY >= DISPLAY_ART_Y + 0x91;
+    }
+    __real__ZN6Engine4Text4Font8DrawTextEPKh(self, text);
+}
+
+static int ContinueUp(void)
+{
+    return sContinueFrame != 0 && HostFrame() - sContinueFrame <= 2;
+}
+
+/* A click on "yes" or "no": the D-pad to it, then A. */
+static u16 ContinueKeys(int left)
+{
+    if (left) {
+        int x = gHostMouse.x - DISPLAY_ART_X;
+        int y = gHostMouse.y - DISPLAY_ART_Y;
+
+        if (x >= 0x60 && x < 0xC8 && y >= 0x83 && y < 0x9C) {
+            sContinueTarget = y >= 0x8F;
+        }
+    }
+    if (sContinueTarget < 0) {
+        return 0;
+    }
+    if (sContinueTarget != sContinueSel) {
+        return sContinueTarget ? DPAD_DOWN : DPAD_UP;
+    }
+    sContinueTarget = -1;
+    return A_BUTTON;
 }
 
 /* The row of a list under the mouse: rows `pitch` apart from `top` (each
@@ -306,8 +352,35 @@ u16 HostMouseGameKeys(void)
         keys = left && row >= 0 ? A_BUTTON : 0;
     } else if (gHostInWarpRoom) {
         keys = WarpRoomKeys(left, wheel);
+    } else if (ContinueUp()) {
+        keys = ContinueKeys(left);
     }
+#ifdef HOST_ANDROID
+    /* The phone: a tap anywhere else that isn't playing (the intro, the
+     * title's "press start", a power's dialog, the credits) is A and
+     * START, the buttons those take to go on. */
+    else if (left && HostTouchMode() == HOST_TOUCH_ANY) {
+        keys = A_BUTTON | START_BUTTON;
+    }
+#endif
     gHostMouse.moved = 0;
     return keys;
+}
+
+/* What the touch screen does now (the Android app's controls): the game
+ * played with the on-screen buttons, a menu of the game's that a tap
+ * plays (as the mouse does), or anywhere else, where a tap goes on. The
+ * HUD runs each frame of a level (hud_hook.cpp). */
+int HostTouchMode(void)
+{
+    if ((gHostInSaveMenu && sSaveMenuInstance != NULL) || (sPause != NULL && HostFrame() - sPauseFrame <= 2) ||
+        gLanguageSelect != NULL || (gHostTitleScreen != NULL && gHostTitleScreen->menuShown) || gHostInWarpRoom ||
+        ContinueUp()) {
+        return HOST_TOUCH_MENU;
+    }
+    if (gHostHud.frame != 0 && HostFrame() - gHostHud.frame <= 3) {
+        return HOST_TOUCH_PLAY;
+    }
+    return HOST_TOUCH_ANY;
 }
 }

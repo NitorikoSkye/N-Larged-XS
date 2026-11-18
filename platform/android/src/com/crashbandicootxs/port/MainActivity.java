@@ -1,16 +1,24 @@
 package com.crashbandicootxs.port;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Color;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Display;
+import android.view.Gravity;
 import android.view.InputDevice;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -24,10 +32,13 @@ import java.util.concurrent.ArrayBlockingQueue;
  *
  * The game itself is the pc platform's core, built for Android as a static
  * executable (libcrashxs_core.so, in the APK's native libraries so that the
- * app may run it). It runs as a child process with --stream
- * (platform/pc/src/stream.c): it writes each frame's picture (240x160
- * RGB565) and sound (16-bit mono, 48 kHz) to its stdout and reads the
- * buttons (the GBA's key bits) from its stdin, at the GBA's own pace.
+ * app may run it), with the game's data blanked out: the first time, the
+ * player picks their ROM (the import screen), and GameData makes each
+ * core's data from it. The core runs as a child process with --stream
+ * (platform/pc/src/stream.c): it writes the pictures, the sound, its touch
+ * mode, its settings and toasts to its stdout and reads the buttons, taps,
+ * back and the rest from its stdin, at the GBA's own pace. The settings
+ * menu is the core's, drawn in the game's style.
  *
  * In the background the app stops reading: the game stops at its next
  * picture, the pipe full, until the app comes back. The save is the
@@ -56,10 +67,128 @@ public class MainActivity extends Activity {
     private int stickKeys;
     private int sentKeys = -1;
 
+    private static final int PICK_ROM = 1;
+    private TextView importStatus;
+
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        immersive();
+        if (GameData.haveRom(this)) {
+            startGame();
+        } else {
+            showImport(null);
+        }
+    }
+
+    /* --- The ROM --- */
+
+    /** The first screen: what the app needs, and the button to pick it. */
+    private void showImport(String message) {
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setGravity(Gravity.CENTER);
+        box.setBackgroundColor(Color.rgb(12, 16, 32));
+        int pad = (int) (24 * getResources().getDisplayMetrics().density);
+        box.setPadding(pad, pad, pad, pad);
+
+        TextView title = new TextView(this);
+        title.setText("Crash Bandicoot XS");
+        title.setTextColor(Color.rgb(255, 196, 64));
+        title.setTextSize(28);
+        title.setGravity(Gravity.CENTER);
+        box.addView(title);
+
+        TextView about = new TextView(this);
+        about.setText("N. Larged XS " + version() + "\n\nThis app doesn't include the game. Pick your own copy: "
+                + "Crash Bandicoot XS (Europe) (En,Fr,De,Es,It,Nl), a .gba file. It's kept in the app's own "
+                + "storage, so you only do this once.");
+        about.setTextColor(Color.WHITE);
+        about.setTextSize(16);
+        about.setGravity(Gravity.CENTER);
+        about.setPadding(0, pad / 2, 0, pad / 2);
+        box.addView(about);
+
+        Button pick = new Button(this);
+        pick.setText("Import ROM");
+        pick.setTextSize(20);
+        pick.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                pickRom();
+            }
+        });
+        box.addView(pick);
+
+        importStatus = new TextView(this);
+        importStatus.setTextColor(Color.rgb(255, 140, 120));
+        importStatus.setTextSize(14);
+        importStatus.setGravity(Gravity.CENTER);
+        importStatus.setPadding(0, pad / 2, 0, 0);
+        importStatus.setText(message != null ? message : "");
+        box.addView(importStatus);
+        setContentView(box);
+    }
+
+    private String version() {
+        try {
+            return "v" + getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    private void pickRom() {
+        Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("*/*");
+        try {
+            startActivityForResult(i, PICK_ROM);
+        } catch (Exception e) {
+            importStatus.setText("No file picker on this phone: " + e.getMessage());
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int request, int result, final Intent data) {
+        if (request != PICK_ROM || result != RESULT_OK || data == null || data.getData() == null) {
+            return;
+        }
+        importStatus.setTextColor(Color.WHITE);
+        importStatus.setText("Checking the ROM...");
+        new Thread(new Runnable() {
+            public void run() {
+                String problem;
+                try {
+                    String[] why = new String[1];
+                    byte[] rom = GameData.readRom(getContentResolver().openInputStream(data.getData()), why);
+                    if (rom == null) {
+                        problem = why[0];
+                    } else {
+                        GameData.keepRom(MainActivity.this, rom);
+                        problem = null;
+                    }
+                } catch (Exception e) {
+                    problem = "Couldn't read that file: " + e.getMessage();
+                }
+                final String p = problem;
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        if (p != null) {
+                            importStatus.setTextColor(Color.rgb(255, 140, 120));
+                            importStatus.setText(p);
+                        } else {
+                            startGame();
+                        }
+                    }
+                });
+            }
+        }, "rom-import").start();
+    }
+
+    /* --- The game --- */
+
+    private void startGame() {
         view = new GameView(this);
         setContentView(view);
         immersive();
@@ -121,10 +250,22 @@ public class MainActivity extends Activity {
             if (!exe.exists()) {
                 throw new IOException(exe + " is missing");
             }
+            File data = null;
+            for (String abi : abis()) {
+                data = GameData.dataFor(this, abi, CORES[index]);
+                if (data != null) {
+                    break;
+                }
+            }
+            if (data == null) {
+                throw new IOException("no game data package for " + CORES[index]);
+            }
             ProcessBuilder pb = new ProcessBuilder(exe.getAbsolutePath(), "--stream", "--save", save.getAbsolutePath());
             /* glibc's restartable sequences: not every Android kernel lets
              * an app use them (musl's core has none). */
             pb.environment().put("GLIBC_TUNABLES", "glibc.pthread.rseq=0");
+            pb.environment().put("CRASHXS_DIR", getFilesDir().getAbsolutePath());
+            pb.environment().put("CRASHXS_DATA", data.getAbsolutePath());
             p = pb.start();
         } catch (Throwable e) {
             stopped(index, null, e);
@@ -155,6 +296,8 @@ public class MainActivity extends Activity {
             sentKeys = -1;
         }
         sendKeys();
+        send(5, displayHz(), 0);
+        send(6, padStyle, 0);
         reader = new Thread(new Runnable() {
             public void run() {
                 read(p);
@@ -178,17 +321,43 @@ public class MainActivity extends Activity {
                 in.readFully(head);
                 int type = (head[0] & 0xFF) | (head[1] & 0xFF) << 8 | (head[2] & 0xFF) << 16 | (head[3] & 0xFF) << 24;
                 int n = (head[4] & 0xFF) | (head[5] & 0xFF) << 8 | (head[6] & 0xFF) << 16 | (head[7] & 0xFF) << 24;
-                if (n < 0 || n > 1 << 20 || (type != 1 && type != 2)) {
+                if (n < 0 || n > 1 << 20 || type < 1 || type > 5) {
                     throw new IOException("bad message from the game: type " + type + ", " + n + " bytes");
                 }
                 byte[] data = new byte[n];
                 in.readFully(data);
                 if (type == 1) {
-                    if (n != GameView.W * GameView.H * 2) {
+                    int w;
+                    if (n == GameView.W * GameView.H * 2) {
+                        w = GameView.W;
+                    } else if (n == GameView.W * GameView.H * 8) {
+                        w = GameView.W * 2;
+                    } else {
                         throw new IOException("bad picture from the game: " + n + " bytes");
                     }
                     gotPicture = true;
-                    view.setFrame(data);
+                    view.setFrame(data, w);
+                } else if (type == 3) {
+                    view.setMode(data[0]);
+                } else if (type == 4) {
+                    final int[] v = new int[n / 4];
+                    for (int i = 0; i < v.length; i++) {
+                        v[i] = (data[4 * i] & 0xFF) | (data[4 * i + 1] & 0xFF) << 8 | (data[4 * i + 2] & 0xFF) << 16
+                                | (data[4 * i + 3] & 0xFF) << 24;
+                    }
+                    view.setSettings(v);
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            frameRate(v[6]);
+                        }
+                    });
+                } else if (type == 5) {
+                    final String t = new String(data, "UTF-8");
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            Toast.makeText(MainActivity.this, t, Toast.LENGTH_SHORT).show();
+                        }
+                    });
                 } else {
                     short[] s = new short[n / 2];
                     for (int i = 0; i < s.length; i++) {
@@ -235,7 +404,7 @@ public class MainActivity extends Activity {
             return;
         }
         String abi = Build.VERSION.SDK_INT >= 21 && Build.SUPPORTED_ABIS.length > 0 ? Build.SUPPORTED_ABIS[0] : Build.CPU_ABI;
-        view.setError("The game stopped (Android app v0.02).\n" + report
+        view.setError("The game stopped (" + version() + ").\n" + report
                 + "Android " + Build.VERSION.RELEASE + " (API " + Build.VERSION.SDK_INT + "), "
                 + Build.MANUFACTURER + " " + Build.MODEL + ", " + abi);
     }
@@ -312,18 +481,123 @@ public class MainActivity extends Activity {
         sendKeys();
     }
 
-    private synchronized void sendKeys() {
+    private void sendKeys() {
         int keys = touchKeys | padKeys | stickKeys;
 
         if (keys == sentKeys || coreIn == null) {
             return;
         }
         sentKeys = keys;
+        send(1, keys, 0);
+    }
+
+    /** A message to the core (stream.c): its type and two values. */
+    private synchronized void send(int type, int a, int b) {
+        if (coreIn == null) {
+            return;
+        }
         try {
-            coreIn.write(new byte[] { (byte) keys, (byte) (keys >> 8) });
+            coreIn.write(new byte[] { (byte) type, 0, (byte) a, (byte) (a >> 8), (byte) b, (byte) (b >> 8), 0, 0 });
             coreIn.flush();
         } catch (IOException e) {
             /* the game has stopped: the reader says so */
+        }
+    }
+
+    void sendTap(int x, int y) {
+        send(2, x, y);
+    }
+
+    void sendBack() {
+        send(3, 0, 0);
+    }
+
+    void openSettings() {
+        send(4, 0, 0);
+    }
+
+    void sendScroll(int steps) {
+        send(7, steps, 0);
+    }
+
+    /* --- The phone's back button: the game's B, pause or the menu's back --- */
+
+    @Override
+    public void onBackPressed() {
+        if (view != null && core != null) {
+            sendBack();
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    /* --- The button prompts: the controller in use, or the touch screen --- */
+
+    static final int PROMPTS_GBA = 1, PROMPTS_XBOX = 2, PROMPTS_PLAYSTATION = 3, PROMPTS_NINTENDO = 4;
+    private int padStyle = PROMPTS_GBA;
+
+    private void setPadStyle(int style) {
+        if (style != padStyle) {
+            padStyle = style;
+            send(6, style, 0);
+        }
+    }
+
+    void touchUsed() {
+        setPadStyle(PROMPTS_GBA);
+    }
+
+    private void controllerUsed(InputDevice d) {
+        int style = PROMPTS_XBOX;
+        if (d != null && Build.VERSION.SDK_INT >= 19) {
+            int vendor = d.getVendorId();
+            if (vendor == 0x054c) {
+                style = PROMPTS_PLAYSTATION;
+            } else if (vendor == 0x057e) {
+                style = PROMPTS_NINTENDO;
+            }
+        }
+        setPadStyle(style);
+        view.controllerUsed();
+    }
+
+    /* --- The display: 60 or 120 a second --- */
+
+    private Display.Mode fastest() {
+        if (Build.VERSION.SDK_INT < 23) {
+            return null;
+        }
+        Display d = getWindowManager().getDefaultDisplay();
+        Display.Mode now = d.getMode();
+        Display.Mode best = null;
+        for (Display.Mode m : d.getSupportedModes()) {
+            if (m.getPhysicalWidth() == now.getPhysicalWidth() && m.getPhysicalHeight() == now.getPhysicalHeight()
+                    && (best == null || m.getRefreshRate() > best.getRefreshRate())) {
+                best = m;
+            }
+        }
+        return best;
+    }
+
+    private int displayHz() {
+        Display.Mode m = fastest();
+        if (m != null) {
+            return Math.round(m.getRefreshRate());
+        }
+        return Math.round(getWindowManager().getDefaultDisplay().getRefreshRate());
+    }
+
+    /** At 120 the screen's fastest mode; at 60 the phone's own choice. */
+    private void frameRate(int fps) {
+        if (Build.VERSION.SDK_INT < 23) {
+            return;
+        }
+        Display.Mode m = fastest();
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        int want = fps >= 120 && m != null ? m.getModeId() : 0;
+        if (lp.preferredDisplayModeId != want) {
+            lp.preferredDisplayModeId = want;
+            getWindow().setAttributes(lp);
         }
     }
 
@@ -345,16 +619,35 @@ public class MainActivity extends Activity {
         }
     }
 
+    /** The phone's ABIs, the APK's packages are in assets/ABI/. */
+    private static String[] abis() {
+        if (Build.VERSION.SDK_INT >= 21 && Build.SUPPORTED_ABIS.length > 0) {
+            return Build.SUPPORTED_ABIS;
+        }
+        return new String[] { Build.CPU_ABI };
+    }
+
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
         int bit = keyBit(e.getKeyCode());
 
+        /* a controller's Guide button: the settings menu, as on the PC */
+        if (view != null && e.getKeyCode() == KeyEvent.KEYCODE_BUTTON_MODE) {
+            if (e.getAction() == KeyEvent.ACTION_DOWN && e.getRepeatCount() == 0) {
+                openSettings();
+            }
+            return true;
+        }
+
         if (bit == 0) {
+            return super.dispatchKeyEvent(e);
+        }
+        if (view == null) {
             return super.dispatchKeyEvent(e);
         }
         if (e.getAction() == KeyEvent.ACTION_DOWN) {
             padKeys |= bit;
-            view.controllerUsed();
+            controllerUsed(e.getDevice());
         } else if (e.getAction() == KeyEvent.ACTION_UP) {
             padKeys &= ~bit;
         }
@@ -379,8 +672,11 @@ public class MainActivity extends Activity {
         if (y > 0.4f) keys |= KEY_DOWN;
         if (e.getAxisValue(MotionEvent.AXIS_LTRIGGER) > 0.4f || e.getAxisValue(MotionEvent.AXIS_BRAKE) > 0.4f) keys |= KEY_L;
         if (e.getAxisValue(MotionEvent.AXIS_RTRIGGER) > 0.4f || e.getAxisValue(MotionEvent.AXIS_GAS) > 0.4f) keys |= KEY_R;
+        if (view == null) {
+            return super.dispatchGenericMotionEvent(e);
+        }
         if (keys != 0) {
-            view.controllerUsed();
+            controllerUsed(e.getDevice());
         }
         stickKeys = keys;
         sendKeys();

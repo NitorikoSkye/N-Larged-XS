@@ -111,6 +111,11 @@ HOST_FLAGS += -mno-ms-bitfields
 endif
 HOST_CXXFLAGS := $(HOST_FLAGS) -std=gnu++98 -fno-rtti -fno-exceptions
 HOST_CFLAGS := $(HOST_FLAGS) -std=gnu99
+# The Android app's core (stream.c, phone.c): its own settings and menu.
+ifeq ($(HOST_ANDROID),1)
+HOST_CXXFLAGS += -DHOST_ANDROID
+HOST_CFLAGS += -DHOST_ANDROID
+endif
 
 # The sanitizers: `make PLATFORM=pc SANITIZE=undefined` (or address, or
 # both: SANITIZE=address,undefined; docs/platforms.md, "Sanitizers").
@@ -290,6 +295,8 @@ HOST_WRAPS += _ZN4Game2Ui9PauseMenu4DrawEv
 # Button prompts (src/prompt_hook.cpp) follow the font's glyphs.
 # ... and the warp room's "start:  load-save" names the player's Start.
 HOST_WRAPS += GetUiText
+# The continue prompt's cursor, for the mouse (src/mouse_hooks.cpp).
+HOST_WRAPS += _ZN6Engine4Text4Font8DrawTextEPKh
 HOST_WRAPS += _ZN6Engine4Text4Font9DrawGlyphEh
 # The HUD setting (src/hud_hook.cpp) wraps the HUD's update.
 HOST_WRAPS += _ZN4Game2Ui3Hud6UpdateEv _ZN6Engine5Actor13ActorCategory4InitEi \
@@ -341,7 +348,12 @@ endif
 endif
 
 ifeq ($(HOST_ANDROID),1)
-HOST_LINK_FLAGS := -static
+# The code in a segment of its own (ARM64's ld puts .rodata with .text
+# otherwise): the core writes the game's data into its data segments at
+# its start (rom_data.c), which a phone allows only where nothing runs.
+# The map says which object each piece of data is from (the app's data
+# file: platform/android/tools/make_core_package.py).
+HOST_LINK_FLAGS := -static -Wl,-z,separate-code -Wl,-Map,$(HOST_EXE).map
 # A phone's CPU draws the picture: the PPU optimised.
 $(PLATFORM_BUILDDIR)/src/ppu.o: HOST_CFLAGS += -O2
 endif

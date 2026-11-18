@@ -638,3 +638,30 @@ const u8 *__wrap_GetUiText(s32 index)
     snprintf((char *)buf, sizeof(buf), "%.*s%s%s", (int)(at - t), t, word, at + 5);
     return buf;
 }
+
+#ifdef HOST_ANDROID
+/* The Android app (stream.c): the glyphs as `style` shows the GBA's
+ * buttons on the phone's controllers (phone.c's bindings), each frame;
+ * HOST_PROMPTS_GBA, the touch controls' (the game's own). */
+void HostPromptsPhone(int style)
+{
+    static const int binds[4] = { HOST_BIND_A, HOST_BIND_B, HOST_BIND_L, HOST_BIND_R };
+    int s;
+
+    gHostStartPrompt[0] = 0;
+    gHostStartStyle = 0;
+    if (style == HOST_PROMPTS_GBA || style == HOST_PROMPTS_AUTO || style == HOST_PROMPTS_KEYBOARD) {
+        for (s = 0; s < 4; s++) {
+            HostPromptOff(s);
+        }
+        return;
+    }
+    for (s = 0; s < 4; s++) {
+        if (!HostPromptForPad(s, style, gHostSettings.pad[binds[s]][0], 1)) {
+            HostPromptOff(s);
+        }
+    }
+    gHostStartStyle = style;
+    gHostStartLabels = 1;
+}
+#endif

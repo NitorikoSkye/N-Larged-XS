@@ -1,10 +1,10 @@
 # N. Larged XS
 
-A native PC port of **Crash Bandicoot XS** (*Crash Bandicoot: The Huge
+A native PC and Android port of **Crash Bandicoot XS** (*Crash Bandicoot: The Huge
 Adventure*, Game Boy Advance, 2002), built from the
 [Crash Bandicoot XS decompilation](https://github.com/Almamu/CrashBandicootXS-decomp).
-It isn't an emulator: it's the game's own code compiled for Windows and
-Linux, with a modern front end on top.
+It isn't an emulator: it's the game's own code compiled for Windows, Linux
+and Android, with a modern front end on top.
 
 > **You need your own copy of the game.** This repository and its releases
 > contain no part of the ROM. The launcher builds the game from a ROM you
@@ -35,6 +35,18 @@ Wine and Proton (Linux, Steam Deck).
 The launcher also has a command line, e.g.
 `NLargedXSLauncher -i "Crash XS.gba" -l -- --fullscreen`. See
 [platform/pc/LAUNCHER.md](platform/pc/LAUNCHER.md) for all the options.
+
+## Android
+
+Download `NLargedXS-<version>.apk` from the [Releases](../../releases) page
+and install it. On first launch, tap **Import ROM** and pick the same
+European ROM; the app keeps it in its own storage, so this happens once.
+In levels the GBA's buttons are on the screen; menus and the warp room are
+tapped directly, and the phone's back button is B (or pause in a level).
+The cog at the top opens the settings, with phone options: touch button
+size, opacity and haptics, large text, 60 or 120 frames a second. Like the
+launcher, the APK contains no part of the game. See
+[platform/android/README.md](platform/android/README.md).
 
 ## Features
 
@@ -92,6 +104,10 @@ no ROM data and can be shared:
 ```sh
 platform/pc/launcher/build.sh path/to/rom.gba path/to/SDL2-2.30.x/x86_64-w64-mingw32
 # -> build/launcher/NLargedXSLauncher.exe
+
+# Android (also needs the ROM, for the same reason)
+platform/android/build.sh path/to/rom.gba
+# -> build/android/NLargedXS-<version>.apk
 ```
 
 The technical details of the port, including how each feature works and

@@ -14,6 +14,7 @@
  * the band under the title. Settings that can't be used now are grey. */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "gba/gba.h"
@@ -219,10 +220,31 @@ static void DrawPauseScreen(void)
  * the box's right end and the plate after it); a box row is a row of a
  * slat (the art's slat compressed: its top edge and highlight, body, and
  * shadow). The two bands at the top are the title band twice. */
-#define ROW_PITCH  12
+/* The rows of the options and bindings pages: 7 rows 12 apart, or with
+ * large text 4 rows 20 apart (Layout). */
+static int sRowPitch = 12;
+static int sRowCount = 7;
+#define ROW_PITCH  sRowPitch
 #define ROWS_TOP   64
-#define ROW_COUNT  7
-static const u8 sSlatRows[ROW_PITCH] = { 68, 69, 70, 73, 76, 76, 76, 79, 82, 83, 84, 86 };
+#define ROW_COUNT  sRowCount
+static const u8 sSlatRows[12] = { 68, 69, 70, 73, 76, 76, 76, 79, 82, 83, 84, 86 };
+
+static int Large(void)
+{
+    return gHostSettings.textSize != 0;
+}
+
+/* The rows' text from the edges: less with large text, which is the
+ * title's font (it has no < and >: the values' arrows are drawn). */
+#define ROW_MARGIN (Large() ? 14 : 18)
+#define ROW_FONT   (Large() ? 1 : 0)
+#define ARROW_W    6
+
+static void Layout(void)
+{
+    sRowPitch = Large() ? 20 : 12;
+    sRowCount = Large() ? 4 : 7;
+}
 
 static int ArtColumn(int x, int *plate)
 {
@@ -265,7 +287,7 @@ static void DrawWidePanel(void)
                 ay = y - 56; /* the bolts along the top */
                 ax = x;
             } else if (y < ROWS_TOP + ROW_PITCH * ROW_COUNT) {
-                ay = plate ? y : sSlatRows[(y - ROWS_TOP) % ROW_PITCH];
+                ay = plate ? y : sSlatRows[(y - ROWS_TOP) % ROW_PITCH * 12 / ROW_PITCH];
             } else if (y < 151) {
                 ay = plate ? y : 147 + (y - (ROWS_TOP + ROW_PITCH * ROW_COUNT));
                 if (ay > 150) {
@@ -604,6 +626,81 @@ static const struct Option sExtras[] = {
 
 #define COUNT(a) ((int)(sizeof(a) / sizeof((a)[0])))
 
+#ifdef HOST_ANDROID
+/* The Android app's menu (phone.c keeps the settings; the app draws the
+ * picture and the touch controls as they say). */
+static const char *const sPhoneFilters[] = { "pixels", "smooth" };
+static const char *const sTouchSizes[] = { "small", "medium", "large", "huge" };
+static const char *const sTouchMenus[] = { "levels", "always" };
+static const char *const sHaptics[] = { "off", "light", "strong" };
+static const char *const sTextSizes[] = { "normal", "large" };
+
+static const struct Option sPhoneGeneral[] = {
+    { "skip intro", "from the next launch: straight to the title, no logos or intro.",
+      OPT_CHOICE, &gHostSettings.skipIntro, sOffOn, 2, 0 },
+};
+
+static const struct Option sPhoneDisplay[] = {
+    { "frame rate", "120: extra frames between the game's own, on 120 hz screens.",
+      OPT_CHOICE, &gHostSettings.frameRate, sFpsNames, HOST_FPS_COUNT, HOST_APPLY_VIDEO, FpsAvailable },
+    { "scaling", "fit keeps the shape, integer keeps pixels even.",
+      OPT_CHOICE, &gHostSettings.scaling, sScalings, HOST_SCALING_COUNT, HOST_APPLY_VIDEO },
+    { "filter", "sharp pixels, or smoothed as they are scaled up.",
+      OPT_CHOICE, &gHostSettings.filter, sPhoneFilters, 2, HOST_APPLY_VIDEO },
+    { "colours", "the game's own colours, or as the gba's darker screen shows them.", OPT_CHOICE,
+      &gHostSettings.colors, sColorModes, 2, HOST_APPLY_VIDEO },
+};
+
+static const struct Option sPhoneTouch[] = {
+    { "size", "how big the on-screen buttons are.", OPT_CHOICE, &gHostSettings.touchSize, sTouchSizes, 4,
+      HOST_APPLY_VIDEO },
+    { "opacity", "how solid the on-screen buttons are.", OPT_PERCENT, &gHostSettings.touchOpacity, NULL, 0,
+      HOST_APPLY_VIDEO, NULL, NULL, NULL, 20, 100 },
+    { "in menus", "levels: only in levels. menus and the warp room are tapped.", OPT_CHOICE,
+      &gHostSettings.touchInMenus, sTouchMenus, 2, HOST_APPLY_VIDEO },
+    { "haptics", "a buzz as you press an on-screen button.", OPT_CHOICE, &gHostSettings.haptics, sHaptics, 3,
+      HOST_APPLY_VIDEO },
+};
+
+static const struct Option sPhoneInterface[] = {
+    { "text size", "this menu's text: normal, or large and easier to read.", OPT_CHOICE,
+      &gHostSettings.textSize, sTextSizes, 2, 0 },
+    { "hud", "lives, wumpa and crates, or nothing over the picture.", OPT_CHOICE, &gHostSettings.hud, sHuds, 2, 0 },
+    { "prompts", "the game's a, b, l and r buttons drawn as your controller's.",
+      OPT_CHOICE, &gHostSettings.prompts, sPrompts, HOST_PROMPTS_NINTENDO + 1, 0 },
+};
+
+static const struct Option sPhoneAudio[] = {
+    { "quality", "high: smoother, clearer sound. original: the gba's own.", OPT_CHOICE,
+      &gHostSettings.audioQuality, sQualities, 2, HOST_APPLY_AUDIO },
+    { "master", "everything the game plays.", OPT_PERCENT, &gHostSettings.master, NULL, 0, HOST_APPLY_AUDIO,
+      NULL, NULL, NULL, 0, 100 },
+    { "music", "the music. the pause menu's music setting also applies.", OPT_PERCENT,
+      &gHostSettings.music, NULL, 0, HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
+    { "sound fx", "the sound effects. the pause menu's sound setting also applies.",
+      OPT_PERCENT, &gHostSettings.sfx, NULL, 0, HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
+};
+
+static const char *const sPhoneAutoSaves[HOST_AUTOSAVE_COUNT] = { "off", "in use", "slot 4" };
+
+static const struct Option sPhoneGameplay[] = {
+    { "auto save", "after a level with something new: save to the slot in use, or slot 4.",
+      OPT_CHOICE, &gHostSettings.autoSave, sPhoneAutoSaves, HOST_AUTOSAVE_COUNT, 0 },
+    { "look around", "hold up or down while standing still to see above or below.", OPT_CHOICE,
+      &gHostSettings.lookAround, sOffOn, 2, 0 },
+};
+
+static const struct Category sCategories[] = {
+    { "general", "skipping the intro", sPhoneGeneral, COUNT(sPhoneGeneral) },
+    { "display", "frame rate, scaling, filter and colours", sPhoneDisplay, COUNT(sPhoneDisplay) },
+    { "touch", "the on-screen buttons: size, opacity, menus and haptics", sPhoneTouch, COUNT(sPhoneTouch) },
+    { "interface", "text size, hud and button prompts", sPhoneInterface, COUNT(sPhoneInterface) },
+    { "audio", "quality, and master, music and sound fx volume", sPhoneAudio, COUNT(sPhoneAudio) },
+    { "gameplay", "auto save and looking up and down", sPhoneGameplay, COUNT(sPhoneGameplay) },
+};
+#define SETTINGS_TITLE "settings"
+#else
+#define SETTINGS_TITLE "pc settings"
 static const struct Category sCategories[] = {
     { "general", "portable mode, skip intro and quitting", sGeneral, COUNT(sGeneral) },
     { "display", "window, frame rate and scaling", sDisplay, COUNT(sDisplay) },
@@ -614,6 +711,7 @@ static const struct Category sCategories[] = {
     { "gameplay", "auto save and looking up and down", sGameplay, COUNT(sGameplay) },
     { "extras", "discord status and adding to steam", sExtras, COUNT(sExtras) },
 };
+#endif
 
 static const char *const sBindNames[HOST_BIND_COUNT] = {
     "up", "down", "left", "right", "A button", "B button", "L button", "R button", "start", "select",
@@ -886,6 +984,7 @@ void HostUiInput(int action)
 }
 
 static void ValueText(const struct Option *o, char *out, int size);
+static int ValueWidth(const char *value);
 
 /* --- The mouse --------------------------------------------------------------- */
 
@@ -911,6 +1010,7 @@ void HostUiMouse(int event, int x, int y)
     if (!sOpen || sCapturing) {
         return;
     }
+    Layout();
     if (sConfirm) {
         /* "A yes     B no": its halves, and the right button for no */
         if (event == HOST_UI_MOUSE_LEFT && y >= 82 && y < 100) {
@@ -928,6 +1028,19 @@ void HostUiMouse(int event, int x, int y)
     case PAGE_CATEGORIES: {
         int i = (y - 0x44) / 10;
         int over = x < 0x64 && y >= 0x44 && i >= 0 && i < COUNT(sCategories);
+
+        if (Large()) {
+            i = RowAt(y, COUNT(sCategories));
+            over = i >= 0;
+            if (event == HOST_UI_MOUSE_LEFT && i < 0) {
+                if (y < ROWS_TOP && y >= ROWS_TOP - 8) {
+                    HostUiInput(HOST_UI_UP);
+                } else if (y >= ROWS_TOP + ROW_PITCH * ROW_COUNT && y < ROWS_TOP + ROW_PITCH * ROW_COUNT + 10) {
+                    HostUiInput(HOST_UI_DOWN);
+                }
+                break;
+            }
+        }
 
         if (event == HOST_UI_MOUSE_WHEEL_UP || event == HOST_UI_MOUSE_WHEEL_DOWN) {
             HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_UP : HOST_UI_DOWN);
@@ -950,9 +1063,9 @@ void HostUiMouse(int event, int x, int y)
             int vw;
 
             ValueText(&cat->options[i], value, sizeof(value));
-            vw = HostUiTextWidth(0, value);
-            onValue = value[0] != '\0' && x >= W - 18 - vw - 4 && x < W - 12;
-            left = x < W - 18 - vw / 2;
+            vw = ValueWidth(value);
+            onValue = value[0] != '\0' && x >= W - ROW_MARGIN - vw - 4 && x < W - ROW_MARGIN + 6;
+            left = x < W - ROW_MARGIN - vw / 2;
         }
         if (event == HOST_UI_MOUSE_WHEEL_UP || event == HOST_UI_MOUSE_WHEEL_DOWN) {
             if (onValue) {
@@ -1036,6 +1149,25 @@ static void DrawHelp(const char *s, int pal)
     }
 }
 
+static void DrawRowsFrame(int count, int cursor);
+
+/* Large text: the categories as the options pages' rows, the
+ * highlighted one's description in the band under the title. */
+static void DrawCategoryRows(void)
+{
+    int i;
+
+    DrawWidePanel();
+    TextCentered(1, W / 2, 14, SETTINGS_TITLE, HOST_UI_PAL_NORMAL);
+    DrawRowsFrame(COUNT(sCategories), sCategory);
+    for (i = sTop; i < COUNT(sCategories) && i < sTop + ROW_COUNT; i++) {
+        int pal = i == sCategory ? HOST_UI_PAL_WHITE : HOST_UI_PAL_NORMAL;
+
+        TextCentered(1, W / 2, ROWS_TOP + ROW_PITCH * (i - sTop) + 2, sCategories[i].name, pal);
+    }
+    DrawHelp(sCategories[sCategory].about, HOST_UI_PAL_NORMAL);
+}
+
 static void DrawCategories(void)
 {
     const struct Category *cat = &sCategories[sCategory];
@@ -1043,8 +1175,12 @@ static void DrawCategories(void)
     int n;
     int i;
 
+    if (Large()) {
+        DrawCategoryRows();
+        return;
+    }
     DrawPauseScreen();
-    TextCentered(1, W / 2, 14, "pc settings", HOST_UI_PAL_NORMAL);
+    TextCentered(1, W / 2, 14, SETTINGS_TITLE, HOST_UI_PAL_NORMAL);
     Text(1, 0x20, 0x26, HOST_PORT_VERSION, HOST_UI_PAL_NORMAL);
     /* The monitor's title, as the pause menu's page titles. */
     TextCentered(0, 194, 0x2D, cat->name, HOST_UI_PAL_NORMAL);
@@ -1078,6 +1214,55 @@ static void ValueText(const struct Option *o, char *out, int size)
     }
 }
 
+/* A value, "<75%>", as the rows show it: with large text, the title's
+ * font between drawn arrows. */
+static int ValueWidth(const char *value)
+{
+    char inner[48];
+    size_t n = strlen(value);
+
+    if (!Large() || n < 2 || value[0] != '<') {
+        return HostUiTextWidth(ROW_FONT, value);
+    }
+    snprintf(inner, sizeof(inner), "%.*s", (int)(n - 2), value + 1);
+    return HostUiTextWidth(1, inner) + 2 * ARROW_W;
+}
+
+/* A left or right pointing triangle, 4 wide and 7 high, at (x, y). */
+static void SideArrow(int x, int y, int right, int pal)
+{
+    const u32 *c = sFontPal[pal];
+    int r;
+
+    for (r = 0; r < 7; r++) {
+        int len = r < 4 ? r + 1 : 7 - r;
+        int k;
+
+        for (k = 0; k < len; k++) {
+            int px = right ? x + k : x + 3 - k;
+
+            sCanvas[(y + r) * W + px] = 0xFF000000 | c[k == len - 1 ? 6 : r < 3 ? 4 : 8];
+        }
+    }
+}
+
+static void DrawValue(int right, int y, const char *value, int pal)
+{
+    char inner[48];
+    size_t n = strlen(value);
+    int w;
+
+    if (!Large() || n < 2 || value[0] != '<') {
+        TextRight(ROW_FONT, right, y, value, pal);
+        return;
+    }
+    snprintf(inner, sizeof(inner), "%.*s", (int)(n - 2), value + 1);
+    w = HostUiTextWidth(1, inner);
+    SideArrow(right - 4, y + 4, 1, pal);
+    TextRight(1, right - ARROW_W, y, inner, pal);
+    SideArrow(right - ARROW_W - w - ARROW_W + 1, y + 4, 0, pal);
+}
+
 static void DrawRowsFrame(int count, int cursor)
 {
     if (cursor < sTop) {
@@ -1105,13 +1290,13 @@ static void DrawOptions(void)
     DrawRowsFrame(cat->count, cursor);
     for (i = sTop; i < cat->count && i < sTop + ROW_COUNT; i++) {
         const struct Option *o = &cat->options[i];
-        int y = ROWS_TOP + ROW_PITCH * (i - sTop) + 2;
+        int y = ROWS_TOP + ROW_PITCH * (i - sTop) + (Large() ? 2 : 2);
         int on = OptionEnabled(o);
         int pal = on ? (i == cursor ? HOST_UI_PAL_WHITE : HOST_UI_PAL_NORMAL)
                      : (i == cursor ? HOST_UI_PAL_GREY_LIGHT : HOST_UI_PAL_GREY);
         char value[48];
 
-        Text(0, 18, y, o->label, pal);
+        Text(ROW_FONT, ROW_MARGIN, y, o->label, pal);
         ValueText(o, value, sizeof(value));
         if (value[0] != '\0') {
             int vpal = pal;
@@ -1119,7 +1304,7 @@ static void DrawOptions(void)
             if (on && o->type == OPT_CHOICE && !ChoiceAvailable(o, *o->value)) {
                 vpal = i == cursor ? HOST_UI_PAL_GREY_LIGHT : HOST_UI_PAL_GREY;
             }
-            TextRight(0, W - 18, y, value, vpal);
+            DrawValue(W - ROW_MARGIN, y, value, vpal);
         }
     }
     if (sMessageTime > 0) {
@@ -1227,6 +1412,7 @@ static void DrawConfirm(void)
 void HostUiDraw(u32 *canvas)
 {
     InitPalettes();
+    Layout();
     sCanvas = canvas;
     if (sMessageTime > 0) {
         sMessageTime--;
@@ -1259,6 +1445,8 @@ void HostUiPreview(const char *dir)
     int n = 0;
 
     HostConfigDefaults(&gHostSettings);
+    /* HOST_UI_LARGE: the pages with large text */
+    gHostSettings.textSize = getenv("HOST_UI_LARGE") != NULL;
     HostUiOpen();
     /* Every help must fit the band's two lines. */
     for (c = 0; c < COUNT(sCategories); c++) {
@@ -1267,8 +1455,28 @@ void HostUiPreview(const char *dir)
         for (i = 0; i < sCategories[c].count; i++) {
             char lines[4][64];
 
-            if (Wrap(sCategories[c].options[i].help, W - 16, lines, 4) > 2) {
-                printf("ui-preview: too long: %s\n", sCategories[c].options[i].help);
+            const struct Option *o = &sCategories[c].options[i];
+            int v;
+
+            if (Wrap(o->help, W - 16, lines, 4) > 2) {
+                printf("ui-preview: too long: %s\n", o->help);
+            }
+            /* a row's label and each of its values side by side */
+            for (v = 0; v < (o->type == OPT_CHOICE ? o->count : 1); v++) {
+                char value[48];
+                int saved = o->value != NULL ? *o->value : 0;
+                int width;
+
+                if (o->value == NULL) {
+                    break;
+                }
+                *o->value = o->type == OPT_PERCENT ? 100 : v;
+                ValueText(o, value, sizeof(value));
+                *o->value = saved;
+                width = HostUiTextWidth(ROW_FONT, o->label) + 4 + ValueWidth(value);
+                if (width > W - 2 * ROW_MARGIN) {
+                    printf("ui-preview: too wide: %s %s (%d)\n", o->label, value, width);
+                }
             }
         }
     }

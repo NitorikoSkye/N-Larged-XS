@@ -117,6 +117,13 @@ struct HostSettings {
     int discord;
     int discordProgress;
     char discordAppId[32]; /* the Discord application's id, digits */
+    /* Android (phone.c, the app reads them from the core's settings
+     * message): the touch controls, the menus' text and the haptics */
+    int touchSize;     /* 0 small, 1 medium, 2 large, 3 huge */
+    int touchOpacity;  /* percent */
+    int touchInMenus;  /* 0 levels only (menus are tapped), 1 always */
+    int haptics;       /* 0 off, 1 light, 2 strong */
+    int textSize;      /* the settings menu's text: 0 normal, 1 large */
 };
 extern struct HostSettings gHostSettings;
 
@@ -183,6 +190,14 @@ struct HostMouse {
 };
 extern struct HostMouse gHostMouse;
 u16 HostMouseGameKeys(void); /* the buttons the mouse adds this frame */
+/* What a touch does now (mouse_hooks.cpp; the Android app's controls). */
+enum {
+    HOST_TOUCH_PLAY,     /* a level: the on-screen buttons */
+    HOST_TOUCH_MENU,     /* a game menu, the warp room: tapped as the mouse clicks */
+    HOST_TOUCH_SETTINGS, /* the settings menu (stream.c) */
+    HOST_TOUCH_ANY,      /* elsewhere: a tap is A and START */
+};
+int HostTouchMode(void);
 
 /* steam.c: Extras' Add to steam (a toast says how it went). */
 void HostSteamAdd(void);

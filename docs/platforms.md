@@ -562,7 +562,62 @@ screen's, the save menu's and the warp room's Run, gLanguageSelect, and
 PauseMenu::Draw (wrapped for its `this`). The cursor shows for two
 seconds after the mouse moves, and SDL's touch-as-mouse makes a
 touchscreen (a Steam Deck's) tap the same. HOST_LINK_GAME keeps the save
-menu's five rows for the mouse too.
+menu's five rows for the mouse too. Game over's "continue?" (v0.40): a
+click on "yes" or "no" steps the cursor there (Up or Down) and then
+presses A; the prompt's instance is out of reach (ContinuePrompt::Run
+makes it, all in one object), so Font::DrawText is wrapped and the ">"
+cursor's row (gContinuePromptCursorText) says which is selected.
+
+**Android** (v0.40; platform/android/, its README; src/stream.c,
+src/phone.c, src/rom_data.c). The Android app runs the pc platform's core
+built with HOST_ANDROID=1 (static, musl or glibc, ARM64 and x86-64) as a
+child process with --stream, whose header comment has the messages both
+ways. What the phone build adds:
+
+- *Its settings* (phone.c): settings.ini in the app's files
+  (CRASHXS_DIR), and ui.c's menu with the phone's categories (general,
+  display, touch, interface, audio, gameplay). The core sends the app what
+  it needs: the touch buttons' size, opacity and whether they show in
+  menus, the haptics, the scaling, the filter and the frame rate. Frame
+  rate offers 60, and 120 where the app says the screen reaches 119 Hz.
+- *Large text* (Interface's text size, any build's ui.c): the options and
+  categories pages as four rows 20 pixels apart in the title's font, with
+  the values' arrows drawn (the font has no < or >). --ui-preview reports
+  a row whose label and widest value don't fit; HOST_UI_LARGE=1 previews
+  the large pages.
+- *The settings menu in the stream*: opened by the app's cog (or a
+  controller's Guide button), the game waits while it is open, as in the
+  window; its canvas is the picture, the app's keys work it on presses,
+  taps are its mouse, scrolls its wheel, back its B. Keys held as it
+  closes aren't the game's until let go.
+- *Touch modes* (HostTouchMode, mouse_hooks.cpp), sent as they change: the
+  settings menu; one of the game's menus the mouse plays (the title's, the
+  language select, the save menu, the pause menu, the warp room, the
+  continue prompt), where the app hides its buttons and sends taps as
+  clicks; a level (the HUD ran in the last three frames), with the
+  buttons; or anywhere else, where a tap is A and Start (the intro, the
+  title's "press start", a power's dialog, the credits). The phone's back
+  is the right button in a menu and Start in a level.
+- *Prompts* (HostPromptsPhone, prompts.c): the app says which controller
+  was used last (by its vendor: Sony, Nintendo, else Xbox's layout; the
+  touch screen, the GBA's), and button prompts' "auto" follows it, the
+  Start text too.
+- *120 frames a second*: at each VBlank the frame is kept for
+  interpolation (interp.c), and the picture half way to it and the frame
+  itself go out at 480x320 (ppu_hd.c at twice the size, on up to four
+  threads), half a frame apart.
+- *Sound*: master volume, and quality's high (gax_dsp.c's 16-bit blocks,
+  resampled as the 8-bit ones).
+- *The game's data* (rom_data.c): the APK's cores have it blanked out
+  (platform/android/tools/make_core_package.py, from the link map: the
+  build's own objects' .rodata, .data and .data.rel.ro, not the C
+  library's nor the code's merged literals; the cores are linked with
+  -z separate-code so that it shares no page with code). The app makes it
+  from the player's ROM into a file (CRASHXS_DATA), which a constructor
+  that runs before any of the game's writes back in place (read-only pages
+  made writable for it, then read-only again). A file for another build
+  (its build id, the data's SHA-1) is refused. The blanked ARM64 and
+  x86-64 cores with their data give the PC build's checkpoint hashes.
 
 **Controls.** Keyboard: the arrows are the D-pad, X is A, Z is B, A and
 S are L and R, Enter is Start, Backspace (or right Shift) is Select. A

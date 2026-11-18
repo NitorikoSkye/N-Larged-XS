@@ -91,13 +91,32 @@ void HostFrontendAudio(const s8 *buf, u32 n, u32 rate)
     }
 }
 
+#ifdef HOST_ANDROID
+void HostStreamAudio16(const s16 *buf, u32 n, u32 rate);
+#endif
+
 void HostFrontendAudio16(const s16 *buf, u32 n, u32 rate)
 {
+#ifdef HOST_ANDROID
+    if (gHostStream) {
+        HostStreamAudio16(buf, n, rate);
+    }
+#else
     (void)buf;
     (void)n;
     (void)rate;
+#endif
 }
 
+#ifdef HOST_ANDROID
+/* The phone's settings and their front end: phone.c; a toast: the app's. */
+void HostStreamToast(const char *text);
+
+void HostToast(const char *text)
+{
+    HostStreamToast(text);
+}
+#else
 void HostToast(const char *text)
 {
     (void)text;
@@ -155,6 +174,7 @@ int HostFrontendFpsAllowed(int fps)
 void HostFrontendQuit(void)
 {
 }
+#endif /* HOST_ANDROID */
 
 #else
 
