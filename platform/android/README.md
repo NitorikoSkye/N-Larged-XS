@@ -17,10 +17,10 @@ as the PC port.
 3. Play.
 
 **Touch.** In a level, the GBA's buttons are on the screen, each showing what
-it does in white (icons/*.svg): the D-pad on the left, A (jump: a hop onto
-a crate) and B (spin: a tornado) on the right, L (turbo run: a sneaker
-kicking up dust) and R (crouch and body slam: a crate smashed from above)
-in the top corners, Select (show the counters) and Start (pause) at the bottom. Everywhere else (the title screen, the save menu, the warp
+it does in white (icons/*.svg): the D-pad on the left, A (jump: a sneaker
+leaping off the ground) and B (spin: a tornado) on the right, L (turbo run:
+the sneaker leaning into a run, with speed lines and dust) and R (crouch and
+body slam: an arrow down onto a crate, cracking it) in the top corners, Select (show the counters) and Start (pause) at the bottom. Everywhere else (the title screen, the save menu, the warp
 room, the pause menu, game over's "continue?") they're hidden and you tap
 what you want, as with the PC port's mouse: a tap on a menu row picks it, a
 tap on a warp room pad walks Crash there and a tap on the pad he's on
