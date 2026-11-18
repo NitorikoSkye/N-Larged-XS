@@ -281,7 +281,9 @@ two lines.
 
 The files (settings.ini, the save, screenshots/) are in the user's
 application data folder (%APPDATA%\CrashBandicootXS), or next to the
-executable in portable mode (a settings.ini there with portable=1);
+executable in portable mode (a settings.ini there with portable=1;
+since v0.34 a first run, with nothing in application data, starts
+portable when the game's folder can be written to);
 switching moves them. v0.01's save next to the executable is copied to
 application data once. `--save FILE` still wins.
 

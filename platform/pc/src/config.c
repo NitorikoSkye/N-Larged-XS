@@ -7,7 +7,9 @@
  * ~/.local/share/CrashBandicootXS on Linux), or, in portable mode, next
  * to the executable: a settings.ini there that says portable=1 is portable
  * mode. Switching moves the files over (copied, then the old ones removed
- * once every copy is whole), so the save follows.
+ * once every copy is whole), so the save follows. A first run, with
+ * nothing in application data, starts portable when the game's folder can
+ * be written to (v0.34).
  *
  * v0.01 kept its save next to the executable with no settings.ini: a
  * save found there, with none in application data, is copied over once
@@ -468,6 +470,21 @@ void HostConfigInit(void)
     HostConfigDefaults(&gHostSettings);
 
     portable = ReadSettings(sExeDir);
+    if (portable == -1) {
+        char appSettings[1100];
+        char appSave[1100];
+
+        /* A first run (no settings here, nothing in application data):
+         * portable by default, when the game's folder can be written to
+         * (not in Program Files, say). A settings.ini or a save already in
+         * application data stays where it is. */
+        Join(appSettings, sizeof(appSettings), sAppDir, SETTINGS_FILE);
+        Join(appSave, sizeof(appSave), sAppDir, SAVE_FILE);
+        if (strcmp(sAppDir, sExeDir) != 0 && !Exists(appSettings) && !Exists(appSave) && WriteSettings(sExeDir, 1)) {
+            portable = 1;
+            rmdir(sAppDir); /* SDL_GetPrefPath made it; gone if empty */
+        }
+    }
     if (portable == 1) {
         gHostSettings.portable = 1;
         PointSaveAt(sExeDir);
