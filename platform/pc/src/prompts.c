@@ -20,6 +20,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <string.h>
 
 #include "host_platform.h"
@@ -542,32 +543,98 @@ void HostPromptGlyphDrawn(u32 firstTile, u32 palette)
     }
 }
 
-/* --- "start:  load-save" ----------------------------------------------------
+/* --- "start" -------------------------------------------------------------
 
- * The warp room's hint (text 0x2F, in every language with the word "start"
- * somewhere in it) says the button the player's Start is: sdl.c says how
- * (gHostStartPrompt): a key's name in the game's font, or "L", the font's
- * L button glyph, which sdl.c has show the pad's Start while in the warp
- * room (no other text there draws it). The link wraps GetUiText. */
-char gHostStartPrompt[16]; /* "" leaves the text as it is */
+ * Two of the game's texts say "start", as a word, in every language: 0x2E
+ * ("push start to continue": the power dialogs and the save menu's
+ * messages) and 0x2F (the warp room's "start:  load-save"). They say the
+ * player's Start instead (sdl.c chooses how): gHostStartPrompt, a key's
+ * name in the game's font, or else the pad's Start button, drawn
+ * (StartGlyph) in the place of the font's L or R glyph: whichever the
+ * screen's other text doesn't use. Only the power dialogs' descriptions
+ * (0x40-0x43) use either (turbo run's says L, body slam's R), and a
+ * dialog fetches its description before it draws 0x2E. The link wraps
+ * GetUiText. */
+char gHostStartPrompt[16]; /* a key's name, or "" */
+int gHostStartStyle;       /* else a pad style, or 0 */
+int gHostStartLabels;
+
+static int StartGlyph(int slot)
+{
+    int s;
+
+    for (s = 0; s < HOST_BIND_SLOTS && gHostStartStyle != 0; s++) {
+        if (HostPromptForPad(slot, gHostStartStyle, gHostSettings.pad[HOST_BIND_START][s], gHostStartLabels)) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+/* Headless runs (no SDL to choose): HOST_PROMPTS, as for the A, B, L
+ * and R glyphs, with Start on its usual key and button. */
+static void StartFromEnv(void)
+{
+    static int sDone;
+    const char *e;
+
+    if (sDone || !gHostOptions.headless) {
+        return;
+    }
+    sDone = 1;
+    e = getenv("HOST_PROMPTS");
+    if (e == NULL) {
+        return;
+    }
+    if (strcmp(e, "keyboard") == 0) {
+        snprintf(gHostStartPrompt, sizeof(gHostStartPrompt), "%s", "enter");
+        return;
+    }
+    gHostStartStyle = strcmp(e, "xbox") == 0          ? HOST_PROMPTS_XBOX
+                      : strcmp(e, "playstation") == 0 ? HOST_PROMPTS_PLAYSTATION
+                      : strcmp(e, "nintendo") == 0    ? HOST_PROMPTS_NINTENDO
+                                                       : 0;
+    gHostStartLabels = 1;
+    gHostSettings.pad[HOST_BIND_START][0] = HOST_PAD_BUTTON(PAD_START);
+}
 
 const u8 *__real_GetUiText(s32 index);
 
 const u8 *__wrap_GetUiText(s32 index)
 {
     static u8 buf[96];
+    static int sFree = 2; /* the glyph slot the screen leaves free */
     const u8 *text = __real_GetUiText(index);
+    const char *t = (const char *)text;
     const char *at;
-    size_t pre;
+    const char *word;
 
-    if (index != 0x2F || gHostStartPrompt[0] == 0 || text == NULL) {
+    if (text == NULL) {
         return text;
     }
-    at = strstr((const char *)text, "start");
+    if (index >= 0x40 && index <= 0x43) {
+        sFree = strchr(t, 'L') != NULL ? 3 : 2;
+        return text;
+    }
+    if (index != 0x2E && index != 0x2F) {
+        return text;
+    }
+    StartFromEnv();
+    for (at = strstr(t, "start"); at != NULL; at = strstr(at + 1, "start")) {
+        if ((at == t || !isalpha((unsigned char)at[-1])) && !isalpha((unsigned char)at[5])) {
+            break;
+        }
+    }
     if (at == NULL) {
         return text;
     }
-    pre = (size_t)(at - (const char *)text);
-    snprintf((char *)buf, sizeof(buf), "%.*s%s%s", (int)pre, (const char *)text, gHostStartPrompt, at + 5);
+    if (gHostStartPrompt[0] != 0) {
+        word = gHostStartPrompt;
+    } else if (StartGlyph(sFree)) {
+        word = sFree == 3 ? "R" : "L";
+    } else {
+        return text;
+    }
+    snprintf((char *)buf, sizeof(buf), "%.*s%s%s", (int)(at - t), t, word, at + 5);
     return buf;
 }

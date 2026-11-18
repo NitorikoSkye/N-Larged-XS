@@ -1943,8 +1943,8 @@ static SDL_GameController *PromptPad(void)
 }
 
 extern int gHostInWarpRoom;     /* level_pick.c */
-extern int gHostInSaveMenu;     /* autosave_hooks.cpp */
 extern char gHostStartPrompt[16]; /* prompts.c */
+extern int gHostStartStyle, gHostStartLabels;
 
 /* A key's name as the game's small font can write it (lower case, its
  * letters, digits and a few signs), or 0. */
@@ -1971,24 +1971,26 @@ static int KeyText(int scancode, char *out, size_t size)
     return n > 0;
 }
 
-/* The warp room's "start:  load-save" (prompts.c): the key bound to Start,
- * or the pad's Start button in the L glyph's place. */
+/* "start" in the game's texts (prompts.c, __wrap_GetUiText): the key
+ * bound to Start, written out, or (gHostStartStyle) the pad's Start
+ * button. */
 static void StartPrompt(int style, int labels)
 {
     int s;
 
     gHostStartPrompt[0] = 0;
+    gHostStartStyle = 0;
     if (style == HOST_PROMPTS_GBA) {
         return;
     }
+    if (style != HOST_PROMPTS_KEYBOARD) {
+        gHostStartStyle = style;
+        gHostStartLabels = labels;
+        return;
+    }
     for (s = 0; s < HOST_BIND_SLOTS; s++) {
-        if (style == HOST_PROMPTS_KEYBOARD) {
-            if (gHostSettings.keys[HOST_BIND_START][s] > 0 &&
-                KeyText(gHostSettings.keys[HOST_BIND_START][s], gHostStartPrompt, sizeof(gHostStartPrompt))) {
-                return;
-            }
-        } else if (gHostInWarpRoom && !gHostInSaveMenu && HostPromptForPad(2, style, gHostSettings.pad[HOST_BIND_START][s], labels)) {
-            snprintf(gHostStartPrompt, sizeof(gHostStartPrompt), "%s", "L");
+        if (gHostSettings.keys[HOST_BIND_START][s] > 0 &&
+            KeyText(gHostSettings.keys[HOST_BIND_START][s], gHostStartPrompt, sizeof(gHostStartPrompt))) {
             return;
         }
     }
