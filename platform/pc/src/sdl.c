@@ -1168,7 +1168,8 @@ static void PlaceOverlay(SDL_Rect dst, int w, int h, int side, int bottom, int *
 #define FPS_W 64
 #define FPS_H 12
 
-static void DrawFps(SDL_Rect dst, int scale)
+/* Returns how far down the window it reaches, for the timer under it. */
+static int DrawFps(SDL_Rect dst, int scale)
 {
     static u32 canvas[FPS_W * FPS_H];
     char text[16];
@@ -1185,6 +1186,7 @@ static void DrawFps(SDL_Rect dst, int scale)
 
         PlaceOverlay(dst, w, FPS_H, 0, 0, &scale, &x, &y);
         PutOverlay(&sFpsTex, canvas, FPS_W, FPS_H, x, y, scale);
+        return y + (FPS_H + 2) * scale;
     }
 }
 
@@ -1211,7 +1213,9 @@ static SDL_Texture *sTimerTex;
 /* The speedrun timer (timer.c), top right: the time in the large font,
  * then up to two lines in the small one. Its height (window pixels), for
  * the message under it. */
-static int DrawTimer(SDL_Rect dst, int scale)
+/* Top left, under the FPS counter (`top`: where it ends, 0 if none): the
+ * right border's top is the stats panel's. */
+static int DrawTimer(SDL_Rect dst, int scale, int top)
 {
     static u32 canvas[TIMER_W * TIMER_H];
     char big[32];
@@ -1247,7 +1251,10 @@ static int DrawTimer(SDL_Rect dst, int scale)
     if (l3[0]) {
         HostUiText(canvas, TIMER_W, TIMER_H, 0, w - 4 - HostUiTextWidth(0, l3), 29, l3, HOST_UI_PAL_WHITE);
     }
-    PlaceOverlay(dst, w, TIMER_H, 1, 0, &scale, &x, &y);
+    PlaceOverlay(dst, w, TIMER_H, 0, 0, &scale, &x, &y);
+    if (top > 0) {
+        y = top;
+    }
     PutOverlay(&sTimerTex, canvas, TIMER_W, TIMER_H, x, y, scale);
     return (h + 2) * scale;
 }
@@ -1717,13 +1724,16 @@ static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int m
         if (banner != NULL) {
             DrawMenu(dst, banner);
         }
+        int fpsBottom = 0;
+
         if (gHostSettings.showFps) {
-            DrawFps(dst, scale);
+            fpsBottom = DrawFps(dst, scale);
         }
         if (gHostSettings.inputDisplay) {
             DrawPad(dst, scale, gHostSettings.inputDisplay == 2);
         }
-        DrawToast(dst, scale, DrawTimer(dst, scale));
+        DrawTimer(dst, scale, fpsBottom);
+        DrawToast(dst, scale, 0);
     }
     UpdateCursor();
     SDL_RenderPresent(sRenderer);

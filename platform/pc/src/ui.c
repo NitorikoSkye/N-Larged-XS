@@ -540,7 +540,7 @@ static const struct Option sInterface[] = {
       &gHostSettings.showFps, sOffOn, 2, 0 },
     { "input display", "the buttons held, at the foot of that side's border or the picture.", OPT_CHOICE,
       &gHostSettings.inputDisplay, sCorners, 3, 0 },
-    { "speedrun timer", "top right: the level's time, its split against your best, the run's.",
+    { "speedrun timer", "top left: the level's time, its split against your best, the run's.",
       OPT_CHOICE, &gHostSettings.speedrunTimer, sTimers, HOST_TIMER_COUNT, 0 },
 };
 
