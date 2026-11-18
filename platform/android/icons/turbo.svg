@@ -1,6 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- L: turbo run. Two chevrons ahead of speed lines. -->
-  <path d="M56 32 L86 64 L56 96" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
-  <path d="M82 32 L112 64 L82 96" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
-  <path d="M10 46 H36 M4 64 H40 M10 82 H36" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"/>
+  <!-- L: turbo run. A running shoe flat out, kicking up dust. -->
+  <path d="M40 46 L56 42 C 62 54, 72 58, 84 60 L110 68 C 122 72, 122 86, 110 88 L42 88 C 36 88, 34 82, 36 76 Z" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"/>
+  <path d="M40 98 H112" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"/>
+  <path d="M60 58 L66 50 M70 62 L76 54 M80 64 L86 57" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+  <path d="M6 54 H26 M2 70 H28 M8 86 H26" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+  <circle cx="22" cy="104" r="6" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+  <circle cx="10" cy="98" r="4" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="4"/>
 </svg>
