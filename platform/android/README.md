@@ -22,7 +22,10 @@ it does in white, drawn as cartoon brush strokes that swell and taper
 rising, over and down) and B (spin: a tornado) on the right, L (turbo run: a
 sneaker leaning into a run, speed streaming off it) and R (crouch and
 body slam: an arrow curling over and down onto the ground, which it hits
-hard) in the top corners, Select (show the counters) and Start (pause) at the bottom. Everywhere else (the title screen, the save menu, the warp
+hard) in the top corners, Select (show the counters) and Start (pause) at the bottom. Hold the turbo
+run's button for a moment to lock it on (**Auto**, handy for time trials):
+it buzzes, turns orange and says AUTO, and stays held in levels (through
+pausing) until you tap it again. Everywhere else (the title screen, the save menu, the warp
 room, the pause menu, game over's "continue?") they're hidden and you tap
 what you want, as with the PC port's mouse: a tap on a menu row picks it, a
 tap on a warp room pad walks Crash there and a tap on the pad he's on
