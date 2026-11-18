@@ -649,6 +649,8 @@ static const struct Option sPhoneDisplay[] = {
       OPT_CHOICE, &gHostSettings.filter, sPhoneFilters, 2, HOST_APPLY_VIDEO },
     { "colours", "the game's own colours, or as the gba's darker screen shows them.", OPT_CHOICE,
       &gHostSettings.colors, sColorModes, 2, HOST_APPLY_VIDEO },
+    { "borders", "beside the picture: black, its colours blurred, or the world's art.", OPT_CHOICE,
+      &gHostSettings.borders, sBorders, HOST_BORDERS_COUNT, HOST_APPLY_VIDEO, NULL, NotStretched },
 };
 
 static const struct Option sPhoneTouch[] = {
@@ -665,7 +667,8 @@ static const struct Option sPhoneTouch[] = {
 static const struct Option sPhoneInterface[] = {
     { "text size", "this menu's text: normal, or large and easier to read.", OPT_CHOICE,
       &gHostSettings.textSize, sTextSizes, 2, 0 },
-    { "hud", "lives, wumpa and crates, or nothing over the picture.", OPT_CHOICE, &gHostSettings.hud, sHuds, 2, 0 },
+    { "hud", "lives, wumpa and crates: in the game, hidden, or in the left border.", OPT_CHOICE,
+      &gHostSettings.hud, sHuds, HOST_HUD_COUNT, 0 },
     { "prompts", "the game's a, b, l and r buttons drawn as your controller's.",
       OPT_CHOICE, &gHostSettings.prompts, sPrompts, HOST_PROMPTS_NINTENDO + 1, 0 },
 };
@@ -692,7 +695,7 @@ static const struct Option sPhoneGameplay[] = {
 
 static const struct Category sCategories[] = {
     { "general", "skipping the intro", sPhoneGeneral, COUNT(sPhoneGeneral) },
-    { "display", "frame rate, scaling, filter and colours", sPhoneDisplay, COUNT(sPhoneDisplay) },
+    { "display", "frame rate, scaling, filter, colours and borders", sPhoneDisplay, COUNT(sPhoneDisplay) },
     { "touch", "the on-screen buttons: size, opacity, menus and haptics", sPhoneTouch, COUNT(sPhoneTouch) },
     { "interface", "text size, hud and button prompts", sPhoneInterface, COUNT(sPhoneInterface) },
     { "audio", "quality, and master, music and sound fx volume", sPhoneAudio, COUNT(sPhoneAudio) },

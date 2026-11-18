@@ -279,6 +279,13 @@ static u16 WarpRoomKeys(int left, int wheel)
         sEnter = 0;
         return wheel > 0 ? DPAD_UP : DPAD_DOWN;
     }
+    /* the hint under the pads ("start:  load-save", or "tap: load-save"
+     * on the phone): Start, which opens the save menu */
+    if (left && y >= 0x96 - 4 && y < 0x96 + 12 && x >= 40 && x < 200) {
+        sTarget = -1;
+        sEnter = 0;
+        return START_BUTTON;
+    }
     if (left) {
         int pad = WarpPad(ls);
 

@@ -14,13 +14,15 @@
  * made again only when the window's size or the level changes. Borders
  * above and below the picture (a tall window) are the metal alone. */
 
-#ifdef HOST_SDL
+#if defined(HOST_SDL) || defined(HOST_ANDROID)
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#ifdef HOST_SDL
 #include <SDL.h>
+#endif
 
 #include "gba/gba.h"
 #include "host_platform.h"
@@ -126,7 +128,10 @@ static void ReadStats(struct Stats *st)
 
 /* A bar: its texture and what it was made for. */
 struct Bar {
+#ifdef HOST_SDL
     SDL_Texture *tex;
+#endif
+    int made;
     int w;
     int h;
     int level;
@@ -484,6 +489,40 @@ static void StatsPanel(u32 *c, int w, int h, const struct Stats *st, int reserve
 
 /* A number in the HUD's small digits (and '/', ':', '.'), right-aligned
  * at x1, its glyphs' tops at y. */
+#ifdef HOST_ANDROID
+/* The phone's right bar: the touch buttons cover its lower half, so the
+ * progress in one plate at the top: the completion, then the crystals,
+ * gems and relics, each by its icon. */
+static void CompactStats(u32 *c, int w, int h, const struct Stats *st)
+{
+    int x0 = 9 + 2;
+    int x1 = w - 2;
+    int cx = (x0 + x1) / 2;
+    int y = 6;
+    char text[32];
+    static const int icons[3] = { ICON_CRYSTAL, ICON_GEM_CLEAR, ICON_RELIC_PLATINUM };
+    static const int totals[3] = { 20, 28, 20 };
+    int counts[3];
+    int i;
+
+    counts[0] = st->crystals;
+    counts[1] = st->gems;
+    counts[2] = st->relics;
+    if (h < 110) {
+        return;
+    }
+    Plate(c, w, h, x0, y, x1, y + 96);
+    Centered(c, w, h, 0, cx, y + 4, "complete");
+    snprintf(text, sizeof(text), "%d%%", st->percent);
+    Centered(c, w, h, 1, cx, y + 13, text);
+    for (i = 0; i < 3; i++) {
+        Icon(c, w, h, icons[i], x0 + 10, y + 42 + 19 * i, 0);
+        snprintf(text, sizeof(text), "%d/%d", counts[i], totals[i]);
+        Centered(c, w, h, 1, cx + 7, y + 35 + 19 * i, text);
+    }
+}
+#endif
+
 static int GlyphOf(char ch)
 {
     if (ch >= '0' && ch <= '9') {
@@ -615,7 +654,9 @@ static int HudInBorder(void)
     return gHostSettings.hud == HOST_HUD_BORDERS && gHostPlayingLevel >= 0 && gHostHud.frame != 0;
 }
 
-static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, int side)
+/* A bar's pixels (ARGB, w x h of its own pixels), malloc'd; NULL if out
+ * of memory. */
+static u32 *BarPixels(int w, int h, int level, int side)
 {
     u32 *c = malloc((size_t)w * h * 4);
     int innerRight = side == 0;
@@ -632,8 +673,15 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
     /* the input display's room at the bottom of its border (sdl.c) */
     int reserve = side < 2 && gHostSettings.inputDisplay == side + 1 ? HOST_PAD_ART_H + 8 : 0;
 
+#ifdef HOST_ANDROID
+    /* the phone's touch buttons are over the bars' lower half */
+    if (side < 2) {
+        reserve = h / 2;
+    }
+#endif
+
     if (c == NULL) {
-        return;
+        return NULL;
     }
     /* the porthole (or portrait) and the name above it */
     if (cy + 56 > h - reserve) {
@@ -667,10 +715,42 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
                 HudPanel(c, w, h, 2, w - 11, cy + 64, &gHostHud);
             }
         } else if (side == 1 && sStats.valid) {
+#ifdef HOST_ANDROID
+            CompactStats(c, w, h, &sStats);
+#else
             StatsPanel(c, w, h, &sStats, reserve);
+#endif
         } else {
             Portrait(c, w, h, cx, cy);
         }
+    }
+    return c;
+}
+
+/* What a bar was made for (to know when to make it again). */
+static void NoteBar(struct Bar *bar, int w, int h, int level, int side)
+{
+    bar->made = 1;
+    bar->w = w;
+    bar->h = h;
+    bar->level = level;
+    bar->side = side;
+    bar->stats = sStats;
+    bar->hud = gHostHud;
+    bar->hud.frame = 0;
+    bar->hudShown = HudInBorder();
+    bar->pad = gHostSettings.inputDisplay;
+}
+
+static int BarStale(const struct Bar *bar, int w, int h, int side);
+
+#ifdef HOST_SDL
+static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, int side)
+{
+    u32 *c = BarPixels(w, h, level, side);
+
+    if (c == NULL) {
+        return;
     }
     if (bar->tex != NULL) {
         SDL_DestroyTexture(bar->tex);
@@ -681,15 +761,7 @@ static void MakeBar(struct Bar *bar, SDL_Renderer *r, int w, int h, int level, i
         SDL_SetTextureScaleMode(bar->tex, SDL_ScaleModeNearest);
     }
     free(c);
-    bar->w = w;
-    bar->h = h;
-    bar->level = level;
-    bar->side = side;
-    bar->stats = sStats;
-    bar->hud = gHostHud;
-    bar->hud.frame = 0;
-    bar->hudShown = HudInBorder();
-    bar->pad = gHostSettings.inputDisplay;
+    NoteBar(bar, w, h, level, side);
 }
 
 /* --discord-assets DIR: the Discord application's art assets (discord.c),
@@ -760,6 +832,8 @@ void HostBordersWriteDiscordAssets(const char *dir)
     printf("discord assets: %s (upload them to the application's Rich Presence art assets)\n", dir);
 }
 
+#endif /* HOST_SDL */
+
 static int HudChanged(const struct Bar *bar)
 {
     struct HostHud now = gHostHud;
@@ -771,6 +845,15 @@ static int HudChanged(const struct Bar *bar)
     return bar->hudShown && memcmp(&bar->hud, &now, sizeof(now)) != 0;
 }
 
+/* A side bar (0 left, 1 right) made for something else than now. */
+static int BarStale(const struct Bar *bar, int w, int h, int side)
+{
+    return !bar->made || bar->w != w || bar->h != h || bar->level != gHostPlayingLevel || bar->side != side ||
+           bar->pad != gHostSettings.inputDisplay ||
+           (side == 1 && memcmp(&bar->stats, &sStats, sizeof(sStats)) != 0) || (side == 0 && HudChanged(bar));
+}
+
+#ifdef HOST_SDL
 void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
 {
     int side;
@@ -837,11 +920,7 @@ void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
         if (barW <= 0) {
             continue;
         }
-        if (sBars[side].tex == NULL || sBars[side].w != w || sBars[side].h != h ||
-            sBars[side].level != gHostPlayingLevel || sBars[side].side != side ||
-            sBars[side].pad != gHostSettings.inputDisplay ||
-            (side == 1 && memcmp(&sBars[side].stats, &sStats, sizeof(sStats)) != 0) ||
-            (side == 0 && HudChanged(&sBars[side]))) {
+        if (sBars[side].tex == NULL || BarStale(&sBars[side], w, h, side)) {
             MakeBar(&sBars[side], r, w, h, gHostPlayingLevel, side);
         }
         if (side == 0 && w >= 75 && HudInBorder()) {
@@ -859,3 +938,81 @@ void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
 }
 
 #endif /* HOST_SDL */
+
+#ifdef HOST_ANDROID
+/* The phone (stream.c): the bars as the window would draw them beside a
+ * picture `picW` wide with `left` and `right` pixels of screen beside it
+ * and `top` above it, on a screen `screenH` high; each bar that changed
+ * goes to `send` (side 0 left, 1 right, 2 above, which the app also draws
+ * flipped below; its pixel size `unit`), and the HUD's place is said
+ * (gHostHudInBorder). */
+void HostBordersPhone(int left, int right, int screenH, int picW, int top,
+                      void (*send)(int side, int unit, int w, int h, const u32 *px))
+{
+    int side;
+
+    gHostHudInBorder = 0;
+    if (gHostSettings.borders != HOST_BORDERS_THEMED || screenH <= 0) {
+        return;
+    }
+    ReadStats(&sStats);
+    if (top > 0) {
+        int unit;
+        int w;
+        int h;
+
+        if (left > 0) {
+            unit = left / 75 > 1 ? left / 75 : 1;
+        } else {
+            int k = (screenH - 2 * top) / HOST_SCREEN_HEIGHT;
+
+            unit = (k + 1) / 2 > 1 ? (k + 1) / 2 : 1;
+        }
+        w = (picW + unit - 1) / unit;
+        h = (top + unit - 1) / unit;
+        if (!sBars[2].made || sBars[2].w != w || sBars[2].h != h || sBars[2].side != 2) {
+            u32 *c = BarPixels(w, h, -1, 2);
+
+            if (c != NULL) {
+                send(2, unit, w, h, c);
+                free(c);
+                NoteBar(&sBars[2], w, h, -1, 2);
+            }
+        }
+    }
+    for (side = 0; side < 2; side++) {
+        int barW = side == 0 ? left : right;
+        int unit = barW / 75 > 1 ? barW / 75 : 1;
+        int w = (barW + unit - 1) / unit;
+        int h = (screenH + unit - 1) / unit;
+
+        if (barW <= 0) {
+            continue;
+        }
+        if (BarStale(&sBars[side], w, h, side)) {
+            u32 *c = BarPixels(w, h, gHostPlayingLevel, side);
+
+            if (c != NULL) {
+                send(side, unit, w, h, c);
+                free(c);
+                NoteBar(&sBars[side], w, h, gHostPlayingLevel, side);
+            }
+        }
+        if (side == 0 && w >= 75 && HudInBorder()) {
+            gHostHudInBorder = 1;
+        }
+    }
+}
+
+/* The app's screen changed (or the bars must go again). */
+void HostBordersPhoneReset(void)
+{
+    int i;
+
+    for (i = 0; i < 3; i++) {
+        sBars[i].made = 0;
+    }
+}
+#endif /* HOST_ANDROID */
+
+#endif /* HOST_SDL || HOST_ANDROID */

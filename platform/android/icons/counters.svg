@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- SELECT: show the HUD's counters. An eye. -->
+  <path d="M10 64 C 34 28, 94 28, 118 64 C 94 100, 34 100, 10 64 Z" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="9"/>
+  <circle cx="64" cy="64" r="17" fill="#fff"/>
+</svg>

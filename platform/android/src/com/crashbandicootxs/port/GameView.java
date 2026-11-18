@@ -2,7 +2,9 @@ package com.crashbandicootxs.port;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Path;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Rect;
@@ -12,6 +14,7 @@ import android.view.HapticFeedbackConstants;
 import android.view.MotionEvent;
 import android.view.View;
 
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 /**
@@ -29,7 +32,14 @@ import java.nio.ByteBuffer;
  * they're hidden and a tap goes to the game where it lands, a swipe up or
  * down scrolls. "In menus: always" keeps the buttons in the menus too.
  * The settings button sits at the top middle. A controller in use hides
- * the buttons until the screen is touched again.
+ * the buttons until the screen is touched again. The buttons show what
+ * they do (icons/*.svg, white): A jumps, B spins, R crouches and slams, L
+ * is the turbo run, Start pauses, Select shows the counters.
+ *
+ * Beside the picture, the borders: black, ambient (the picture's colours,
+ * blurred and darkened, across the screen) or themed (the core's bars,
+ * borders.c, as the PC port draws them: the app says how much room there
+ * is, the core sends the bars in their own pixels and their size).
  */
 public class GameView extends View {
     static final int W = 240, H = 160;
@@ -58,6 +68,21 @@ public class GameView extends View {
     private int scaling;
     private boolean smooth;
     private volatile int mode = MODE_ANY;
+    private int borders = 2;
+
+    /* The themed borders' bars (0 left, 1 right, 2 above, flipped below)
+     * and their pixel sizes; the ambient border's tiny picture. */
+    private final Bitmap[] bars = new Bitmap[3];
+    private final int[] barUnit = new int[3];
+    private final Bitmap glow = Bitmap.createBitmap(8, 5, Bitmap.Config.RGB_565);
+    private final Canvas glowCanvas = new Canvas(glow);
+    private final Paint soft = new Paint(Paint.FILTER_BITMAP_FLAG);
+    private final Paint shade = new Paint();
+
+    /* The buttons' icons. */
+    private final Bitmap iconJump, iconSpin, iconSlam, iconTurbo, iconPause, iconCounters;
+    private final Paint iconPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+    private final RectF iconRect = new RectF();
 
     /* The controls' places (set by layout). */
     private float padX, padY, padR;
@@ -81,6 +106,38 @@ public class GameView extends View {
         text.setTypeface(Typeface.DEFAULT_BOLD);
         setBackgroundColor(Color.BLACK);
         setHapticFeedbackEnabled(true);
+        shade.setColor(Color.argb(150, 0, 0, 0));
+        iconJump = icon(activity, "jump");
+        iconSpin = icon(activity, "spin");
+        iconSlam = icon(activity, "slam");
+        iconTurbo = icon(activity, "turbo");
+        iconPause = icon(activity, "pause");
+        iconCounters = icon(activity, "counters");
+    }
+
+    private static Bitmap icon(MainActivity a, String name) {
+        try {
+            InputStream in = a.getAssets().open("icons/" + name + ".png");
+            try {
+                return BitmapFactory.decodeStream(in);
+            } finally {
+                in.close();
+            }
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /** A themed border's bar from the core (RGB565, its own pixels). */
+    void setBar(int side, int unit, int w, int h, byte[] data, int offset) {
+        if (side < 0 || side > 2 || w <= 0 || h <= 0) {
+            return;
+        }
+        Bitmap b = Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565);
+        b.copyPixelsFromBuffer(ByteBuffer.wrap(data, offset, w * h * 2));
+        bars[side] = b;
+        barUnit[side] = unit;
+        postInvalidate();
     }
 
     /** A picture from the game (RGB565, little-endian: the bitmap's own order). */
@@ -111,6 +168,7 @@ public class GameView extends View {
         haptics = v[3];
         scaling = v[4];
         smooth = v[5] != 0;
+        borders = v.length > 7 ? v[7] : 0;
         post(new Runnable() {
             public void run() {
                 layout(getWidth(), getHeight());
@@ -164,6 +222,7 @@ public class GameView extends View {
             }
         }
         gameRect.set((w - gw) / 2, (h - gh) / 2, (w - gw) / 2 + gw, (h - gh) / 2 + gh);
+        activity.sendLayout(gameRect.left, w - gameRect.right, h, gw, gameRect.top);
 
         float size = new float[] { 0.8f, 1f, 1.25f, 1.5f }[Math.max(0, Math.min(3, touchSize))];
         float s = u * size;
@@ -203,6 +262,8 @@ public class GameView extends View {
             shown.copyPixelsFromBuffer(ByteBuffer.wrap(p));
             pending = null;
         }
+        pixels.setFilterBitmap(false);
+        drawBorders(c);
         pixels.setFilterBitmap(smooth);
         c.drawBitmap(shown, null, gameRect, pixels);
         if (error != null) {
@@ -213,6 +274,48 @@ public class GameView extends View {
             drawControls(c);
         }
         drawGear(c);
+    }
+
+    private void drawBorders(Canvas c) {
+        int w = getWidth(), h = getHeight();
+
+        if (borders == 1) {
+            /* the picture's colours, blurred: drawn down to 8x5, then up
+             * across the screen, smoothly, and darkened */
+            glowCanvas.drawBitmap(shown, null, new Rect(0, 0, 8, 5), soft);
+            c.drawBitmap(glow, null, new Rect(0, 0, w, h), soft);
+            c.drawRect(0, 0, w, h, shade);
+            return;
+        }
+        if (borders != 2) {
+            return;
+        }
+        Bitmap top = bars[2];
+        if (top != null && gameRect.top > 0) {
+            int u = barUnit[2];
+            int bw = top.getWidth() * u, bh = top.getHeight() * u;
+            int x = gameRect.left + (gameRect.width() - bw) / 2;
+            if (gameRect.left <= 0) {
+                x = 0;
+            }
+            c.drawBitmap(top, null, new Rect(x, gameRect.top - bh, x + bw, gameRect.top), pixels);
+            c.save();
+            c.scale(1, -1, 0, gameRect.bottom + bh / 2f);
+            c.drawBitmap(top, null, new Rect(x, gameRect.bottom, x + bw, gameRect.bottom + bh), pixels);
+            c.restore();
+        }
+        for (int side = 0; side < 2; side++) {
+            Bitmap b = bars[side];
+            int room = side == 0 ? gameRect.left : w - gameRect.right;
+            if (b == null || room <= 0) {
+                continue;
+            }
+            int u = barUnit[side];
+            int bw = b.getWidth() * u, bh = b.getHeight() * u;
+            int x = side == 0 ? gameRect.left - bw : gameRect.right;
+            int y = (h - bh) / 2;
+            c.drawBitmap(b, null, new Rect(x, y, x + bw, y + bh), pixels);
+        }
     }
 
     /** The message, lines wrapped to the screen, on a dark box in the middle. */
@@ -290,33 +393,66 @@ public class GameView extends View {
         };
         fill.setColor(fillColor(false));
         c.drawRect(padX - arm, padY - arm, padX + arm, padY + arm, fill);
+        fill.setColor(Color.argb(alpha(255), 255, 255, 255));
         for (int i = 0; i < 4; i++) {
-            fill.setColor(fillColor((keys & bits[i]) != 0));
-            c.drawRoundRect(arms[i], u, u, fill);
+            Paint armFill = new Paint(fill);
+            armFill.setColor(fillColor((keys & bits[i]) != 0));
+            c.drawRoundRect(arms[i], u, u, armFill);
             c.drawRoundRect(arms[i], u, u, line);
+            arrow(c, arms[i], i);
         }
-        button(c, aX, aY, "A", (keys & MainActivity.KEY_A) != 0);
-        button(c, bX, bY, "B", (keys & MainActivity.KEY_B) != 0);
-        pill(c, lRect, "L", (keys & MainActivity.KEY_L) != 0);
-        pill(c, rRect, "R", (keys & MainActivity.KEY_R) != 0);
-        pill(c, selRect, "SELECT", (keys & MainActivity.KEY_SELECT) != 0);
-        pill(c, startRect, "START", (keys & MainActivity.KEY_START) != 0);
+        iconPaint.setAlpha(Math.min(255, alpha(255) + 60));
+        button(c, aX, aY, iconJump, "A", (keys & MainActivity.KEY_A) != 0);
+        button(c, bX, bY, iconSpin, "B", (keys & MainActivity.KEY_B) != 0);
+        pill(c, lRect, iconTurbo, "L", (keys & MainActivity.KEY_L) != 0);
+        pill(c, rRect, iconSlam, "R", (keys & MainActivity.KEY_R) != 0);
+        pill(c, selRect, iconCounters, "SELECT", (keys & MainActivity.KEY_SELECT) != 0);
+        pill(c, startRect, iconPause, "START", (keys & MainActivity.KEY_START) != 0);
     }
 
-    private void button(Canvas c, float x, float y, String label, boolean pressed) {
+    /** A white triangle in a D-pad arm, pointing its way (0 up, 1 down,
+     * 2 left, 3 right). */
+    private void arrow(Canvas c, RectF arm, int dir) {
+        float cx = arm.centerX(), cy = arm.centerY();
+        float k = Math.min(arm.width(), arm.height()) * 0.28f;
+        Path p = new Path();
+        switch (dir) {
+        case 0: p.moveTo(cx, cy - k); p.lineTo(cx + k, cy + k * 0.6f); p.lineTo(cx - k, cy + k * 0.6f); break;
+        case 1: p.moveTo(cx, cy + k); p.lineTo(cx + k, cy - k * 0.6f); p.lineTo(cx - k, cy - k * 0.6f); break;
+        case 2: p.moveTo(cx - k, cy); p.lineTo(cx + k * 0.6f, cy - k); p.lineTo(cx + k * 0.6f, cy + k); break;
+        default: p.moveTo(cx + k, cy); p.lineTo(cx - k * 0.6f, cy - k); p.lineTo(cx - k * 0.6f, cy + k); break;
+        }
+        p.close();
+        c.drawPath(p, fill);
+    }
+
+    private void drawIcon(Canvas c, Bitmap icon, float cx, float cy, float size) {
+        iconRect.set(cx - size / 2, cy - size / 2, cx + size / 2, cy + size / 2);
+        c.drawBitmap(icon, null, iconRect, iconPaint);
+    }
+
+    private void button(Canvas c, float x, float y, Bitmap icon, String label, boolean pressed) {
         fill.setColor(fillColor(pressed));
         c.drawCircle(x, y, btnR, fill);
         c.drawCircle(x, y, btnR, line);
-        c.drawText(label, x, y + text.getTextSize() * 0.36f, text);
+        if (icon != null) {
+            drawIcon(c, icon, x, y, btnR * 1.45f);
+        } else {
+            c.drawText(label, x, y + text.getTextSize() * 0.36f, text);
+        }
     }
 
-    private void pill(Canvas c, RectF r, String label, boolean pressed) {
+    private void pill(Canvas c, RectF r, Bitmap icon, String label, boolean pressed) {
         float rad = r.height() / 2;
 
         fill.setColor(fillColor(pressed));
         c.drawRoundRect(r, rad, rad, fill);
         c.drawRoundRect(r, rad, rad, line);
-        c.drawText(label, r.centerX(), r.centerY() + text.getTextSize() * 0.36f, text);
+        if (icon != null) {
+            drawIcon(c, icon, r.centerX(), r.centerY(), r.height() * 0.95f);
+        } else {
+            c.drawText(label, r.centerX(), r.centerY() + text.getTextSize() * 0.36f, text);
+        }
     }
 
     /* --- Touch --- */

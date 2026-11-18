@@ -10,6 +10,8 @@ SCRIPT lines (by game picture count, from 0):
     N back | menu        the phone's back button, the settings button
     N hz HZ              the screen's top refresh rate
     N style S            the controller's prompt style (HOST_PROMPTS_*)
+    N pad 0|1            whether a controller is connected
+    N bars L R H W TOP   the screen around the picture (the borders)
     N scroll STEPS
     N shot NAME          write the latest picture as OUTDIR/NAME.png
     N end
@@ -79,6 +81,11 @@ def main():
                 p.stdin.write(msg(6, int(step[1])))
             elif kind == "scroll":
                 p.stdin.write(msg(7, int(step[1])))
+            elif kind == "pad":
+                p.stdin.write(msg(8, int(step[1])))
+            elif kind == "bars":
+                p.stdin.write(msg(9, int(step[1]), int(step[2]), int(step[3])))
+                p.stdin.write(msg(10, int(step[4]), int(step[5])))
             elif kind == "shot":
                 w, h, data_ = last
                 img = Image.frombytes("RGB", (w, h), rgb(data_, w, h))
@@ -112,6 +119,11 @@ def main():
             print(f"{pictures}: settings {struct.unpack('<8i', body)}")
         elif kind == 5:
             print(f"{pictures}: toast {body.decode()}")
+        elif kind == 6:
+            side, unit, w, h = struct.unpack_from("<4i", body)
+            img = Image.frombytes("RGB", (w, h), rgb(body[16:], w, h))
+            img.save(os.path.join(out, f"bar{side}_{pictures}.png"))
+            print(f"{pictures}: bar {side} unit {unit} {w}x{h}")
 
 
 def rgb(data, w, h):

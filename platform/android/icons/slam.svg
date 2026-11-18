@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- R: crouch and body slam. An arrow down onto the ground, with the impact. -->
+  <path d="M64 18 V78" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+  <path d="M40 58 L64 82 L88 58" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+  <path d="M30 104 H98" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="9"/>
+  <path d="M22 90 L12 82 M106 90 L116 82 M24 104 H10 M104 104 H118" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+</svg>

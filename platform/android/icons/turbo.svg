@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- L: turbo run. Two chevrons ahead of speed lines. -->
+  <path d="M56 32 L86 64 L56 96" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+  <path d="M82 32 L112 64 L82 96" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+  <path d="M10 46 H36 M4 64 H40 M10 82 H36" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"/>
+</svg>

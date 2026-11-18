@@ -606,6 +606,18 @@ ways. What the phone build adds:
   interpolation (interp.c), and the picture half way to it and the frame
   itself go out at 480x320 (ppu_hd.c at twice the size, on up to four
   threads), half a frame apart.
+- *Borders* (v0.41; borders.c's HostBordersPhone, compiled for HOST_SDL or
+  HOST_ANDROID now, the bars' pixels apart from SDL's textures): Display's
+  borders as on PC (themed by default). The app sends the room beside and
+  above the picture; the core makes the bars as the window would and sends
+  each as it changes; the bars' lower half stays clear for the touch
+  buttons (the porthole and name above it, and on the right a compact
+  progress plate instead of the stats panel). Ambient is drawn by the app.
+  HUD's "borders" works as on PC (gHostHudInBorder).
+- *The warp room's hint* (v0.41): with no controller connected (the app's
+  message 8), text 0x2F is "tap:  load-save" in the game's language
+  (prompts.c), and a tap on it is Start (mouse_hooks.cpp: on PC a click
+  there too), which opens the save menu.
 - *Sound*: master volume, and quality's high (gax_dsp.c's 16-bit blocks,
   resampled as the 8-bit ones).
 - *The game's data* (rom_data.c): the APK's cores have it blanked out

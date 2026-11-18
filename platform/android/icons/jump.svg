@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- A: jump. An arrow springing up off the ground. -->
+  <path d="M64 92 V28" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+  <path d="M38 52 L64 26 L90 52" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+  <path d="M30 108 H98" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="9"/>
+  <path d="M42 96 L36 88 M86 96 L92 88" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+</svg>

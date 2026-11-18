@@ -11,8 +11,8 @@
 # stops before its first picture).
 # Needs (Debian/Ubuntu): gcc/g++-aarch64-linux-gnu, binutils-aarch64-linux-gnu,
 # libc6-dev-arm64-cross, openjdk-17-jdk-headless, android-sdk-platform-23,
-# android-sdk-build-tools, dalvik-exchange, apksigner, zipalign; and zig's
-# musl (pip install ziglang).
+# android-sdk-build-tools, dalvik-exchange, apksigner, zipalign, librsvg2-bin; and
+# zig's musl (pip install ziglang).
 set -e
 ROM=${1:?usage: platform/android/build.sh ROM}
 A=aarch64-linux-gnu
@@ -35,7 +35,7 @@ make PLATFORM=pc HOST_ANDROID=1 HOST_SDL=0 OBJ_DIR=build/android-musl-x64/crashb
 
 rm -rf $OUT/stage $OUT/classes $OUT/res $OUT/assets
 mkdir -p $OUT/stage/lib/arm64-v8a $OUT/stage/lib/x86_64 $OUT/classes $OUT/res/drawable \
-    $OUT/assets/arm64-v8a $OUT/assets/x86_64
+    $OUT/assets/arm64-v8a $OUT/assets/x86_64 $OUT/assets/icons
 
 echo "== the game data out of the cores, and their packages"
 # core build dir, ABI, name in the APK, nm, strip
@@ -49,6 +49,12 @@ pack android-musl-arm64 arm64-v8a libcrashxs_core $A-nm $A-strip
 pack android-arm64 arm64-v8a libcrashxs_gnu $A-nm $A-strip
 pack android-musl-x64 x86_64 libcrashxs_core nm strip
 pack android-x86_64 x86_64 libcrashxs_gnu nm strip
+
+echo "== the touch buttons' icons (icons/*.svg, white)"
+mkdir -p $OUT/assets/icons
+for f in platform/android/icons/*.svg; do
+    rsvg-convert -w 160 -h 160 "$f" -o $OUT/assets/icons/$(basename "$f" .svg).png
+done
 
 echo "== the icon (Crash's HUD head, as the PC port's)"
 python3 platform/android/make_icon.py games/xs/graphics/sprites/bank47_icons/f034.png $OUT/res/drawable/icon.png

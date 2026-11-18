@@ -189,6 +189,7 @@ public class MainActivity extends Activity {
     /* --- The game --- */
 
     private void startGame() {
+        ((android.hardware.input.InputManager) getSystemService(INPUT_SERVICE)).registerInputDeviceListener(devices, null);
         view = new GameView(this);
         setContentView(view);
         immersive();
@@ -298,6 +299,9 @@ public class MainActivity extends Activity {
         sendKeys();
         send(5, displayHz(), 0);
         send(6, padStyle, 0);
+        sendControllers();
+        send(9, layoutSent[0], layoutSent[1], layoutSent[2]);
+        send(10, layoutSent[3], layoutSent[4], 0);
         reader = new Thread(new Runnable() {
             public void run() {
                 read(p);
@@ -321,7 +325,7 @@ public class MainActivity extends Activity {
                 in.readFully(head);
                 int type = (head[0] & 0xFF) | (head[1] & 0xFF) << 8 | (head[2] & 0xFF) << 16 | (head[3] & 0xFF) << 24;
                 int n = (head[4] & 0xFF) | (head[5] & 0xFF) << 8 | (head[6] & 0xFF) << 16 | (head[7] & 0xFF) << 24;
-                if (n < 0 || n > 1 << 20 || type < 1 || type > 5) {
+                if (n < 0 || n > 4 << 20 || type < 1 || type > 6) {
                     throw new IOException("bad message from the game: type " + type + ", " + n + " bytes");
                 }
                 byte[] data = new byte[n];
@@ -351,6 +355,15 @@ public class MainActivity extends Activity {
                             frameRate(v[6]);
                         }
                     });
+                } else if (type == 6) {
+                    int[] h = new int[4];
+                    for (int i = 0; i < 4; i++) {
+                        h[i] = (data[4 * i] & 0xFF) | (data[4 * i + 1] & 0xFF) << 8 | (data[4 * i + 2] & 0xFF) << 16
+                                | (data[4 * i + 3] & 0xFF) << 24;
+                    }
+                    if (n == 16 + h[2] * h[3] * 2) {
+                        view.setBar(h[0], h[1], h[2], h[3], data, 16);
+                    }
                 } else if (type == 5) {
                     final String t = new String(data, "UTF-8");
                     runOnUiThread(new Runnable() {
@@ -492,12 +505,17 @@ public class MainActivity extends Activity {
     }
 
     /** A message to the core (stream.c): its type and two values. */
-    private synchronized void send(int type, int a, int b) {
+    private void send(int type, int a, int b) {
+        send(type, a, b, 0);
+    }
+
+    private synchronized void send(int type, int a, int b, int c) {
         if (coreIn == null) {
             return;
         }
         try {
-            coreIn.write(new byte[] { (byte) type, 0, (byte) a, (byte) (a >> 8), (byte) b, (byte) (b >> 8), 0, 0 });
+            coreIn.write(new byte[] { (byte) type, 0, (byte) a, (byte) (a >> 8), (byte) b, (byte) (b >> 8), (byte) c,
+                    (byte) (c >> 8) });
             coreIn.flush();
         } catch (IOException e) {
             /* the game has stopped: the reader says so */
@@ -519,6 +537,51 @@ public class MainActivity extends Activity {
     void sendScroll(int steps) {
         send(7, steps, 0);
     }
+
+    private int[] layoutSent = new int[5];
+
+    /** The room around the picture, for the borders (stream.c's 9 and 10). */
+    void sendLayout(int left, int right, int height, int pictureW, int top) {
+        layoutSent = new int[] { left, right, height, pictureW, top };
+        send(9, left, right, height);
+        send(10, pictureW, top, 0);
+    }
+
+    /* --- Controllers connected: the warp room's hint says "tap" without --- */
+
+    private boolean controllerConnected() {
+        for (int id : InputDevice.getDeviceIds()) {
+            InputDevice d = InputDevice.getDevice(id);
+            if (d == null || (Build.VERSION.SDK_INT >= 16 && d.isVirtual())) {
+                continue;
+            }
+            int s = d.getSources();
+            if ((s & InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD
+                    || (s & InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void sendControllers() {
+        send(8, controllerConnected() ? 1 : 0, 0);
+    }
+
+    private final android.hardware.input.InputManager.InputDeviceListener devices =
+            new android.hardware.input.InputManager.InputDeviceListener() {
+        public void onInputDeviceAdded(int id) {
+            sendControllers();
+        }
+
+        public void onInputDeviceRemoved(int id) {
+            sendControllers();
+        }
+
+        public void onInputDeviceChanged(int id) {
+            sendControllers();
+        }
+    };
 
     /* --- The phone's back button: the game's B, pause or the menu's back --- */
 

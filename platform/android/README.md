@@ -16,14 +16,17 @@ as the PC port.
    update of the app uses it again by itself).
 3. Play.
 
-**Touch.** In a level, the GBA's buttons are on the screen: the D-pad on the
-left, A and B on the right, L and R in the top corners, Select and Start at
-the bottom. Everywhere else (the title screen, the save menu, the warp
+**Touch.** In a level, the GBA's buttons are on the screen, each showing what
+it does in white (icons/*.svg): the D-pad on the left, A (jump) and B
+(spin) on the right, L (turbo run) and R (crouch, body slam) in the top
+corners, Select (show the counters) and Start (pause) at the bottom. Everywhere else (the title screen, the save menu, the warp
 room, the pause menu, game over's "continue?") they're hidden and you tap
 what you want, as with the PC port's mouse: a tap on a menu row picks it, a
 tap on a warp room pad walks Crash there and a tap on the pad he's on
 enters it. On a screen that only waits (the intro, a power's dialog, the
-credits) a tap goes on. The phone's back button is B in the menus, pauses
+credits) a tap goes on. With no controller connected, the warp room's
+"start: load-save" says "tap: load-save" (in each language), and tapping
+it opens the load and save menu. The phone's back button is B in the menus, pauses
 in a level, and closes the settings menu. A controller works too (it hides
 the touch buttons until you touch the screen again), and its Guide button
 opens the settings.
@@ -35,11 +38,15 @@ drawn in the game's style, with the phone's own options:
 - **Display:** frame rate (60, or 120 on a 120 Hz screen: pictures between
   the game's own, the game at its own speed), scaling (fit, integer,
   stretch), filter (pixels or smooth), colours (the game's own, or the
-  GBA's darker screen).
+  GBA's darker screen), borders beside the picture (black, ambient: its
+  colours blurred, or themed: the PC port's warp room walls, with the
+  level's porthole and name on the left and your progress on the right,
+  both kept above the touch buttons).
 - **Touch:** the buttons' size (small to huge) and opacity, whether they
   also show in the menus, and haptics (off, light, strong).
 - **Interface:** text size (normal, or large: the menu's rows in the
-  game's big font, four to a page), the HUD, and button prompts (the
+  game's big font, four to a page), the HUD (in the game, hidden, or in
+  the left border), and button prompts (the
   game's A, B, L, R and Start drawn as your controller's).
 - **Audio:** quality, and master, music and sound effects volumes.
 - **Gameplay:** auto save, looking up and down.
@@ -75,6 +82,16 @@ and haptics, the scaling and filter, the frame rate). The touch mode comes
 from `HostTouchMode` (mouse_hooks.cpp): a level (the HUD ran this frame),
 one of the game's menus (as the mouse knows them), the settings menu, or
 anywhere else.
+
+The themed borders are the PC port's (borders.c): the app says how much
+screen there is beside and above the picture (messages 9 and 10), and the
+core draws each bar in its own pixels at the size the window would
+(`HostBordersPhone`) and sends it when it changes (message 6); the app
+draws it nearest-neighbour beside the picture. On the phone the bars keep
+their lower half clear for the touch buttons, and the right one has a
+compact progress plate (completion, crystals, gems, relics). Ambient is
+the app's: the picture drawn down to 8x5 and up across the screen,
+smoothly, darkened.
 
 The save is `crashbandicootxs.sav` in the app's private files; what the
 cores print goes to `core0.log` and `core1.log` next to it. If the game
@@ -113,7 +130,7 @@ status uses on PC, small number tables).
 `gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
 libc6-dev-arm64-cross openjdk-17-jdk-headless android-sdk-platform-23
 android-sdk-build-tools dalvik-exchange apksigner zipalign`, and `pip
-install ziglang` (musl). No Gradle, no SDK manager. The APK is signed with
+install ziglang` (musl), and `librsvg2-bin` (the buttons' icons). No Gradle, no SDK manager. The APK is signed with
 `crashxs.keystore` (here, so that every build can update the last one
 installed without losing its save).
 

@@ -556,6 +556,18 @@ void HostPromptGlyphDrawn(u32 firstTile, u32 palette)
  * dialog fetches its description before it draws 0x2E. The link wraps
  * GetUiText. */
 char gHostStartPrompt[16]; /* a key's name, or "" */
+/* The phone with no controller (stream.c): the warp room's hint says to
+ * tap it (mouse_hooks.cpp makes a tap on it Start), in each language. */
+int gHostTapHint;
+static const char *const sTapHints[6] = {
+    "tap:  load-save",          /* English */
+    "touchez: charg-sauveg",    /* French */
+    "tippen: laden-speichern",  /* German */
+    "toca: cargar-grabar",      /* Spanish */
+    "tocca: carica-salva",      /* Italian */
+    "tik: laden-opslaan",       /* Dutch */
+};
+extern s32 gLanguage;
 int gHostStartStyle;       /* else a pad style, or 0 */
 int gHostStartLabels;
 
@@ -618,6 +630,9 @@ const u8 *__wrap_GetUiText(s32 index)
     }
     if (index != 0x2E && index != 0x2F) {
         return text;
+    }
+    if (index == 0x2F && gHostTapHint && gLanguage >= 0 && gLanguage < 6) {
+        return (const u8 *)sTapHints[gLanguage];
     }
     StartFromEnv();
     for (at = strstr(t, "start"); at != NULL; at = strstr(at + 1, "start")) {

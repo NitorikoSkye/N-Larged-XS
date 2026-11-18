@@ -18,8 +18,10 @@
  * - type 4, the settings the app uses (HOST_ANDROID builds: phone.c), as
  *   little-endian s32s: the touch controls' size, opacity and whether
  *   they show in menus, the haptics, the scaling, the filter, the frames
- *   a second; at the start and when they change;
- * - type 5, a toast's text (auto save's "saved").
+ *   a second, the borders; at the start and when they change;
+ * - type 5, a toast's text (auto save's "saved");
+ * - type 6, a themed border's bar (borders.c; SendBar below), when it
+ *   changes.
  * In, on stdin, 8-byte messages: a type byte, a byte unused, then up to
  * three little-endian u16s:
  * - 1, the GBA's keys held (KEYINPUT's bits, set for pressed);
@@ -32,7 +34,12 @@
  *   119);
  * - 6, the button prompts the controller in use calls for (HOST_PROMPTS_*;
  *   GBA for the touch screen);
- * - 7, a scroll by (s16) steps, up positive (a swipe over a menu).
+ * - 7, a scroll by (s16) steps, up positive (a swipe over a menu);
+ * - 8, whether a controller is connected (none: the warp room's hint
+ *   says to tap it, prompts.c);
+ * - 9, the screen beside the picture: the left and right bars' widths
+ *   and the screen's height, in its pixels (the borders);
+ * - 10, the picture's width and the room above it.
  *
  * The settings menu (ui.c) runs here as in the window: while it is open
  * the game waits, and its canvas is the picture.
@@ -196,6 +203,20 @@ static int sDisplayHz = 60;
 static int sPadStyle = HOST_PROMPTS_GBA;
 static int sTouchMode = -1;  /* as last sent */
 static int sSettingsDirty = 1;
+extern int gHostTapHint; /* prompts.c */
+/* The app's screen around the picture, in its pixels (the borders): the
+ * bars' widths left and right, the screen's height, the picture's width
+ * and the room above it. */
+static int sBarLeft, sBarRight, sBarScreenH, sBarPictureW, sBarTop;
+
+#ifdef HOST_ANDROID
+void HostBordersPhone(int left, int right, int screenH, int picW, int top,
+                      void (*send)(int side, int unit, int w, int h, const u32 *px)); /* borders.c */
+void HostBordersPhoneReset(void);
+#define BordersReset() HostBordersPhoneReset()
+#else
+#define BordersReset() ((void)0)
+#endif
 
 int HostStreamDisplayHz(void)
 {
@@ -266,6 +287,20 @@ static void Handle(const u8 *m, int menu)
         break;
     case 6:
         sPadStyle = Arg(m, 0);
+        break;
+    case 8:
+        gHostTapHint = Arg(m, 0) == 0;
+        break;
+    case 9:
+        sBarLeft = Arg(m, 0);
+        sBarRight = Arg(m, 1);
+        sBarScreenH = Arg(m, 2);
+        BordersReset();
+        break;
+    case 10:
+        sBarPictureW = Arg(m, 0);
+        sBarTop = Arg(m, 1);
+        BordersReset();
         break;
     case 7: {
         int steps = (s16)Arg(m, 0);
@@ -338,7 +373,7 @@ static void SendState(int mode)
         v[4] = gHostSettings.scaling;
         v[5] = gHostSettings.filter;
         v[6] = gHostFpsValues[gHostSettings.frameRate];
-        v[7] = 0;
+        v[7] = gHostSettings.borders;
         Message(4, v, sizeof(v));
     }
 }
@@ -411,6 +446,42 @@ static void SendPicture(const u32 *src, int w, int h)
     }
     Message(1, picture, (u32)(w * h * sizeof(u16)));
 }
+
+#ifdef HOST_ANDROID
+/* A themed border's bar (borders.c), type 6: s32 side (0 left, 1 right, 2
+ * above and, flipped, below), its pixel size on the screen, its width and
+ * height, then its RGB565 pixels. */
+static void SendBar(int side, int unit, int w, int h, const u32 *px)
+{
+    static u8 *buf;
+    static size_t size;
+    size_t need = 16 + (size_t)w * h * 2;
+    s32 head[4];
+    int i;
+
+    if (need > size) {
+        free(buf);
+        buf = malloc(need);
+        size = buf != NULL ? need : 0;
+        if (buf == NULL) {
+            return;
+        }
+    }
+    head[0] = side;
+    head[1] = unit;
+    head[2] = w;
+    head[3] = h;
+    memcpy(buf, head, 16);
+    for (i = 0; i < w * h; i++) {
+        u32 c = px[i];
+        u16 v = (u16)((c >> 8 & 0xF800) | (c >> 5 & 0x07E0) | (c >> 3 & 0x001F));
+
+        buf[16 + 2 * i] = (u8)v;
+        buf[17 + 2 * i] = (u8)(v >> 8);
+    }
+    Message(6, buf, (u32)need);
+}
+#endif
 
 /* --- The pictures between frames (120 a second) --------------------------- */
 
@@ -542,6 +613,9 @@ void HostStreamVBlank(void)
 #endif
     mode = HostTouchMode();
     SendState(mode);
+#ifdef HOST_ANDROID
+    HostBordersPhone(sBarLeft, sBarRight, sBarScreenH, sBarPictureW, sBarTop, SendBar);
+#endif
     /* the keys the game reads this frame: the app's, the taps', a pulse */
     sMask &= sKeys;
     sMouseKeys = HostMouseGameKeys() | sPulse;

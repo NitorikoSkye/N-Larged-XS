@@ -37,6 +37,7 @@ void HostConfigDefaults(struct HostSettings *s)
     s->audioQuality = 1;
     s->autoSave = HOST_AUTOSAVE_IN_USE;
     s->lookAround = 1;
+    s->borders = HOST_BORDERS_THEMED;
     s->touchSize = 1;
     s->touchOpacity = 60;
     s->haptics = 1;
@@ -74,7 +75,8 @@ static const struct {
     { "scaling", &gHostSettings.scaling, 0, HOST_SCALING_COUNT - 1 },
     { "filter", &gHostSettings.filter, 0, 1 },
     { "colours", &gHostSettings.colors, 0, 1 },
-    { "hud", &gHostSettings.hud, 0, 1 },
+    { "hud", &gHostSettings.hud, 0, HOST_HUD_COUNT - 1 },
+    { "borders", &gHostSettings.borders, 0, HOST_BORDERS_COUNT - 1 },
     { "master", &gHostSettings.master, 0, 100 },
     { "music", &gHostSettings.music, 0, 100 },
     { "sfx", &gHostSettings.sfx, 0, 100 },
