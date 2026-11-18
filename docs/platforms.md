@@ -366,7 +366,10 @@ level for the border, Discord, the timer and rumble (v0.15; before, the
 HUD came back into the picture in the yeti chase).
 
 **Speedrun timer** (v0.14; Interface, src/timer.c). Top left, under the
-FPS counter (top right until v0.35, where the stats panel now is): the level's
+FPS counter (top right until v0.35, where the stats panel now is; from
+v0.36 both, and the toasts, on the borders' dark, blue-rimmed plate, the
+counter and the timer the same width with their lines centred, and in a
+themed border beside its riveted plate): the level's
 time in the large font, the run's under it ("level and run"), and for 8
 seconds after a level the split against the best one for it ("pb!" for a
 new best), kept in splits.ini. Time is VBlanks (59.7275 a second); the

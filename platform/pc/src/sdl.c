@@ -1147,6 +1147,22 @@ static void Fill(u32 *c, int w, int x0, int y0, int x1, int y1, u32 color)
     }
 }
 
+/* The borders' plate (the stats panels' and the input display's): dark,
+ * see-through, a blue rim; w x h at the canvas's top left. */
+static void PlateFill(u32 *c, int cw, int w, int h)
+{
+    int x;
+    int y;
+
+    for (y = 0; y < h; y++) {
+        for (x = 0; x < w; x++) {
+            int rim = x == 0 || y == 0 || x == w - 1 || y == h - 1;
+
+            c[y * cw + x] = rim ? 0xFF384890 : 0xC80C1020;
+        }
+    }
+}
+
 static void PutOverlay(SDL_Texture **tex, const u32 *canvas, int w, int h, int x, int y, int scale)
 {
     SDL_Rect r = { x, y, w * scale, h * scale };
@@ -1165,21 +1181,30 @@ static void PutOverlay(SDL_Texture **tex, const u32 *canvas, int w, int h, int x
 
 static void PlaceOverlay(SDL_Rect dst, int w, int h, int side, int bottom, int *scale, int *x, int *y);
 
-#define FPS_W 64
+#define FPS_W 200 /* room for the timer's width, when they line up */
 #define FPS_H 12
 
-/* Returns how far down the window it reaches, for the timer under it. */
-static int DrawFps(SDL_Rect dst, int scale)
+static int FpsWidth(void)
+{
+    char text[16];
+
+    snprintf(text, sizeof(text), "%u fps", sFpsShown);
+    return HostUiTextWidth(0, text) + 8;
+}
+
+/* On the borders' plate, `width` wide (the timer's too, so they line
+ * up); returns how far down the window it reaches, for the timer under
+ * it. */
+static int DrawFps(SDL_Rect dst, int scale, int width)
 {
     static u32 canvas[FPS_W * FPS_H];
     char text[16];
-    int w;
+    int w = width > FPS_W ? FPS_W : width;
 
     snprintf(text, sizeof(text), "%u fps", sFpsShown);
-    w = HostUiTextWidth(0, text) + 6;
     memset(canvas, 0, sizeof(canvas));
-    Fill(canvas, FPS_W, 0, 0, w, FPS_H, 0xB0000000);
-    HostUiText(canvas, FPS_W, FPS_H, 0, 3, 2, text, HOST_UI_PAL_NORMAL);
+    PlateFill(canvas, FPS_W, w, FPS_H);
+    HostUiText(canvas, FPS_W, FPS_H, 0, (w - HostUiTextWidth(0, text)) / 2, 2, text, HOST_UI_PAL_NORMAL);
     {
         int x;
         int y;
@@ -1215,7 +1240,28 @@ static SDL_Texture *sTimerTex;
  * the message under it. */
 /* Top left, under the FPS counter (`top`: where it ends, 0 if none): the
  * right border's top is the stats panel's. */
-static int DrawTimer(SDL_Rect dst, int scale, int top)
+/* The timer's width (0: not shown). */
+static int TimerWidth(void)
+{
+    char big[32];
+    char l2[64];
+    char l3[64];
+    int w;
+
+    if (HostTimerLines(big, l2, l3) == 0) {
+        return 0;
+    }
+    w = HostUiTextWidth(1, big);
+    if (l2[0] && HostUiTextWidth(0, l2) > w) {
+        w = HostUiTextWidth(0, l2);
+    }
+    if (l3[0] && HostUiTextWidth(0, l3) > w) {
+        w = HostUiTextWidth(0, l3);
+    }
+    return w + 10;
+}
+
+static int DrawTimer(SDL_Rect dst, int scale, int top, int width)
 {
     static u32 canvas[TIMER_W * TIMER_H];
     char big[32];
@@ -1237,19 +1283,23 @@ static int DrawTimer(SDL_Rect dst, int scale, int top)
     if (l3[0] && HostUiTextWidth(0, l3) > w) {
         w = HostUiTextWidth(0, l3);
     }
-    w += 8;
+    w += 10;
+    if (width > w) {
+        w = width;
+    }
     if (w > TIMER_W) {
         w = TIMER_W;
     }
-    h = 18 + (l2[0] ? 10 : 0) + (l3[0] ? 10 : 0);
+    h = 19 + (l2[0] ? 10 : 0) + (l3[0] ? 10 : 0);
     memset(canvas, 0, sizeof(canvas));
-    Fill(canvas, TIMER_W, 0, 0, w, h, 0xB0000000);
-    HostUiText(canvas, TIMER_W, TIMER_H, 1, w - 4 - HostUiTextWidth(1, big), 2, big, HOST_UI_PAL_NORMAL);
+    /* the borders' plate, its lines centred, as the stats panels' */
+    PlateFill(canvas, TIMER_W, w, h);
+    HostUiText(canvas, TIMER_W, TIMER_H, 1, (w - HostUiTextWidth(1, big)) / 2, 2, big, HOST_UI_PAL_NORMAL);
     if (l2[0]) {
-        HostUiText(canvas, TIMER_W, TIMER_H, 0, w - 4 - HostUiTextWidth(0, l2), 19, l2, HOST_UI_PAL_WHITE);
+        HostUiText(canvas, TIMER_W, TIMER_H, 0, (w - HostUiTextWidth(0, l2)) / 2, 19, l2, HOST_UI_PAL_WHITE);
     }
     if (l3[0]) {
-        HostUiText(canvas, TIMER_W, TIMER_H, 0, w - 4 - HostUiTextWidth(0, l3), 29, l3, HOST_UI_PAL_WHITE);
+        HostUiText(canvas, TIMER_W, TIMER_H, 0, (w - HostUiTextWidth(0, l3)) / 2, 29, l3, HOST_UI_PAL_WHITE);
     }
     PlaceOverlay(dst, w, TIMER_H, 0, 0, &scale, &x, &y);
     if (top > 0) {
@@ -1270,13 +1320,13 @@ static void DrawToast(SDL_Rect dst, int scale, int below)
     if (sToast[0] == '\0' || age >= TOAST_MS) {
         return;
     }
-    w = HostUiTextWidth(0, sToast) + 6;
+    w = HostUiTextWidth(0, sToast) + 8;
     if (w > TOAST_W) {
         w = TOAST_W;
     }
     memset(canvas, 0, sizeof(canvas));
-    Fill(canvas, TOAST_W, 0, 0, w, TOAST_H, 0xB0000000);
-    HostUiText(canvas, TOAST_W, TOAST_H, 0, 3, 2, sToast, HOST_UI_PAL_NORMAL);
+    PlateFill(canvas, TOAST_W, w, TOAST_H);
+    HostUiText(canvas, TOAST_W, TOAST_H, 0, 4, 2, sToast, HOST_UI_PAL_NORMAL);
     PlaceOverlay(dst, w, TOAST_H, 1, 0, &scale, &x, &y);
     y += below;
     if (sToastTex != NULL) {
@@ -1535,12 +1585,16 @@ static void PlaceOverlay(SDL_Rect dst, int w, int h, int side, int bottom, int *
     int bar;
     int s;
 
+    int strip;
+
     SDL_GetRendererOutputSize(sRenderer, &ww, &wh);
     bar = side == 0 ? dst.x : ww - (dst.x + dst.w);
+    /* beside the themed wall's riveted plate, not over it */
+    strip = gHostSettings.borders == HOST_BORDERS_THEMED ? 9 * (bar / 75 > 1 ? bar / 75 : 1) : 0;
     for (s = *scale; s >= 1; s--) {
-        if (bar >= w * s + 2 * s) {
+        if (bar - strip >= w * s + 2 * s) {
             *scale = s;
-            *x = (side == 0 ? 0 : dst.x + dst.w) + (bar - w * s) / 2;
+            *x = (side == 0 ? 0 : dst.x + dst.w + strip) + (bar - strip - w * s) / 2;
             *y = bottom ? wh - (h + 4) * s : 4 * s;
             return;
         }
@@ -1725,14 +1779,23 @@ static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int m
             DrawMenu(dst, banner);
         }
         int fpsBottom = 0;
+        /* the FPS counter and the timer under it the same width */
+        int width = FpsWidth();
+        int timerWidth = TimerWidth();
 
+        if (!gHostSettings.showFps) {
+            width = 0;
+        }
+        if (timerWidth > width) {
+            width = timerWidth;
+        }
         if (gHostSettings.showFps) {
-            fpsBottom = DrawFps(dst, scale);
+            fpsBottom = DrawFps(dst, scale, width);
         }
         if (gHostSettings.inputDisplay) {
             DrawPad(dst, scale, gHostSettings.inputDisplay == 2);
         }
-        DrawTimer(dst, scale, fpsBottom);
+        DrawTimer(dst, scale, fpsBottom, width);
         DrawToast(dst, scale, 0);
     }
     UpdateCursor();
