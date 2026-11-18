@@ -1942,6 +1942,58 @@ static SDL_GameController *PromptPad(void)
     return NULL;
 }
 
+extern int gHostInWarpRoom;     /* level_pick.c */
+extern int gHostInSaveMenu;     /* autosave_hooks.cpp */
+extern char gHostStartPrompt[16]; /* prompts.c */
+
+/* A key's name as the game's small font can write it (lower case, its
+ * letters, digits and a few signs), or 0. */
+static int KeyText(int scancode, char *out, size_t size)
+{
+    const char *name = SDL_GetScancodeName((SDL_Scancode)scancode);
+    size_t n = 0;
+
+    if (name == NULL || name[0] == 0) {
+        return 0;
+    }
+    if (strcmp(name, "Return") == 0 || strcmp(name, "Keypad Enter") == 0) {
+        name = "enter";
+    }
+    for (; *name && n + 1 < size; name++) {
+        char c = *name >= 'A' && *name <= 'Z' ? (char)(*name - 'A' + 'a') : *name;
+
+        if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == ' ' || strchr("-+!:,?.'%", c))) {
+            return 0;
+        }
+        out[n++] = c;
+    }
+    out[n] = 0;
+    return n > 0;
+}
+
+/* The warp room's "start:  load-save" (prompts.c): the key bound to Start,
+ * or the pad's Start button in the L glyph's place. */
+static void StartPrompt(int style, int labels)
+{
+    int s;
+
+    gHostStartPrompt[0] = 0;
+    if (style == HOST_PROMPTS_GBA) {
+        return;
+    }
+    for (s = 0; s < HOST_BIND_SLOTS; s++) {
+        if (style == HOST_PROMPTS_KEYBOARD) {
+            if (gHostSettings.keys[HOST_BIND_START][s] > 0 &&
+                KeyText(gHostSettings.keys[HOST_BIND_START][s], gHostStartPrompt, sizeof(gHostStartPrompt))) {
+                return;
+            }
+        } else if (gHostInWarpRoom && !gHostInSaveMenu && HostPromptForPad(2, style, gHostSettings.pad[HOST_BIND_START][s], labels)) {
+            snprintf(gHostStartPrompt, sizeof(gHostStartPrompt), "%s", "L");
+            return;
+        }
+    }
+}
+
 /* Each frame: the A, B, L and R glyphs as the style shows the first
  * binding of each that has a picture there. */
 static void UpdatePrompts(void)
@@ -1977,6 +2029,7 @@ static void UpdatePrompts(void)
             HostPromptOff(slot);
         }
     }
+    StartPrompt(style, labels);
 }
 
 static u16 GameKeys(void)

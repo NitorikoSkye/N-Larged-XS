@@ -372,6 +372,7 @@ int HostPromptForPad(int slot, int style, int binding, int labels)
     int face = -1;
     int side = -1; /* 0 left, 1 right */
     int trigger = 0;
+    int menu = 0; /* the Start button: the menu one */
 
     if (HOST_PAD_IS_BUTTON(binding)) {
         int b = binding & 0xFF;
@@ -380,6 +381,8 @@ int HostPromptForPad(int slot, int style, int binding, int labels)
             face = b;
         } else if (b == PAD_LSHOULDER || b == PAD_RSHOULDER) {
             side = b == PAD_RSHOULDER;
+        } else if (b == PAD_START) {
+            menu = 1;
         }
     } else if (HOST_PAD_IS_AXIS(binding)) {
         int a = (binding & 0xFF) >> 1;
@@ -389,16 +392,34 @@ int HostPromptForPad(int slot, int style, int binding, int labels)
             trigger = 1;
         }
     }
-    if (face < 0 && (side < 0 || IsFace(slot))) {
+    if (face < 0 && ((side < 0 && !menu) || IsFace(slot))) {
         return 0;
     }
-    snprintf(key, sizeof(key), "p%d %d %d %d %d", style, face, side, trigger, labels);
+    snprintf(key, sizeof(key), "p%d %d %d %d %d %d", style, face, side, trigger, labels, menu);
     if (Same(slot, key)) {
         return 1;
     }
     memset(sCanvas, 0, sizeof(sCanvas));
     if (face >= 0) {
         Face(slot, style, face, labels);
+    } else if (menu) {
+        /* the menu button: three lines (Xbox's Menu, PlayStation's
+         * Options), or a plus (Nintendo's +), on a dark pill */
+        int r;
+
+        Box(0, 0, 14, 'd', 'e', 0);
+        if (style == HOST_PROMPTS_NINTENDO) {
+            for (r = 1; r <= 5; r++) {
+                Put(4 + r - 1, 3, 'w');
+                Put(6, r, 'w');
+            }
+        } else {
+            for (r = 4; r <= 9; r++) {
+                Put(r, 1, 'w');
+                Put(r, 3, 'w');
+                Put(r, 5, 'w');
+            }
+        }
     } else {
         static const char *const names[3][2][2] = {
             { { "LB", "RB" }, { "LT", "RT" } }, /* Xbox */
@@ -519,4 +540,34 @@ void HostPromptGlyphDrawn(u32 firstTile, u32 palette)
             }
         }
     }
+}
+
+/* --- "start:  load-save" ----------------------------------------------------
+
+ * The warp room's hint (text 0x2F, in every language with the word "start"
+ * somewhere in it) says the button the player's Start is: sdl.c says how
+ * (gHostStartPrompt): a key's name in the game's font, or "L", the font's
+ * L button glyph, which sdl.c has show the pad's Start while in the warp
+ * room (no other text there draws it). The link wraps GetUiText. */
+char gHostStartPrompt[16]; /* "" leaves the text as it is */
+
+const u8 *__real_GetUiText(s32 index);
+
+const u8 *__wrap_GetUiText(s32 index)
+{
+    static u8 buf[96];
+    const u8 *text = __real_GetUiText(index);
+    const char *at;
+    size_t pre;
+
+    if (index != 0x2F || gHostStartPrompt[0] == 0 || text == NULL) {
+        return text;
+    }
+    at = strstr((const char *)text, "start");
+    if (at == NULL) {
+        return text;
+    }
+    pre = (size_t)(at - (const char *)text);
+    snprintf((char *)buf, sizeof(buf), "%.*s%s%s", (int)pre, (const char *)text, gHostStartPrompt, at + 5);
+    return buf;
 }

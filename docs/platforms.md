@@ -414,6 +414,14 @@ the game reads changes. `HOST_PROMPTS=xbox|playstation|nintendo|keyboard`
 does it in headless runs with the default bindings (the Dingodile test's
 super body slam dialog, frame 13850).
 
+The warp room's "start:  load-save" (text 0x2F; every language has the
+word "start" in it) names the player's Start the same way (v0.38;
+__wrap_GetUiText in src/prompts.c, chosen by StartPrompt in sdl.c): with
+keyboard prompts the bound key's name in the game's font ("enter"), and
+with a pad style the L glyph's place, which nothing else in the warp room
+uses, shows that pad's Start (Xbox's Menu and PlayStation's Options as
+three lines, Nintendo's +). The gba style keeps "start".
+
 **Rumble** (v0.14; Controls, src/rumble.c). The link wraps
 AudioContext::PlaySfx: hurt, deaths, explosions, boss and vehicle hits,
 body slams, stomps, crates, crystals and gems each have a strength for the
