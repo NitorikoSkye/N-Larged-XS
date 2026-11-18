@@ -1,7 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- R: crouch and body slam. Down hard onto a crate, cracking it. -->
-  <path d="M64 6 V34" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
-  <path d="M46 20 L64 38 L82 20" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
-  <rect x="24" y="54" width="80" height="66" rx="6" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="10"/>
-  <path d="M64 54 L56 72 L70 86 L60 120" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="9"/>
+  <!-- R: crouch and body slam. Over the top and straight down onto the
+       ground, which it hits hard. -->
+  <path d="M102 46 C 102 12, 64 10, 64 40 V 58" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+  <path d="M42 54 L86 54 L64 82 Z" fill="#fff" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M34 82 L16 72 M36 96 L14 96 M94 82 L112 72 M92 96 L114 96" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+  <ellipse cx="64" cy="108" rx="42" ry="10" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="7"/>
+  <ellipse cx="64" cy="108" rx="16" ry="3" fill="#fff"/>
 </svg>

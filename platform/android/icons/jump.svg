@@ -1,5 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- A: jump. The running shoe (as turbo run's) leaping up off the ground. -->
-  <g transform="translate(66 42) rotate(-28) scale(1.0) translate(-78 -66)"><path d="M40 46 L56 42 C 62 54, 72 58, 84 60 L110 68 C 122 72, 122 86, 110 88 L42 88 C 36 88, 34 82, 36 76 Z" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="9"/><path d="M38 80 H114" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/><path d="M62 57 L67 50 M72 61 L77 54" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="6"/></g>
-  <path d="M36 98 V116 M56 104 V124 M76 100 V114" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="8"/>
+  <!-- A: jump. A trail rising off the ground, over once, and down. -->
+  <path d="M20 118 L22 108 M24 98 L27 88 M30 79 L34 70" stroke="#fff" stroke-width="12" stroke-linecap="butt"/>
+  <path d="M34 70 C 44 26, 90 18, 96 66" stroke="#fff" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+  <path d="M76 62 L116 62 L96 92 Z" fill="#fff" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
 </svg>
