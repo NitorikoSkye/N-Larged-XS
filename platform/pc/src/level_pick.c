@@ -121,7 +121,7 @@ void HostPrintProgress(void)
     const u8 *p = gLevelState;
 
     if (p != NULL) {
-        printf("progress: %d%% crystals %d gems %d relics %d flags 0x%02x\n", GetCompletionPercent(p),
-               CountCrystals(p), CountGems(p), CountRelics(p), p[2]);
+        printf("progress: %d%% crystals %d gems %d relics %d flags 0x%02x\n",
+               GetCompletionPercent(p), CountCrystals(p), CountGems(p), CountRelics(p), p[2]);
     }
 }

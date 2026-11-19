@@ -156,7 +156,9 @@ void HostUiText(u32 *canvas, int w, int h, int large, int x, int y, const char *
         }
         /* The button icons (A, B, L, R) keep their colours: white would
          * wipe out their letters. */
-        colors = sFontPal[(!large && pal == HOST_UI_PAL_WHITE && c >= 'A' && c <= 'Z') ? HOST_UI_PAL_NORMAL : pal];
+        colors = sFontPal[(!large && pal == HOST_UI_PAL_WHITE && c >= 'A' && c <= 'Z')
+                              ? HOST_UI_PAL_NORMAL
+                              : pal];
         /* The game draws a glyph's OBJ at posY + yOffset (font_glyph.cpp). */
         top = y + f->yOffset[g];
         for (cy = 0; cy < 16; cy++) {
@@ -410,8 +412,8 @@ static const char *const sScales[] = { "", "1x", "2x", "3x", "4x", "5x", "6x", "
 static const char *const sFpsNames[] = { "60 fps", "90 fps", "120 fps", "144 fps", "240 fps" };
 static const char *const sScalings[] = { "fit", "integer", "stretch" };
 static const char *const sBorders[] = { "black", "ambient", "themed" };
-static const char *const sFilters[] = { "pixels", "smooth", "sharp smooth", "scale2x", "scale3x", "cartoon",
-                                        "cartoon soft" };
+static const char *const sFilters[] = { "pixels",  "smooth",  "sharp smooth", "scale2x",
+                                        "scale3x", "cartoon", "cartoon soft" };
 static const char *const sScanlines[] = { "off", "light", "dark" };
 static const char *const sColorModes[] = { "original", "gba screen" };
 static const char *const sCorners[] = { "off", "left", "right" };
@@ -513,42 +515,42 @@ static void OpenController(void)
 }
 
 static const struct Option sGeneral[] = {
-    { "portable mode", "settings and saves next to the game, not in appdata.",
-      OPT_ACTION, &gHostSettings.portable, sOffOn, 2, 0, NULL, NULL, TogglePortable },
+    { "portable mode", "settings and saves next to the game, not in appdata.", OPT_ACTION,
+      &gHostSettings.portable, sOffOn, 2, 0, NULL, NULL, TogglePortable },
     { "pause when unfocused", "the game stops while its window isn't the active one.", OPT_CHOICE,
       &gHostSettings.pauseUnfocused, sOffOn, 2, 0 },
-    { "skip intro", "from the next launch: straight to the title, no logos or intro.",
-      OPT_CHOICE, &gHostSettings.skipIntro, sOffOn, 2, 0 },
-    { "quit game", "close the game. your progress is in its save, as the game saves it.", OPT_ACTION, NULL, NULL, 0,
-      0, NULL, NULL, AskQuit },
+    { "skip intro", "from the next launch: straight to the title, no logos or intro.", OPT_CHOICE,
+      &gHostSettings.skipIntro, sOffOn, 2, 0 },
+    { "quit game", "close the game. your progress is in its save, as the game saves it.",
+      OPT_ACTION, NULL, NULL, 0, 0, NULL, NULL, AskQuit },
 };
 
 static const struct Option sDisplay[] = {
-    { "window mode", "a window, or the whole screen (borderless).", OPT_CHOICE, &gHostSettings.fullscreen,
-      sWindowModes, 2, HOST_APPLY_WINDOW },
+    { "window mode", "a window, or the whole screen (borderless).", OPT_CHOICE,
+      &gHostSettings.fullscreen, sWindowModes, 2, HOST_APPLY_WINDOW },
     { "window size", "the window's size, in times the gba's 240x160 screen.", OPT_CHOICE,
       &gHostSettings.windowScale, sScales, 9, HOST_APPLY_WINDOW, ScaleAvailable, WindowedOnly },
-    { "frame rate", "extra frames between the game's own. same game speed.",
-      OPT_CHOICE, &gHostSettings.frameRate, sFpsNames, HOST_FPS_COUNT, HOST_APPLY_VIDEO, FpsAvailable },
-    { "vsync", "wait for the display before each frame: no tearing.", OPT_CHOICE, &gHostSettings.vsync, sOffOn, 2,
-      HOST_APPLY_VSYNC },
-    { "scaling", "fit keeps the shape, integer keeps pixels even.",
-      OPT_CHOICE, &gHostSettings.scaling, sScalings, HOST_SCALING_COUNT, HOST_APPLY_VIDEO },
+    { "frame rate", "extra frames between the game's own. same game speed.", OPT_CHOICE,
+      &gHostSettings.frameRate, sFpsNames, HOST_FPS_COUNT, HOST_APPLY_VIDEO, FpsAvailable },
+    { "vsync", "wait for the display before each frame: no tearing.", OPT_CHOICE,
+      &gHostSettings.vsync, sOffOn, 2, HOST_APPLY_VSYNC },
+    { "scaling", "fit keeps the shape, integer keeps pixels even.", OPT_CHOICE,
+      &gHostSettings.scaling, sScalings, HOST_SCALING_COUNT, HOST_APPLY_VIDEO },
     { "borders", "around the picture: black, its colours blurred, or the world's art.", OPT_CHOICE,
       &gHostSettings.borders, sBorders, HOST_BORDERS_COUNT, HOST_APPLY_VIDEO, NULL, NotStretched },
 };
 
 static const struct Option sGraphics[] = {
-    { "filter", "how the pixels are scaled up. cartoon smooths the outlines.",
-      OPT_CHOICE, &gHostSettings.filter, sFilters, HOST_FILTER_COUNT, HOST_APPLY_VIDEO },
-    { "scanlines", "dark lines between the rows of pixels, like a crt.", OPT_CHOICE, &gHostSettings.scanlines,
-      sScanlines, 3, HOST_APPLY_VIDEO },
-    { "lcd grid", "the gaps between the pixels of the gba's screen.", OPT_CHOICE, &gHostSettings.lcdGrid, sOffOn, 2,
-      HOST_APPLY_VIDEO },
+    { "filter", "how the pixels are scaled up. cartoon smooths the outlines.", OPT_CHOICE,
+      &gHostSettings.filter, sFilters, HOST_FILTER_COUNT, HOST_APPLY_VIDEO },
+    { "scanlines", "dark lines between the rows of pixels, like a crt.", OPT_CHOICE,
+      &gHostSettings.scanlines, sScanlines, 3, HOST_APPLY_VIDEO },
+    { "lcd grid", "the gaps between the pixels of the gba's screen.", OPT_CHOICE,
+      &gHostSettings.lcdGrid, sOffOn, 2, HOST_APPLY_VIDEO },
     { "colours", "the game's own colours, or as the gba's darker screen shows them.", OPT_CHOICE,
       &gHostSettings.colors, sColorModes, 2, HOST_APPLY_VIDEO },
-    { "lcd ghosting", "each frame fades out slowly, as on the gba's screen.", OPT_CHOICE, &gHostSettings.ghosting,
-      sOffOn, 2, HOST_APPLY_VIDEO },
+    { "lcd ghosting", "each frame fades out slowly, as on the gba's screen.", OPT_CHOICE,
+      &gHostSettings.ghosting, sOffOn, 2, HOST_APPLY_VIDEO },
 };
 
 static const char *const sHuds[HOST_HUD_COUNT] = { "on", "off", "borders" };
@@ -560,8 +562,8 @@ static const struct Option sInterface[] = {
       &gHostSettings.hud, sHuds, HOST_HUD_COUNT, 0 },
     { "show fps", "the frames shown each second, in the window's top left corner.", OPT_CHOICE,
       &gHostSettings.showFps, sOffOn, 2, 0 },
-    { "input display", "the buttons held, at the foot of that side's border or the picture.", OPT_CHOICE,
-      &gHostSettings.inputDisplay, sCorners, 3, 0 },
+    { "input display", "the buttons held, at the foot of that side's border or the picture.",
+      OPT_CHOICE, &gHostSettings.inputDisplay, sCorners, 3, 0 },
     { "speedrun timer", "top left: the level's time, its split against your best, the run's.",
       OPT_CHOICE, &gHostSettings.speedrunTimer, sTimers, HOST_TIMER_COUNT, 0 },
 };
@@ -571,8 +573,8 @@ static const char *const sQualities[] = { "original", "high" };
 static const struct Option sAudio[] = {
     { "quality", "high: smoother, clearer sound. original: the gba's own.", OPT_CHOICE,
       &gHostSettings.audioQuality, sQualities, 2, HOST_APPLY_AUDIO },
-    { "master volume", "everything the game plays.", OPT_PERCENT, &gHostSettings.master, NULL, 0, HOST_APPLY_AUDIO,
-      NULL, NULL, NULL, 0, 100 },
+    { "master volume", "everything the game plays.", OPT_PERCENT, &gHostSettings.master, NULL, 0,
+      HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
     { "music volume", "the music. the pause menu's music setting also applies.", OPT_PERCENT,
       &gHostSettings.music, NULL, 0, HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
     { "sound fx volume", "the sound effects. the pause menu's sound setting also applies.",
@@ -581,12 +583,13 @@ static const struct Option sAudio[] = {
 
 static const char *const sRumbles[] = { "off", "light", "strong" };
 
-static const char *const sPrompts[HOST_PROMPTS_COUNT] = { "auto", "gba", "xbox", "playstation", "nintendo",
-                                                          "keyboard" };
+static const char *const sPrompts[HOST_PROMPTS_COUNT] = { "auto",        "gba",      "xbox",
+                                                          "playstation", "nintendo", "keyboard" };
 
 static const struct Option sControls[] = {
     { "keyboard", "change the keys.", OPT_ACTION, NULL, NULL, 0, 0, NULL, NULL, OpenKeyboard },
-    { "controller", "change the controller's buttons.", OPT_ACTION, NULL, NULL, 0, 0, NULL, NULL, OpenController },
+    { "controller", "change the controller's buttons.", OPT_ACTION, NULL, NULL, 0, 0, NULL, NULL,
+      OpenController },
     { "stick deadzone", "how far a stick or trigger must move before it counts.", OPT_PERCENT,
       &gHostSettings.deadzone, NULL, 0, 0, NULL, NULL, NULL, 10, 90 },
     { "rumble", "the controller buzzes with hits, explosions, crates and bosses.", OPT_CHOICE,
@@ -597,8 +600,8 @@ static const struct Option sControls[] = {
 
 static const char *const sAutoSaves[HOST_AUTOSAVE_COUNT] = { "off", "slot in use", "slot 4" };
 
-static const char *const sSlideGraces[HOST_SLIDE_GRACE_COUNT] = { "off", "4 frames", "6 frames", "8 frames",
-                                                                   "10 frames" };
+static const char *const sSlideGraces[HOST_SLIDE_GRACE_COUNT] = { "off", "4 frames", "6 frames",
+                                                                  "8 frames", "10 frames" };
 
 static const struct Option sGameplay[] = {
     { "auto save", "after a level with something new: save to the slot in use, or slot 4.",
@@ -619,12 +622,12 @@ static int DiscordOn(void)
 }
 
 static const struct Option sExtras[] = {
-    { "discord status", "your level and progress on your discord profile, while discord runs.", OPT_CHOICE,
-      &gHostSettings.discord, sOffOn, 2, 0 },
+    { "discord status", "your level and progress on your discord profile, while discord runs.",
+      OPT_CHOICE, &gHostSettings.discord, sOffOn, 2, 0 },
     { "show progress", "completion, crystals, gems and relics in the status too.", OPT_CHOICE,
       &gHostSettings.discordProgress, sOffOn, 2, 0, NULL, DiscordOn },
-    { "connection", "the discord app it uses: the discord app id line in settings.ini.", OPT_CHOICE, &gHostDiscordStatus,
-      sDiscordStates, HOST_DISCORD_STATUS_COUNT, 0, NULL, Never },
+    { "connection", "the discord app it uses: the discord app id line in settings.ini.", OPT_CHOICE,
+      &gHostDiscordStatus, sDiscordStates, HOST_DISCORD_STATUS_COUNT, 0, NULL, Never },
     { "add to steam", "puts the game in your steam library with its art. grey while steam runs.",
       OPT_ACTION, NULL, NULL, 0, 0, NULL, HostSteamCanAdd, HostSteamAdd },
 };
@@ -641,17 +644,17 @@ static const char *const sHaptics[] = { "off", "light", "strong" };
 static const char *const sTextSizes[] = { "normal", "large" };
 
 static const struct Option sPhoneGeneral[] = {
-    { "skip intro", "from the next launch: straight to the title, no logos or intro.",
-      OPT_CHOICE, &gHostSettings.skipIntro, sOffOn, 2, 0 },
+    { "skip intro", "from the next launch: straight to the title, no logos or intro.", OPT_CHOICE,
+      &gHostSettings.skipIntro, sOffOn, 2, 0 },
 };
 
 static const struct Option sPhoneDisplay[] = {
-    { "frame rate", "120: extra frames between the game's own, on 120 hz screens.",
-      OPT_CHOICE, &gHostSettings.frameRate, sFpsNames, HOST_FPS_COUNT, HOST_APPLY_VIDEO, FpsAvailable },
-    { "scaling", "fit keeps the shape, integer keeps pixels even.",
-      OPT_CHOICE, &gHostSettings.scaling, sScalings, HOST_SCALING_COUNT, HOST_APPLY_VIDEO },
-    { "filter", "sharp pixels, or smoothed as they are scaled up.",
-      OPT_CHOICE, &gHostSettings.filter, sPhoneFilters, 2, HOST_APPLY_VIDEO },
+    { "frame rate", "120: extra frames between the game's own, on 120 hz screens.", OPT_CHOICE,
+      &gHostSettings.frameRate, sFpsNames, HOST_FPS_COUNT, HOST_APPLY_VIDEO, FpsAvailable },
+    { "scaling", "fit keeps the shape, integer keeps pixels even.", OPT_CHOICE,
+      &gHostSettings.scaling, sScalings, HOST_SCALING_COUNT, HOST_APPLY_VIDEO },
+    { "filter", "sharp pixels, or smoothed as they are scaled up.", OPT_CHOICE,
+      &gHostSettings.filter, sPhoneFilters, 2, HOST_APPLY_VIDEO },
     { "colours", "the game's own colours, or as the gba's darker screen shows them.", OPT_CHOICE,
       &gHostSettings.colors, sColorModes, 2, HOST_APPLY_VIDEO },
     { "borders", "beside the picture: black, its colours blurred, or the world's art.", OPT_CHOICE,
@@ -659,14 +662,14 @@ static const struct Option sPhoneDisplay[] = {
 };
 
 static const struct Option sPhoneTouch[] = {
-    { "size", "how big the on-screen buttons are.", OPT_CHOICE, &gHostSettings.touchSize, sTouchSizes, 4,
-      HOST_APPLY_VIDEO },
-    { "opacity", "how solid the on-screen buttons are.", OPT_PERCENT, &gHostSettings.touchOpacity, NULL, 0,
-      HOST_APPLY_VIDEO, NULL, NULL, NULL, 20, 100 },
+    { "size", "how big the on-screen buttons are.", OPT_CHOICE, &gHostSettings.touchSize,
+      sTouchSizes, 4, HOST_APPLY_VIDEO },
+    { "opacity", "how solid the on-screen buttons are.", OPT_PERCENT, &gHostSettings.touchOpacity,
+      NULL, 0, HOST_APPLY_VIDEO, NULL, NULL, NULL, 20, 100 },
     { "in menus", "levels: only in levels. menus and the warp room are tapped.", OPT_CHOICE,
       &gHostSettings.touchInMenus, sTouchMenus, 2, HOST_APPLY_VIDEO },
-    { "haptics", "a buzz as you press an on-screen button.", OPT_CHOICE, &gHostSettings.haptics, sHaptics, 3,
-      HOST_APPLY_VIDEO },
+    { "haptics", "a buzz as you press an on-screen button.", OPT_CHOICE, &gHostSettings.haptics,
+      sHaptics, 3, HOST_APPLY_VIDEO },
 };
 
 static const struct Option sPhoneInterface[] = {
@@ -674,19 +677,19 @@ static const struct Option sPhoneInterface[] = {
       &gHostSettings.textSize, sTextSizes, 2, 0 },
     { "hud", "lives, wumpa and crates: in the game, hidden, or in the left border.", OPT_CHOICE,
       &gHostSettings.hud, sHuds, HOST_HUD_COUNT, 0 },
-    { "prompts", "the game's a, b, l and r buttons drawn as your controller's.",
-      OPT_CHOICE, &gHostSettings.prompts, sPrompts, HOST_PROMPTS_NINTENDO + 1, 0 },
+    { "prompts", "the game's a, b, l and r buttons drawn as your controller's.", OPT_CHOICE,
+      &gHostSettings.prompts, sPrompts, HOST_PROMPTS_NINTENDO + 1, 0 },
 };
 
 static const struct Option sPhoneAudio[] = {
     { "quality", "high: smoother, clearer sound. original: the gba's own.", OPT_CHOICE,
       &gHostSettings.audioQuality, sQualities, 2, HOST_APPLY_AUDIO },
-    { "master", "everything the game plays.", OPT_PERCENT, &gHostSettings.master, NULL, 0, HOST_APPLY_AUDIO,
-      NULL, NULL, NULL, 0, 100 },
+    { "master", "everything the game plays.", OPT_PERCENT, &gHostSettings.master, NULL, 0,
+      HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
     { "music", "the music. the pause menu's music setting also applies.", OPT_PERCENT,
       &gHostSettings.music, NULL, 0, HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
-    { "sound fx", "the sound effects. the pause menu's sound setting also applies.",
-      OPT_PERCENT, &gHostSettings.sfx, NULL, 0, HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
+    { "sound fx", "the sound effects. the pause menu's sound setting also applies.", OPT_PERCENT,
+      &gHostSettings.sfx, NULL, 0, HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
 };
 
 static const char *const sPhoneAutoSaves[HOST_AUTOSAVE_COUNT] = { "off", "in use", "slot 4" };
@@ -702,11 +705,14 @@ static const struct Option sPhoneGameplay[] = {
 
 static const struct Category sCategories[] = {
     { "general", "skipping the intro", sPhoneGeneral, COUNT(sPhoneGeneral) },
-    { "display", "frame rate, scaling, filter, colours and borders", sPhoneDisplay, COUNT(sPhoneDisplay) },
-    { "touch", "the on-screen buttons: size, opacity, menus and haptics", sPhoneTouch, COUNT(sPhoneTouch) },
+    { "display", "frame rate, scaling, filter, colours and borders", sPhoneDisplay,
+      COUNT(sPhoneDisplay) },
+    { "touch", "the on-screen buttons: size, opacity, menus and haptics", sPhoneTouch,
+      COUNT(sPhoneTouch) },
     { "interface", "text size, hud and button prompts", sPhoneInterface, COUNT(sPhoneInterface) },
     { "audio", "quality, and master, music and sound fx volume", sPhoneAudio, COUNT(sPhoneAudio) },
-    { "gameplay", "auto save, looking around, slide jump grace", sPhoneGameplay, COUNT(sPhoneGameplay) },
+    { "gameplay", "auto save, looking around, slide jump grace", sPhoneGameplay,
+      COUNT(sPhoneGameplay) },
 };
 #define SETTINGS_TITLE "settings"
 #else
@@ -724,8 +730,8 @@ static const struct Category sCategories[] = {
 #endif
 
 static const char *const sBindNames[HOST_BIND_COUNT] = {
-    "up", "down", "left", "right", "A button", "B button", "L button", "R button", "start", "select",
-    "settings menu", "fullscreen", "screenshot", "fast forward",
+    "up",       "down",  "left",   "right",         "A button",   "B button",   "L button",
+    "R button", "start", "select", "settings menu", "fullscreen", "screenshot", "fast forward",
 };
 
 static int OptionEnabled(const struct Option *o)
@@ -934,7 +940,8 @@ static void InputBindings(int action)
     case HOST_UI_OK:
         if (sBindRow == HOST_BIND_COUNT) {
             sConfirm = 1;
-            sConfirmText = sBindPad ? "restore the controller's defaults?" : "restore the keyboard's defaults?";
+            sConfirmText = sBindPad ? "restore the controller's defaults?"
+                                    : "restore the keyboard's defaults?";
             sConfirmYes = RestoreBindings;
         } else {
             sCapturing = 1;
@@ -1035,112 +1042,118 @@ void HostUiMouse(int event, int x, int y)
         return;
     }
     switch (sPage) {
-    case PAGE_CATEGORIES: {
-        int i = (y - 0x44) / 10;
-        int over = x < 0x64 && y >= 0x44 && i >= 0 && i < COUNT(sCategories);
+    case PAGE_CATEGORIES:
+        {
+            int i = (y - 0x44) / 10;
+            int over = x < 0x64 && y >= 0x44 && i >= 0 && i < COUNT(sCategories);
 
-        if (Large()) {
-            i = RowAt(y, COUNT(sCategories));
-            over = i >= 0;
+            if (Large()) {
+                i = RowAt(y, COUNT(sCategories));
+                over = i >= 0;
+                if (event == HOST_UI_MOUSE_LEFT && i < 0) {
+                    if (y < ROWS_TOP && y >= ROWS_TOP - 8) {
+                        HostUiInput(HOST_UI_UP);
+                    } else if (y >= ROWS_TOP + ROW_PITCH * ROW_COUNT &&
+                               y < ROWS_TOP + ROW_PITCH * ROW_COUNT + 10) {
+                        HostUiInput(HOST_UI_DOWN);
+                    }
+                    break;
+                }
+            }
+
+            if (event == HOST_UI_MOUSE_WHEEL_UP || event == HOST_UI_MOUSE_WHEEL_DOWN) {
+                HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_UP : HOST_UI_DOWN);
+            } else if (over) {
+                sCategory = i;
+                if (event == HOST_UI_MOUSE_LEFT) {
+                    HostUiInput(HOST_UI_OK);
+                }
+            }
+            break;
+        }
+    case PAGE_OPTIONS:
+        {
+            const struct Category *cat = &sCategories[sCategory];
+            int i = RowAt(y, cat->count);
+            int onValue = 0;
+            int left = 0;
+
+            if (i >= 0) {
+                char value[48];
+                int vw;
+
+                ValueText(&cat->options[i], value, sizeof(value));
+                vw = ValueWidth(value);
+                onValue =
+                    value[0] != '\0' && x >= W - ROW_MARGIN - vw - 4 && x < W - ROW_MARGIN + 6;
+                left = x < W - ROW_MARGIN - vw / 2;
+            }
+            if (event == HOST_UI_MOUSE_WHEEL_UP || event == HOST_UI_MOUSE_WHEEL_DOWN) {
+                if (onValue) {
+                    sCursor[sCategory] = i;
+                    HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_RIGHT : HOST_UI_LEFT);
+                } else {
+                    HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_UP : HOST_UI_DOWN);
+                }
+                break;
+            }
             if (event == HOST_UI_MOUSE_LEFT && i < 0) {
+                /* the arrows above and below the rows scroll them */
                 if (y < ROWS_TOP && y >= ROWS_TOP - 8) {
                     HostUiInput(HOST_UI_UP);
-                } else if (y >= ROWS_TOP + ROW_PITCH * ROW_COUNT && y < ROWS_TOP + ROW_PITCH * ROW_COUNT + 10) {
+                } else if (y >= ROWS_TOP + ROW_PITCH * ROW_COUNT &&
+                           y < ROWS_TOP + ROW_PITCH * ROW_COUNT + 10) {
                     HostUiInput(HOST_UI_DOWN);
                 }
                 break;
             }
-        }
+            if (i < 0) {
+                break;
+            }
+            sCursor[sCategory] = i;
+            if (event == HOST_UI_MOUSE_LEFT) {
+                const struct Option *o = &cat->options[i];
 
-        if (event == HOST_UI_MOUSE_WHEEL_UP || event == HOST_UI_MOUSE_WHEEL_DOWN) {
-            HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_UP : HOST_UI_DOWN);
-        } else if (over) {
-            sCategory = i;
+                if (onValue && o->type != OPT_ACTION) {
+                    HostUiInput(left ? HOST_UI_LEFT : HOST_UI_RIGHT);
+                } else {
+                    HostUiInput(HOST_UI_OK);
+                }
+            }
+            break;
+        }
+    case PAGE_BINDINGS:
+        {
+            int i = RowAt(y, HOST_BIND_COUNT + 1);
+
+            if (event == HOST_UI_MOUSE_WHEEL_UP || event == HOST_UI_MOUSE_WHEEL_DOWN) {
+                HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_UP : HOST_UI_DOWN);
+                break;
+            }
+            if (i < 0) {
+                if (event == HOST_UI_MOUSE_LEFT && y < ROWS_TOP && y >= ROWS_TOP - 8) {
+                    HostUiInput(HOST_UI_UP);
+                } else if (event == HOST_UI_MOUSE_LEFT && y >= ROWS_TOP + ROW_PITCH * ROW_COUNT &&
+                           y < ROWS_TOP + ROW_PITCH * ROW_COUNT + 10) {
+                    HostUiInput(HOST_UI_DOWN);
+                }
+                break;
+            }
+            sBindRow = i;
+            if (i < HOST_BIND_COUNT) {
+                if (x >= 108 && x < 170) {
+                    sBindSlot = 0;
+                } else if (x >= 170) {
+                    sBindSlot = 1;
+                } else if (event == HOST_UI_MOUSE_LEFT) {
+                    break; /* the action's name: nothing to change there */
+                }
+            }
             if (event == HOST_UI_MOUSE_LEFT) {
                 HostUiInput(HOST_UI_OK);
             }
-        }
-        break;
-    }
-    case PAGE_OPTIONS: {
-        const struct Category *cat = &sCategories[sCategory];
-        int i = RowAt(y, cat->count);
-        int onValue = 0;
-        int left = 0;
-
-        if (i >= 0) {
-            char value[48];
-            int vw;
-
-            ValueText(&cat->options[i], value, sizeof(value));
-            vw = ValueWidth(value);
-            onValue = value[0] != '\0' && x >= W - ROW_MARGIN - vw - 4 && x < W - ROW_MARGIN + 6;
-            left = x < W - ROW_MARGIN - vw / 2;
-        }
-        if (event == HOST_UI_MOUSE_WHEEL_UP || event == HOST_UI_MOUSE_WHEEL_DOWN) {
-            if (onValue) {
-                sCursor[sCategory] = i;
-                HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_RIGHT : HOST_UI_LEFT);
-            } else {
-                HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_UP : HOST_UI_DOWN);
-            }
             break;
         }
-        if (event == HOST_UI_MOUSE_LEFT && i < 0) {
-            /* the arrows above and below the rows scroll them */
-            if (y < ROWS_TOP && y >= ROWS_TOP - 8) {
-                HostUiInput(HOST_UI_UP);
-            } else if (y >= ROWS_TOP + ROW_PITCH * ROW_COUNT && y < ROWS_TOP + ROW_PITCH * ROW_COUNT + 10) {
-                HostUiInput(HOST_UI_DOWN);
-            }
-            break;
-        }
-        if (i < 0) {
-            break;
-        }
-        sCursor[sCategory] = i;
-        if (event == HOST_UI_MOUSE_LEFT) {
-            const struct Option *o = &cat->options[i];
-
-            if (onValue && o->type != OPT_ACTION) {
-                HostUiInput(left ? HOST_UI_LEFT : HOST_UI_RIGHT);
-            } else {
-                HostUiInput(HOST_UI_OK);
-            }
-        }
-        break;
-    }
-    case PAGE_BINDINGS: {
-        int i = RowAt(y, HOST_BIND_COUNT + 1);
-
-        if (event == HOST_UI_MOUSE_WHEEL_UP || event == HOST_UI_MOUSE_WHEEL_DOWN) {
-            HostUiInput(event == HOST_UI_MOUSE_WHEEL_UP ? HOST_UI_UP : HOST_UI_DOWN);
-            break;
-        }
-        if (i < 0) {
-            if (event == HOST_UI_MOUSE_LEFT && y < ROWS_TOP && y >= ROWS_TOP - 8) {
-                HostUiInput(HOST_UI_UP);
-            } else if (event == HOST_UI_MOUSE_LEFT && y >= ROWS_TOP + ROW_PITCH * ROW_COUNT &&
-                       y < ROWS_TOP + ROW_PITCH * ROW_COUNT + 10) {
-                HostUiInput(HOST_UI_DOWN);
-            }
-            break;
-        }
-        sBindRow = i;
-        if (i < HOST_BIND_COUNT) {
-            if (x >= 108 && x < 170) {
-                sBindSlot = 0;
-            } else if (x >= 170) {
-                sBindSlot = 1;
-            } else if (event == HOST_UI_MOUSE_LEFT) {
-                break; /* the action's name: nothing to change there */
-            }
-        }
-        if (event == HOST_UI_MOUSE_LEFT) {
-            HostUiInput(HOST_UI_OK);
-        }
-        break;
-    }
     default:
         break;
     }
@@ -1325,7 +1338,8 @@ static void DrawOptions(void)
         if (o->value == &gHostSettings.frameRate && HostFrontendRefreshRate() > 0) {
             char text[160];
 
-            snprintf(text, sizeof(text), "your display: %d hz. same game speed at any rate.", HostFrontendRefreshRate());
+            snprintf(text, sizeof(text), "your display: %d hz. same game speed at any rate.",
+                     HostFrontendRefreshRate());
             DrawHelp(text, HOST_UI_PAL_NORMAL);
         } else {
             DrawHelp(o->help, OptionEnabled(o) ? HOST_UI_PAL_NORMAL : HOST_UI_PAL_GREY_LIGHT);
@@ -1356,7 +1370,8 @@ static void DrawBindings(void)
         int s;
 
         if (i == HOST_BIND_COUNT) {
-            TextCentered(0, W / 2, y, "restore defaults", i == sBindRow ? HOST_UI_PAL_WHITE : HOST_UI_PAL_NORMAL);
+            TextCentered(0, W / 2, y, "restore defaults",
+                         i == sBindRow ? HOST_UI_PAL_WHITE : HOST_UI_PAL_NORMAL);
             continue;
         }
         Text(0, 18, y, sBindNames[i], i == sBindRow ? HOST_UI_PAL_WHITE : HOST_UI_PAL_NORMAL);
@@ -1374,23 +1389,26 @@ static void DrawBindings(void)
                          sBindPad ? gHostUiPadName(table[i][s]) : gHostUiKeyName(table[i][s]));
             }
             Fit(name, 56);
-            pal = (i == sBindRow && s == sBindSlot) ? HOST_UI_PAL_WHITE
-                                                    : (table[i][s] == 0 ? HOST_UI_PAL_GREY : HOST_UI_PAL_NORMAL);
+            pal = (i == sBindRow && s == sBindSlot)
+                      ? HOST_UI_PAL_WHITE
+                      : (table[i][s] == 0 ? HOST_UI_PAL_GREY : HOST_UI_PAL_NORMAL);
             Text(0, x, y, name, pal);
         }
     }
     if (sCapturing) {
         char text[96];
 
-        snprintf(text, sizeof(text), sBindPad ? "press a button for %s. escape cancels."
-                                              : "press a key for %s. escape cancels.",
+        snprintf(text, sizeof(text),
+                 sBindPad ? "press a button for %s. escape cancels."
+                          : "press a key for %s. escape cancels.",
                  sBindNames[sBindRow]);
         DrawHelp(text, HOST_UI_PAL_WHITE);
     } else if (sMessageTime > 0) {
         DrawHelp(sMessage, HOST_UI_PAL_WHITE);
     } else {
-        DrawHelp(sBindPad ? "A changes, delete or the controller's x clears. two of each, either works."
-                          : "A changes, delete clears. two keys for each, either works.",
+        DrawHelp(sBindPad
+                     ? "A changes, delete or the controller's x clears. two of each, either works."
+                     : "A changes, delete clears. two keys for each, either works.",
                  HOST_UI_PAL_NORMAL);
     }
 }

@@ -58,10 +58,22 @@ int gHostStream;
 
 #ifdef _WIN32
 /* Windows has no --stream (the Android app's): the window only. */
-void HostStreamInit(void) {}
-void HostStreamVBlank(void) {}
-void HostStreamAudio(const s8 *buf, u32 n, u32 rate) { (void)buf; (void)n; (void)rate; }
-u16 HostStreamKeys(void) { return 0; }
+void HostStreamInit(void)
+{
+}
+void HostStreamVBlank(void)
+{
+}
+void HostStreamAudio(const s8 *buf, u32 n, u32 rate)
+{
+    (void)buf;
+    (void)n;
+    (void)rate;
+}
+u16 HostStreamKeys(void)
+{
+    return 0;
+}
 #else
 
 #include <errno.h>
@@ -146,18 +158,22 @@ static void Fatal(int sig, siginfo_t *info, void *ctx)
     const char *s = "core: fatal signal ";
 
     (void)ctx;
-    while (*s) *p++ = *s++;
+    while (*s)
+        *p++ = *s++;
     PutNum(&p, (unsigned long)sig, 10);
     s = " code ";
-    while (*s) *p++ = *s++;
+    while (*s)
+        *p++ = *s++;
     PutNum(&p, (unsigned long)(unsigned)info->si_code, 10);
     s = " addr 0x";
-    while (*s) *p++ = *s++;
+    while (*s)
+        *p++ = *s++;
     PutNum(&p, (unsigned long)info->si_addr, 16);
 #ifdef SIGSYS
     if (sig == SIGSYS) {
         s = " syscall ";
-        while (*s) *p++ = *s++;
+        while (*s)
+            *p++ = *s++;
         PutNum(&p, (unsigned long)(unsigned)info->si_syscall, 10);
     }
 #endif
@@ -195,13 +211,13 @@ static void Pace(double part)
 
 /* --- What the app sends --------------------------------------------------- */
 
-static u16 sMouseKeys;       /* the taps' buttons this frame (mouse_hooks.cpp) */
-static u16 sPulse;           /* buttons pressed for one frame (back in a level) */
-static u16 sMask;            /* held when the settings menu closed: not the game's until let go */
+static u16 sMouseKeys; /* the taps' buttons this frame (mouse_hooks.cpp) */
+static u16 sPulse;     /* buttons pressed for one frame (back in a level) */
+static u16 sMask;      /* held when the settings menu closed: not the game's until let go */
 static int sMenuRequest;
 static int sDisplayHz = 60;
 static int sPadStyle = HOST_PROMPTS_GBA;
-static int sTouchMode = -1;  /* as last sent */
+static int sTouchMode = -1; /* as last sent */
 static int sSettingsDirty = 1;
 extern int gHostTapHint; /* prompts.c */
 /* The app's screen around the picture, in its pixels (the borders): the
@@ -211,7 +227,8 @@ static int sBarLeft, sBarRight, sBarScreenH, sBarPictureW, sBarTop;
 
 #ifdef HOST_ANDROID
 void HostBordersPhone(int left, int right, int screenH, int picW, int top,
-                      void (*send)(int side, int unit, int w, int h, const u32 *px)); /* borders.c */
+                      void (*send)(int side, int unit, int w, int h,
+                                   const u32 *px)); /* borders.c */
 void HostBordersPhoneReset(void);
 #define BordersReset() HostBordersPhoneReset()
 #else
@@ -243,31 +260,38 @@ static void Handle(const u8 *m, int menu)
             u16 now = Arg(m, 0);
             u16 pressed = now & ~sKeys;
 
-            if (pressed & DPAD_UP) HostUiInput(HOST_UI_UP);
-            if (pressed & DPAD_DOWN) HostUiInput(HOST_UI_DOWN);
-            if (pressed & DPAD_LEFT) HostUiInput(HOST_UI_LEFT);
-            if (pressed & DPAD_RIGHT) HostUiInput(HOST_UI_RIGHT);
-            if (pressed & A_BUTTON) HostUiInput(HOST_UI_OK);
-            if (pressed & (B_BUTTON | START_BUTTON)) HostUiInput(HOST_UI_BACK);
+            if (pressed & DPAD_UP)
+                HostUiInput(HOST_UI_UP);
+            if (pressed & DPAD_DOWN)
+                HostUiInput(HOST_UI_DOWN);
+            if (pressed & DPAD_LEFT)
+                HostUiInput(HOST_UI_LEFT);
+            if (pressed & DPAD_RIGHT)
+                HostUiInput(HOST_UI_RIGHT);
+            if (pressed & A_BUTTON)
+                HostUiInput(HOST_UI_OK);
+            if (pressed & (B_BUTTON | START_BUTTON))
+                HostUiInput(HOST_UI_BACK);
         }
         sKeys = Arg(m, 0);
         break;
-    case 2: {
-        int x = (s16)Arg(m, 0);
-        int y = (s16)Arg(m, 1);
+    case 2:
+        {
+            int x = (s16)Arg(m, 0);
+            int y = (s16)Arg(m, 1);
 
-        if (menu) {
-            HostUiMouse(HOST_UI_MOUSE_MOVE, x, y);
-            HostUiMouse(HOST_UI_MOUSE_LEFT, x, y);
+            if (menu) {
+                HostUiMouse(HOST_UI_MOUSE_MOVE, x, y);
+                HostUiMouse(HOST_UI_MOUSE_LEFT, x, y);
+                break;
+            }
+            gHostMouse.inside = x >= 0 && x < HOST_SCREEN_WIDTH && y >= 0 && y < HOST_SCREEN_HEIGHT;
+            gHostMouse.x = x;
+            gHostMouse.y = y;
+            gHostMouse.moved = 1;
+            gHostMouse.left = 1;
             break;
         }
-        gHostMouse.inside = x >= 0 && x < HOST_SCREEN_WIDTH && y >= 0 && y < HOST_SCREEN_HEIGHT;
-        gHostMouse.x = x;
-        gHostMouse.y = y;
-        gHostMouse.moved = 1;
-        gHostMouse.left = 1;
-        break;
-    }
     case 3:
         if (menu) {
             HostUiInput(HOST_UI_BACK);
@@ -302,17 +326,20 @@ static void Handle(const u8 *m, int menu)
         sBarTop = Arg(m, 1);
         BordersReset();
         break;
-    case 7: {
-        int steps = (s16)Arg(m, 0);
+    case 7:
+        {
+            int steps = (s16)Arg(m, 0);
 
-        if (menu) {
-            for (; steps > 0; steps--) HostUiMouse(HOST_UI_MOUSE_WHEEL_UP, 0, 0);
-            for (; steps < 0; steps++) HostUiMouse(HOST_UI_MOUSE_WHEEL_DOWN, 0, 0);
-        } else {
-            gHostMouse.wheel += steps;
+            if (menu) {
+                for (; steps > 0; steps--)
+                    HostUiMouse(HOST_UI_MOUSE_WHEEL_UP, 0, 0);
+                for (; steps < 0; steps++)
+                    HostUiMouse(HOST_UI_MOUSE_WHEEL_DOWN, 0, 0);
+            } else {
+                gHostMouse.wheel += steps;
+            }
+            break;
         }
-        break;
-    }
     default:
         break;
     }
@@ -607,7 +634,8 @@ void HostStreamVBlank(void)
     if (HostUiIsOpen()) {
         Menu();
     }
-    HostPromptsPhone(gHostSettings.prompts == HOST_PROMPTS_AUTO ? sPadStyle : gHostSettings.prompts);
+    HostPromptsPhone(gHostSettings.prompts == HOST_PROMPTS_AUTO ? sPadStyle
+                                                                : gHostSettings.prompts);
 #else
     sMenuRequest = 0;
 #endif

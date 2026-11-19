@@ -35,8 +35,8 @@ using Game::Crash::Player;
 
 extern "C" {
 
-static s32 sGrace = -1;  /* frames of grace left; -1: not in a slide off a ledge */
-static u32 sGraceFrame;  /* HostFrame() it was last counted at */
+static s32 sGrace = -1; /* frames of grace left; -1: not in a slide off a ledge */
+static u32 sGraceFrame; /* HostFrame() it was last counted at */
 
 char *getenv(const char *name); /* <stdlib.h> clashes with the game's rand */
 int atoi(const char *s);
@@ -51,7 +51,8 @@ static void Log(const char *where, ActionCtrl *self)
     }
     if (sOn) {
         HostLogf("slide %u %s state %d air %d grace %d y %d\n", (unsigned)HostFrame(), where,
-                (int)self->state, self->part->hitAxes == 0, (int)sGrace, (int)(self->part->y >> 8));
+                 (int)self->state, self->part->hitAxes == 0, (int)sGrace,
+                 (int)(self->part->y >> 8));
     }
 }
 
@@ -110,7 +111,8 @@ void __real__ZN4Game5Crash10ActionCtrl10StateSlideEv(ActionCtrl *self);
  * low bit set means a virtual one (the C++ ABI), so they must start at an
  * even address, as a member function does. */
 __attribute__((aligned(4))) void __wrap__ZN4Game5Crash10ActionCtrl10StateSlideEv(ActionCtrl *self);
-__attribute__((aligned(4))) void __wrap__ZN4Game5Crash10ActionCtrl13StateAirborneEv(ActionCtrl *self);
+__attribute__((aligned(4))) void
+__wrap__ZN4Game5Crash10ActionCtrl13StateAirborneEv(ActionCtrl *self);
 
 void __wrap__ZN4Game5Crash10ActionCtrl10StateSlideEv(ActionCtrl *self)
 {

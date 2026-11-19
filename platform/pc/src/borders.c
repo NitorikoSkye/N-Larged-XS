@@ -457,7 +457,8 @@ static void StatsPanel(u32 *c, int w, int h, const struct Stats *st, int reserve
     snprintf(text, sizeof(text), "%d/%d", st->gems, 28);
     Centered(c, w, h, 1, cx + 7, y + 15, text);
     for (i = 0; i < 4; i++) {
-        Icon(c, w, h, gems[i].icon, cx - 9 + 18 * (i & 1), y + 40 + 15 * (i >> 1), !(st->flags & gems[i].flag));
+        Icon(c, w, h, gems[i].icon, cx - 9 + 18 * (i & 1), y + 40 + 15 * (i >> 1),
+             !(st->flags & gems[i].flag));
     }
     y += 70;
     /* Relics */
@@ -483,7 +484,8 @@ static void StatsPanel(u32 *c, int w, int h, const struct Stats *st, int reserve
     Plate(c, w, h, x0, y, x1, y + 50);
     Centered(c, w, h, 0, cx, y + 4, "powers");
     for (i = 0; i < 4; i++) {
-        Icon(c, w, h, powers[i].icon, cx - 9 + 18 * (i & 1), y + 22 + 16 * (i >> 1), !(st->flags & powers[i].flag));
+        Icon(c, w, h, powers[i].icon, cx - 9 + 18 * (i & 1), y + 22 + 16 * (i >> 1),
+             !(st->flags & powers[i].flag));
     }
 }
 
@@ -601,7 +603,8 @@ static void LayOutHud(struct HudLayout *l, int x0, int x1, const struct HostHud 
     } else {
         snprintf(l->text[2], sizeof(l->text[2]), "%d", (int)hud->crates);
     }
-    snprintf(l->text[3], sizeof(l->text[3]), "%d:%02d.%d", (int)hud->minutes, (int)hud->seconds, (int)hud->tenths);
+    snprintf(l->text[3], sizeof(l->text[3]), "%d:%02d.%d", (int)hud->minutes, (int)hud->seconds,
+             (int)hud->tenths);
     for (i = 0; i < l->rows; i++) {
         /* judged by the widest it can get, so the row keeps its look
          * through the level: 99 lives, 100 wumpa, every crate */
@@ -792,8 +795,8 @@ static void WriteAsset(const char *dir, const char *name, const u32 *c, int w, i
 void HostBordersWriteDiscordAssets(const char *dir)
 {
     static const char *const names[10] = {
-        "world_snow", "world_jungle", "world_sewer", "world_underwater", "world_sky",
-        "world_space", "boss_tiny", "boss_dingodile", "boss_ngin", "boss_cortex",
+        "world_snow",  "world_jungle", "world_sewer",    "world_underwater", "world_sky",
+        "world_space", "boss_tiny",    "boss_dingodile", "boss_ngin",        "boss_cortex",
     };
     u32 c[72 * 72];
     u32 p[52 * 69];
@@ -823,7 +826,8 @@ void HostBordersWriteDiscordAssets(const char *dir)
                 if (dx * dx + dy * dy > 60 * 60) {
                     continue;
                 }
-                c[y * 72 + x] = sx >= 0 && sx < 52 && sy >= 0 && sy < 69 ? p[sy * 52 + sx] : 0xFF101830;
+                c[y * 72 + x] =
+                    sx >= 0 && sx < 52 && sy >= 0 && sy < 69 ? p[sy * 52 + sx] : 0xFF101830;
             }
         }
     }
@@ -848,9 +852,10 @@ static int HudChanged(const struct Bar *bar)
 /* A side bar (0 left, 1 right) made for something else than now. */
 static int BarStale(const struct Bar *bar, int w, int h, int side)
 {
-    return !bar->made || bar->w != w || bar->h != h || bar->level != gHostPlayingLevel || bar->side != side ||
-           bar->pad != gHostSettings.inputDisplay ||
-           (side == 1 && memcmp(&bar->stats, &sStats, sizeof(sStats)) != 0) || (side == 0 && HudChanged(bar));
+    return !bar->made || bar->w != w || bar->h != h || bar->level != gHostPlayingLevel ||
+           bar->side != side || bar->pad != gHostSettings.inputDisplay ||
+           (side == 1 && memcmp(&bar->stats, &sStats, sizeof(sStats)) != 0) ||
+           (side == 0 && HudChanged(bar));
 }
 
 #ifdef HOST_SDL
@@ -860,7 +865,10 @@ void HostBordersDrawThemed(SDL_Renderer *r, SDL_Rect dst, int ww, int wh)
 
     if (dst.x <= 0) {
         /* Above and below: the wall, across. */
-        int unit = wh - dst.h > 0 ? ((dst.h / HOST_SCREEN_HEIGHT + 1) / 2 > 1 ? (dst.h / HOST_SCREEN_HEIGHT + 1) / 2 : 1) : 1;
+        int unit = wh - dst.h > 0 ? ((dst.h / HOST_SCREEN_HEIGHT + 1) / 2 > 1
+                                         ? (dst.h / HOST_SCREEN_HEIGHT + 1) / 2
+                                         : 1)
+                                  : 1;
         int w = (ww + unit - 1) / unit;
         int h = (dst.y + unit - 1) / unit;
         SDL_Rect top;

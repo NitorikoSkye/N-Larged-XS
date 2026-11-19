@@ -275,9 +275,9 @@ static void Simplify(const char *in, char *out, size_t size)
         char c;
         const char *name;
     } names[] = {
-        { '`', "tilde" }, { '~', "tilde" }, { '/', "slash" },     { '\\', "backslash" }, { ';', "semicolon" },
-        { '=', "equals" }, { '[', "lbracket" }, { ']', "rbracket" }, { '*', "times" },   { '&', "and" },
-        { '"', "quote" },  { '#', "hash" },
+        { '`', "tilde" },     { '~', "tilde" },  { '/', "slash" },    { '\\', "backslash" },
+        { ';', "semicolon" }, { '=', "equals" }, { '[', "lbracket" }, { ']', "rbracket" },
+        { '*', "times" },     { '&', "and" },    { '"', "quote" },    { '#', "hash" },
     };
     size_t n = 0;
 
@@ -328,9 +328,12 @@ static const char *PadName(int v)
 
     if (HOST_PAD_IS_AXIS(v)) {
         static const char *const axes[SDL_CONTROLLER_AXIS_MAX][2] = {
-            { "l stick left", "l stick right" }, { "l stick up", "l stick down" },
-            { "r stick left", "r stick right" }, { "r stick up", "r stick down" },
-            { "lt -", "lt" },                    { "rt -", "rt" },
+            { "l stick left", "l stick right" },
+            { "l stick up", "l stick down" },
+            { "r stick left", "r stick right" },
+            { "r stick up", "r stick down" },
+            { "lt -", "lt" },
+            { "rt -", "rt" },
         };
         int axis = (v & 0xFF) >> 1;
 
@@ -453,7 +456,8 @@ static void BuildLut(void)
     for (r = 0; r < 64; r++) {
         for (g = 0; g < 64; g++) {
             for (b = 0; b < 64; b++) {
-                double in[3] = { pow((r * 4 + r / 16) / 255.0, 2.2), pow((g * 4 + g / 16) / 255.0, 2.2),
+                double in[3] = { pow((r * 4 + r / 16) / 255.0, 2.2),
+                                 pow((g * 4 + g / 16) / 255.0, 2.2),
                                  pow((b * 4 + b / 16) / 255.0, 2.2) };
                 u32 out = 0;
                 int c;
@@ -666,8 +670,10 @@ static void QueueAudio(const s16 *buf, u32 n, u32 rate)
             double p0 = ext[i];
             double p3 = ext[i + 3];
 
-            v = p1 + 0.5 * f *
-                         (p2 - p0 + f * (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3 + f * (3.0 * (p1 - p2) + p3 - p0)));
+            v = p1 +
+                0.5 * f *
+                    (p2 - p0 +
+                     f * (2.0 * p0 - 5.0 * p1 + 4.0 * p2 - p3 + f * (3.0 * (p1 - p2) + p3 - p0)));
         } else {
             v = p1 + (p2 - p1) * f;
         }
@@ -789,14 +795,15 @@ void HostFrontendInit(void)
     HostDiscordInit();
     gHostUiKeyName = KeyName;
     gHostUiPadName = PadName;
-    sWindow = SDL_CreateWindow(HOST_PORT_NAME " - " HOST_PORT_VERSION, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                               SW * gHostSettings.windowScale, SH * gHostSettings.windowScale,
-                               SDL_WINDOW_RESIZABLE |
-                                   (gHostSettings.fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
+    sWindow = SDL_CreateWindow(
+        HOST_PORT_NAME " - " HOST_PORT_VERSION, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        SW * gHostSettings.windowScale, SH * gHostSettings.windowScale,
+        SDL_WINDOW_RESIZABLE | (gHostSettings.fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
     if (sWindow == NULL) {
         Fail("SDL_CreateWindow");
     }
-    sRenderer = SDL_CreateRenderer(sWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
+    sRenderer =
+        SDL_CreateRenderer(sWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_TARGETTEXTURE);
     if (sRenderer == NULL) {
         sRenderer = SDL_CreateRenderer(sWindow, -1, 0);
     }
@@ -808,8 +815,8 @@ void HostFrontendInit(void)
     if (gHostSettings.colors) {
         BuildLut();
     }
-    sMenuTex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, HOST_UI_WIDTH,
-                                 HOST_UI_HEIGHT);
+    sMenuTex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
+                                 HOST_UI_WIDTH, HOST_UI_HEIGHT);
     SDL_SetTextureBlendMode(sMenuTex, SDL_BLENDMODE_BLEND);
     StartWorkers();
     OpenAudio();
@@ -925,7 +932,8 @@ static void Scale3x(const u32 *in, u32 *out, int w, int h)
                 o[2 * ow + 1] = (D == Hh && E != I) || (Hh == F && E != G) ? Hh : E;
                 o[2 * ow + 2] = Hh == F ? F : E;
             } else {
-                o[0] = o[1] = o[2] = o[ow] = o[ow + 1] = o[ow + 2] = o[2 * ow] = o[2 * ow + 1] = o[2 * ow + 2] = E;
+                o[0] = o[1] = o[2] = o[ow] = o[ow + 1] = o[ow + 2] = o[2 * ow] = o[2 * ow + 1] =
+                    o[2 * ow + 2] = E;
             }
         }
     }
@@ -955,7 +963,8 @@ static int XbrzFactor(void)
     return k < 2 ? 2 : k > 6 ? 6 : k;
 }
 
-void HostXbrzScale(int factor, const unsigned int *src, unsigned int *dst, int w, int h, int yFirst, int yLast);
+void HostXbrzScale(int factor, const unsigned int *src, unsigned int *dst, int w, int h, int yFirst,
+                   int yLast);
 void HostXbrzWarm(void);
 
 struct XbrzJob {
@@ -998,7 +1007,8 @@ static void UploadPicture(const u32 *src, int w, int h, int ownFrame, double dt)
         p = out;
     }
     (void)ownFrame;
-    if (w == SW && (gHostSettings.filter == HOST_FILTER_CARTOON || gHostSettings.filter == HOST_FILTER_CARTOON_SOFT)) {
+    if (w == SW && (gHostSettings.filter == HOST_FILTER_CARTOON ||
+                    gHostSettings.filter == HOST_FILTER_CARTOON_SOFT)) {
         struct XbrzJob job;
         int f = XbrzFactor();
 
@@ -1032,7 +1042,8 @@ static void UploadPicture(const u32 *src, int w, int h, int ownFrame, double dt)
         w *= f;
         h *= f;
         n = (size_t)w * h;
-    } else if (w == SW && (gHostSettings.filter == HOST_FILTER_SCALE2X || gHostSettings.filter == HOST_FILTER_SCALE3X)) {
+    } else if (w == SW && (gHostSettings.filter == HOST_FILTER_SCALE2X ||
+                           gHostSettings.filter == HOST_FILTER_SCALE3X)) {
         u32 *out;
 
         Work(&sWork, n * 9);
@@ -1078,7 +1089,8 @@ static void UploadPicture(const u32 *src, int w, int h, int ownFrame, double dt)
         if (sGameTex != NULL) {
             SDL_DestroyTexture(sGameTex);
         }
-        sGameTex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, w, h);
+        sGameTex =
+            SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_STREAMING, w, h);
         if (sGameTex == NULL) {
             Fail("SDL_CreateTexture");
         }
@@ -1108,7 +1120,8 @@ static void DrawGame(SDL_Rect dst)
             if (sSharpTex != NULL) {
                 SDL_DestroyTexture(sSharpTex);
             }
-            sSharpTex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_RGB888, SDL_TEXTUREACCESS_TARGET, tw, th);
+            sSharpTex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_RGB888,
+                                          SDL_TEXTUREACCESS_TARGET, tw, th);
             sSharpW = tw;
             sSharpH = th;
         }
@@ -1121,10 +1134,11 @@ static void DrawGame(SDL_Rect dst)
             return;
         }
     }
-    SDL_SetTextureScaleMode(sGameTex, (filter == HOST_FILTER_SMOOTH || filter == HOST_FILTER_SHARP ||
-                                       filter == HOST_FILTER_CARTOON || filter == HOST_FILTER_CARTOON_SOFT)
-                                          ? SDL_ScaleModeLinear
-                                          : SDL_ScaleModeNearest);
+    SDL_SetTextureScaleMode(sGameTex,
+                            (filter == HOST_FILTER_SMOOTH || filter == HOST_FILTER_SHARP ||
+                             filter == HOST_FILTER_CARTOON || filter == HOST_FILTER_CARTOON_SOFT)
+                                ? SDL_ScaleModeLinear
+                                : SDL_ScaleModeNearest);
     SDL_RenderCopy(sRenderer, sGameTex, NULL, &dst);
 }
 
@@ -1188,7 +1202,8 @@ static void PutOverlay(SDL_Texture **tex, const u32 *canvas, int w, int h, int x
     SDL_Rect r = { x, y, w * scale, h * scale };
 
     if (*tex == NULL) {
-        *tex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, w, h);
+        *tex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
+                                 w, h);
         if (*tex == NULL) {
             return;
         }
@@ -1199,7 +1214,8 @@ static void PutOverlay(SDL_Texture **tex, const u32 *canvas, int w, int h, int x
     SDL_RenderCopy(sRenderer, *tex, NULL, &r);
 }
 
-static void PlaceOverlay(SDL_Rect dst, int w, int h, int side, int bottom, int *scale, int *x, int *y);
+static void PlaceOverlay(SDL_Rect dst, int w, int h, int side, int bottom, int *scale, int *x,
+                         int *y);
 
 #define FPS_W 200 /* room for the timer's width, when they line up */
 #define FPS_H 12
@@ -1224,7 +1240,8 @@ static int DrawFps(SDL_Rect dst, int scale, int width)
     snprintf(text, sizeof(text), "%u fps", sFpsShown);
     memset(canvas, 0, sizeof(canvas));
     PlateFill(canvas, FPS_W, w, FPS_H);
-    HostUiText(canvas, FPS_W, FPS_H, 0, (w - HostUiTextWidth(0, text)) / 2, 2, text, HOST_UI_PAL_NORMAL);
+    HostUiText(canvas, FPS_W, FPS_H, 0, (w - HostUiTextWidth(0, text)) / 2, 2, text,
+               HOST_UI_PAL_NORMAL);
     {
         int x;
         int y;
@@ -1314,12 +1331,15 @@ static int DrawTimer(SDL_Rect dst, int scale, int top, int width)
     memset(canvas, 0, sizeof(canvas));
     /* the borders' plate, its lines centred, as the stats panels' */
     PlateFill(canvas, TIMER_W, w, h);
-    HostUiText(canvas, TIMER_W, TIMER_H, 1, (w - HostUiTextWidth(1, big)) / 2, 2, big, HOST_UI_PAL_NORMAL);
+    HostUiText(canvas, TIMER_W, TIMER_H, 1, (w - HostUiTextWidth(1, big)) / 2, 2, big,
+               HOST_UI_PAL_NORMAL);
     if (l2[0]) {
-        HostUiText(canvas, TIMER_W, TIMER_H, 0, (w - HostUiTextWidth(0, l2)) / 2, 19, l2, HOST_UI_PAL_WHITE);
+        HostUiText(canvas, TIMER_W, TIMER_H, 0, (w - HostUiTextWidth(0, l2)) / 2, 19, l2,
+                   HOST_UI_PAL_WHITE);
     }
     if (l3[0]) {
-        HostUiText(canvas, TIMER_W, TIMER_H, 0, (w - HostUiTextWidth(0, l3)) / 2, 29, l3, HOST_UI_PAL_WHITE);
+        HostUiText(canvas, TIMER_W, TIMER_H, 0, (w - HostUiTextWidth(0, l3)) / 2, 29, l3,
+                   HOST_UI_PAL_WHITE);
     }
     PlaceOverlay(dst, w, TIMER_H, 0, 0, &scale, &x, &y);
     if (top > 0) {
@@ -1459,7 +1479,7 @@ static void PadLetter(int cx, int cy, const char *rows, u32 color)
 
 static void DrawPad(SDL_Rect dst, int scale, int right)
 {
-    static const u32 line = 0xFFD0D8EC;   /* pale steel */
+    static const u32 line = 0xFFD0D8EC;    /* pale steel */
     static const u32 litLine = 0xFFFFF0A0; /* a held button's edge */
     static const u32 lit = 0xFFF0A818;     /* the game's amber */
     u16 k = sKeys;
@@ -1499,10 +1519,11 @@ static void DrawPad(SDL_Rect dst, int scale, int right)
         for (x = 10; x <= 24; x++) {
             int dx = x - 17;
             int dy = y - 22;
-            int arm = (dy < -3 && (k & DPAD_UP)) || (dy > 3 && (k & DPAD_DOWN)) || (dx < -3 && (k & DPAD_LEFT)) ||
-                      (dx > 3 && (k & DPAD_RIGHT));
+            int arm = (dy < -3 && (k & DPAD_UP)) || (dy > 3 && (k & DPAD_DOWN)) ||
+                      (dx < -3 && (k & DPAD_LEFT)) || (dx > 3 && (k & DPAD_RIGHT));
 
-            if (arm && PadIn(x, y) && PadIn(x - 1, y) && PadIn(x + 1, y) && PadIn(x, y - 1) && PadIn(x, y + 1)) {
+            if (arm && PadIn(x, y) && PadIn(x - 1, y) && PadIn(x + 1, y) && PadIn(x, y - 1) &&
+                PadIn(x, y + 1)) {
                 sPadCanvas[y * PAD_W + x] = lit;
             }
         }
@@ -1518,7 +1539,18 @@ static void DrawPad(SDL_Rect dst, int scale, int right)
 
         PadShape(PAD_CIRCLE, cx, cy, 0, 0, 4);
         PadDraw(held ? litLine : line, held ? lit : 0);
-        PadLetter(cx, cy, i ? "##." "#.#" "##." "#.#" "##." : ".#." "#.#" "###" "#.#" "#.#", held ? 0xFF201008 : line);
+        PadLetter(cx, cy,
+                  i ? "##."
+                      "#.#"
+                      "##."
+                      "#.#"
+                      "##."
+                    : ".#."
+                      "#.#"
+                      "###"
+                      "#.#"
+                      "#.#",
+                  held ? 0xFF201008 : line);
     }
     /* Select and Start */
     for (i = 0; i < 2; i++) {
@@ -1563,8 +1595,8 @@ static void DrawMenu(SDL_Rect dst, const char *banner)
 
         memset(sMenuCanvas, 0, sizeof(sMenuCanvas));
         Fill(sMenuCanvas, HOST_UI_WIDTH, 0, 64, HOST_UI_WIDTH, 92, 0xB0000000);
-        HostUiText(sMenuCanvas, HOST_UI_WIDTH, HOST_UI_HEIGHT, 1, (HOST_UI_WIDTH - w) / 2, 70, banner,
-                   HOST_UI_PAL_NORMAL);
+        HostUiText(sMenuCanvas, HOST_UI_WIDTH, HOST_UI_HEIGHT, 1, (HOST_UI_WIDTH - w) / 2, 70,
+                   banner, HOST_UI_PAL_NORMAL);
     } else {
         HostUiDraw(sMenuCanvas);
     }
@@ -1598,7 +1630,8 @@ extern int gHostHudInBorder;
  * (side 0 left, 1 right) when one is wide enough for it at `*scale` or
  * smaller, centred across it at its top or bottom; otherwise in the
  * window's corner, over the picture. */
-static void PlaceOverlay(SDL_Rect dst, int w, int h, int side, int bottom, int *scale, int *x, int *y)
+static void PlaceOverlay(SDL_Rect dst, int w, int h, int side, int bottom, int *scale, int *x,
+                         int *y)
 {
     int ww;
     int wh;
@@ -1713,7 +1746,8 @@ static void UpdateAmbient(double dt)
     }
     sAmbReady = 1;
     if (sAmbTex == NULL) {
-        sAmbTex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, AMB_W, AMB_H);
+        sAmbTex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_ARGB8888,
+                                    SDL_TEXTUREACCESS_STREAMING, AMB_W, AMB_H);
         if (sAmbTex == NULL) {
             return;
         }
@@ -1771,7 +1805,8 @@ static int sMenuPeek;
  * frame or an interpolated one), then what goes over it. */
 static void UpdateCursor(void);
 
-static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int menu, const char *banner)
+static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int menu,
+                    const char *banner)
 {
     SDL_Rect dst = GameRect();
     int scale = (dst.h / SH + 1) / 2 > 1 ? (dst.h / SH + 1) / 2 : 1;
@@ -1823,7 +1858,8 @@ static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int m
     sFpsCount++;
     now = SDL_GetPerformanceCounter();
     if (now - sFpsStart >= SDL_GetPerformanceFrequency() / 2) {
-        sFpsShown = (u32)((sFpsCount * SDL_GetPerformanceFrequency() + (now - sFpsStart) / 2) / (now - sFpsStart));
+        sFpsShown = (u32)((sFpsCount * SDL_GetPerformanceFrequency() + (now - sFpsStart) / 2) /
+                          (now - sFpsStart));
         sFpsCount = 0;
         sFpsStart = now;
     }
@@ -1863,7 +1899,8 @@ static void Screenshot(void)
             fclose(f);
         }
     } while (f != NULL);
-    if (pixels != NULL ? HostWritePng(path, pixels, w, h) : HostWritePng(path, gHostScreen, SW, SH)) {
+    if (pixels != NULL ? HostWritePng(path, pixels, w, h)
+                       : HostWritePng(path, gHostScreen, SW, SH)) {
         printf("screenshot %s before frame %u\n", path, HostFrame() + 1);
         fflush(stdout);
     }
@@ -1910,7 +1947,8 @@ static int Held(int b, int useKeys, int usePads)
         for (s = 0; s < HOST_BIND_SLOTS; s++) {
             int v = gHostSettings.pad[b][s];
 
-            if (HOST_PAD_IS_BUTTON(v) && SDL_GameControllerGetButton(pad, (SDL_GameControllerButton)(v & 0xFF))) {
+            if (HOST_PAD_IS_BUTTON(v) &&
+                SDL_GameControllerGetButton(pad, (SDL_GameControllerButton)(v & 0xFF))) {
                 return 1;
             }
             if (HOST_PAD_IS_AXIS(v) && AxisHeld(pad, v, threshold)) {
@@ -1962,7 +2000,7 @@ static SDL_GameController *PromptPad(void)
     return NULL;
 }
 
-extern int gHostInWarpRoom;     /* level_pick.c */
+extern int gHostInWarpRoom;       /* level_pick.c */
 extern char gHostStartPrompt[16]; /* prompts.c */
 extern int gHostStartStyle, gHostStartLabels;
 
@@ -1982,7 +2020,8 @@ static int KeyText(int scancode, char *out, size_t size)
     for (; *name && n + 1 < size; name++) {
         char c = *name >= 'A' && *name <= 'Z' ? (char)(*name - 'A' + 'a') : *name;
 
-        if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == ' ' || strchr("-+!:,?.'%", c))) {
+        if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == ' ' ||
+              strchr("-+!:,?.'%", c))) {
             return 0;
         }
         out[n++] = c;
@@ -2010,7 +2049,8 @@ static void StartPrompt(int style, int labels)
     }
     for (s = 0; s < HOST_BIND_SLOTS; s++) {
         if (gHostSettings.keys[HOST_BIND_START][s] > 0 &&
-            KeyText(gHostSettings.keys[HOST_BIND_START][s], gHostStartPrompt, sizeof(gHostStartPrompt))) {
+            KeyText(gHostSettings.keys[HOST_BIND_START][s], gHostStartPrompt,
+                    sizeof(gHostStartPrompt))) {
             return;
         }
     }
@@ -2057,7 +2097,8 @@ static void UpdatePrompts(void)
 static u16 GameKeys(void)
 {
     static const u16 bits[HOST_BIND_GBA_COUNT] = {
-        DPAD_UP, DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT, A_BUTTON, B_BUTTON, L_BUTTON, R_BUTTON, START_BUTTON, SELECT_BUTTON,
+        DPAD_UP,  DPAD_DOWN, DPAD_LEFT, DPAD_RIGHT,   A_BUTTON,
+        B_BUTTON, L_BUTTON,  R_BUTTON,  START_BUTTON, SELECT_BUTTON,
     };
     u16 keys = 0;
     int b;
@@ -2203,19 +2244,21 @@ static void MenuMouse(const SDL_Event *e)
             return;
         }
         break;
-    case SDL_MOUSEWHEEL: {
-        int mx;
-        int my;
+    case SDL_MOUSEWHEEL:
+        {
+            int mx;
+            int my;
 
-        SDL_GetMouseState(&mx, &my);
-        if (e->wheel.y == 0 || !MouseOn(mx, my, sMenuRect, HOST_UI_WIDTH, HOST_UI_HEIGHT, &x, &y)) {
-            return;
+            SDL_GetMouseState(&mx, &my);
+            if (e->wheel.y == 0 ||
+                !MouseOn(mx, my, sMenuRect, HOST_UI_WIDTH, HOST_UI_HEIGHT, &x, &y)) {
+                return;
+            }
+            event = (e->wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -e->wheel.y : e->wheel.y) > 0
+                        ? HOST_UI_MOUSE_WHEEL_UP
+                        : HOST_UI_MOUSE_WHEEL_DOWN;
+            break;
         }
-        event = (e->wheel.direction == SDL_MOUSEWHEEL_FLIPPED ? -e->wheel.y : e->wheel.y) > 0
-                    ? HOST_UI_MOUSE_WHEEL_UP
-                    : HOST_UI_MOUSE_WHEEL_DOWN;
-        break;
-    }
     default:
         return;
     }
@@ -2261,10 +2304,11 @@ static void MenuEvent(const SDL_Event *e)
             HostUiInput(HOST_UI_RIGHT);
         } else if (e->key.repeat) {
             /* only the directions repeat */
-        } else if (k == SDL_SCANCODE_RETURN || k == SDL_SCANCODE_KP_ENTER || k == SDL_SCANCODE_SPACE ||
-                   KeyIs(k, HOST_BIND_A) || KeyIs(k, HOST_BIND_START)) {
+        } else if (k == SDL_SCANCODE_RETURN || k == SDL_SCANCODE_KP_ENTER ||
+                   k == SDL_SCANCODE_SPACE || KeyIs(k, HOST_BIND_A) || KeyIs(k, HOST_BIND_START)) {
             HostUiInput(HOST_UI_OK);
-        } else if (k == SDL_SCANCODE_ESCAPE || k == SDL_SCANCODE_BACKSPACE || KeyIs(k, HOST_BIND_B)) {
+        } else if (k == SDL_SCANCODE_ESCAPE || k == SDL_SCANCODE_BACKSPACE ||
+                   KeyIs(k, HOST_BIND_B)) {
             HostUiInput(HOST_UI_BACK);
         } else if (k == SDL_SCANCODE_DELETE) {
             HostUiInput(HOST_UI_CLEAR);
@@ -2294,7 +2338,8 @@ static void MenuEvent(const SDL_Event *e)
         }
         return;
     }
-    if (e->type == SDL_CONTROLLERAXISMOTION && capturing == 2 && e->caxis.axis < SDL_CONTROLLER_AXIS_MAX) {
+    if (e->type == SDL_CONTROLLERAXISMOTION && capturing == 2 &&
+        e->caxis.axis < SDL_CONTROLLER_AXIS_MAX) {
         int out = e->caxis.value > 24000 || e->caxis.value < -24000;
 
         if (out && !sAxisWasOut[e->caxis.axis]) {
@@ -2389,7 +2434,8 @@ static void CommonEvent(const SDL_Event *e, int *shot)
         break;
     case SDL_CONTROLLERBUTTONDOWN:
         sLastPad = e->cbutton.which;
-        if (!HostUiIsOpen() && !HostUiCapturing() && PadIs(HOST_PAD_BUTTON(e->cbutton.button), HOST_BIND_MENU)) {
+        if (!HostUiIsOpen() && !HostUiCapturing() &&
+            PadIs(HOST_PAD_BUTTON(e->cbutton.button), HOST_BIND_MENU)) {
             sMenuRequest = 1;
         }
         break;
@@ -2556,7 +2602,8 @@ static Uint64 sLastPresent;
 
 static double SinceLastPresent(Uint64 now)
 {
-    double dt = sLastPresent ? (double)(now - sLastPresent) * 60.0 / SDL_GetPerformanceFrequency() : 1.0;
+    double dt =
+        sLastPresent ? (double)(now - sLastPresent) * 60.0 / SDL_GetPerformanceFrequency() : 1.0;
 
     sLastPresent = now;
     return dt;

@@ -34,7 +34,7 @@ using Game::Level::Camera;
 /* How long up or down is held before the view moves, how far it goes and
  * how fast (a fraction of the remaining distance each frame). */
 enum {
-    LOOK_DELAY = 40,             /* frames: two thirds of a second */
+    LOOK_DELAY = 40,               /* frames: two thirds of a second */
     LOOK_DISTANCE = INT_TO_Q8(48), /* 30% of the screen's height */
     LOOK_EASE = 8,
 };
@@ -75,8 +75,9 @@ void __wrap__ZN4Game5Level6Camera6UpdateEv(Camera *self)
 
     /* Up or down alone, standing still on the ground, the camera
      * following Crash on foot. */
-    if (self->mode == CAMERA_MODE_FACING && gPlayer != NULL && self->target == gPlayer && (gPlayer->hitAxes & PART_DIR_DOWN) && gPlayer->speedY == 0 &&
-        gPlayer->speedX == 0 && !(keys & (DPAD_LEFT | DPAD_RIGHT | A_BUTTON | B_BUTTON | L_BUTTON | R_BUTTON))) {
+    if (self->mode == CAMERA_MODE_FACING && gPlayer != NULL && self->target == gPlayer &&
+        (gPlayer->hitAxes & PART_DIR_DOWN) && gPlayer->speedY == 0 && gPlayer->speedX == 0 &&
+        !(keys & (DPAD_LEFT | DPAD_RIGHT | A_BUTTON | B_BUTTON | L_BUTTON | R_BUTTON))) {
         if ((keys & (DPAD_UP | DPAD_DOWN)) == DPAD_UP) {
             dir = -1;
         } else if ((keys & (DPAD_UP | DPAD_DOWN)) == DPAD_DOWN) {
@@ -102,7 +103,8 @@ void __wrap__ZN4Game5Level6Camera6UpdateEv(Camera *self)
     }
     gHostLookOffset = sOffset;
     if (sOffset != 0) {
-        gLevelLayers->SetScroll(self->x - INT_TO_Q8(DISPLAY_CENTER_X), self->y + sOffset - INT_TO_Q8(DISPLAY_CENTER_Y));
+        gLevelLayers->SetScroll(self->x - INT_TO_Q8(DISPLAY_CENTER_X),
+                                self->y + sOffset - INT_TO_Q8(DISPLAY_CENTER_Y));
     }
 }
 }

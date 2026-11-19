@@ -45,7 +45,7 @@ extern "C" {
 s32 __real__ZN4Game2Ui11TitleScreen3RunEv(TitleScreen *self);
 u8 __real__ZN4Game2Ui8SaveMenu3RunEjj(u32 state, u32 cursor);
 
-extern "C" int gHostStatsShown; /* level_pick.c */
+extern "C" int gHostStatsShown;           /* level_pick.c */
 extern "C" TitleScreen *gHostTitleScreen; /* mouse_hooks.cpp */
 
 s32 __wrap__ZN4Game2Ui11TitleScreen3RunEv(TitleScreen *self)
@@ -53,7 +53,7 @@ s32 __wrap__ZN4Game2Ui11TitleScreen3RunEv(TitleScreen *self)
     s32 result;
 
     HostAutosaveSessionStart();
-    gHostStatsShown = 0; /* no game under way: no stats in the border */
+    gHostStatsShown = 0;     /* no game under way: no stats in the border */
     gHostTitleScreen = self; /* for the mouse (mouse_hooks.cpp) */
     result = __real__ZN4Game2Ui11TitleScreen3RunEv(self);
     gHostTitleScreen = NULL;
@@ -75,7 +75,8 @@ static u8 SaveMenuRun(u32 state, u32 cursor)
     }
     for (row = 0; row < 4; row++) {
         emptyBefore[row] = menu->cartSave->IsSlotEmpty(row);
-        __builtin_memcpy(&before[row], (u8 *)menu->cartSave + row * sizeof(struct save_slot), sizeof(struct save_slot));
+        __builtin_memcpy(&before[row], (u8 *)menu->cartSave + row * sizeof(struct save_slot),
+                         sizeof(struct save_slot));
     }
     result = __real__ZN4Game2Ui8SaveMenu3RunEjj(state, cursor);
     if (menu->gameLoaded) {
@@ -85,7 +86,8 @@ static u8 SaveMenuRun(u32 state, u32 cursor)
     for (row = 0; row < 4; row++) {
         const u8 *now = (const u8 *)menu->cartSave + row * sizeof(struct save_slot);
         int empty = menu->cartSave->IsSlotEmpty(row);
-        int changed = empty != emptyBefore[row] || __builtin_memcmp(now, &before[row], sizeof(struct save_slot)) != 0;
+        int changed = empty != emptyBefore[row] ||
+                      __builtin_memcmp(now, &before[row], sizeof(struct save_slot)) != 0;
 
         if (!empty && changed &&
             __builtin_memcmp(now, gLevelState->PackSaveData(), sizeof(GameProgress)) == 0) {

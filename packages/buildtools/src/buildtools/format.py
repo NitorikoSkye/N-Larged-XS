@@ -60,6 +60,8 @@ FORMATTED = [
 UNFORMATTED = [
     "engine/src/*/data",
     "lib/*/data",
+    # xBRZ (the pc platform's cartoon filters): Zenju's code as it comes
+    "platform/pc/xbrz",
 ]
 
 CLANG_FORMAT_MAJOR = 21

@@ -55,10 +55,10 @@ void HostConfigDefaultKeys(struct HostSettings *s)
 void HostConfigDefaultPad(struct HostSettings *s)
 {
     memset(s->pad, 0, sizeof(s->pad));
-    s->pad[HOST_BIND_A][0] = HOST_PAD_BUTTON(1);   /* SDL's B: the right face button */
-    s->pad[HOST_BIND_B][0] = HOST_PAD_BUTTON(0);   /* SDL's A: the bottom one */
-    s->pad[HOST_BIND_L][0] = HOST_PAD_BUTTON(9);   /* SDL's left shoulder */
-    s->pad[HOST_BIND_R][0] = HOST_PAD_BUTTON(10);  /* SDL's right shoulder */
+    s->pad[HOST_BIND_A][0] = HOST_PAD_BUTTON(1);  /* SDL's B: the right face button */
+    s->pad[HOST_BIND_B][0] = HOST_PAD_BUTTON(0);  /* SDL's A: the bottom one */
+    s->pad[HOST_BIND_L][0] = HOST_PAD_BUTTON(9);  /* SDL's left shoulder */
+    s->pad[HOST_BIND_R][0] = HOST_PAD_BUTTON(10); /* SDL's right shoulder */
     s->pad[HOST_BIND_START][0] = HOST_PAD_BUTTON(6);
     s->pad[HOST_BIND_SELECT][0] = HOST_PAD_BUTTON(4);
 }
@@ -115,7 +115,8 @@ void HostConfigSave(void)
     if (f == NULL) {
         return;
     }
-    fprintf(f, "# %s %s (Android) settings, written by the game.\n", HOST_PORT_NAME, HOST_PORT_VERSION);
+    fprintf(f, "# %s %s (Android) settings, written by the game.\n", HOST_PORT_NAME,
+            HOST_PORT_VERSION);
     for (i = 0; i < sizeof(sInts) / sizeof(sInts[0]); i++) {
         fprintf(f, "%s=%d\n", sInts[i].name, *sInts[i].value);
     }
@@ -146,7 +147,9 @@ void HostConfigInit(void)
                 if (strcmp(line, sInts[i].name) == 0) {
                     int v = atoi(eq + 1);
 
-                    *sInts[i].value = v < sInts[i].min ? sInts[i].min : v > sInts[i].max ? sInts[i].max : v;
+                    *sInts[i].value = v < sInts[i].min   ? sInts[i].min
+                                      : v > sInts[i].max ? sInts[i].max
+                                                         : v;
                 }
             }
         }

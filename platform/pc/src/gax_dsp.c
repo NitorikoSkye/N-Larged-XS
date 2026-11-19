@@ -88,10 +88,11 @@ void HostGaxResample(struct HostGaxMixItem *item, int storeBackward, int mixBack
                 }
                 pos -= loopLen;
             }
-            *(s16 *)out = (s16)(Mul(gHostAudioHq && !storeBackward ? Between(src, pos, end >> 11, loopLen >> 11)
-                                                                       : src[pos >> 11],
-                                     volume) >>
-                                 8);
+            *(s16 *)out = (s16)(Mul(gHostAudioHq && !storeBackward
+                                        ? Between(src, pos, end >> 11, loopLen >> 11)
+                                        : src[pos >> 11],
+                                    volume) >>
+                                8);
             out += 2;
             pos = storeBackward ? pos - step : pos + step;
         }
@@ -107,8 +108,9 @@ void HostGaxResample(struct HostGaxMixItem *item, int storeBackward, int mixBack
                 }
                 pos -= loopLen;
             }
-            *(s16 *)out = (s16)((Mul(gHostAudioHq && !mixBackward ? Between(src, pos, end >> 11, loopLen >> 11)
-                                                                  : src[pos >> 11],
+            *(s16 *)out = (s16)((Mul(gHostAudioHq && !mixBackward
+                                         ? Between(src, pos, end >> 11, loopLen >> 11)
+                                         : src[pos >> 11],
                                      volume) >>
                                  8) +
                                 *(s16 *)out);

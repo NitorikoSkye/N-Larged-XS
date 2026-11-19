@@ -66,13 +66,13 @@ static const struct {
     const char *emoji;
     int boss;
 } sWorlds[] = {
-    { "world_snow", "\xE2\x9D\x84\xEF\xB8\x8F", 0 },      /* snowflake */
-    { "world_jungle", "\xF0\x9F\x8C\xB4", 0 },            /* palm tree */
-    { "world_sewer", "\xF0\x9F\xA7\xAA", 0 },             /* test tube */
-    { "world_underwater", "\xF0\x9F\x8C\x8A", 0 },        /* wave */
-    { "world_sky", "\xE2\x9C\x88\xEF\xB8\x8F", 0 },       /* aeroplane */
-    { "world_space", "\xF0\x9F\x9A\x80", 0 },             /* rocket */
-    { "boss_tiny", "\xE2\x9A\x94\xEF\xB8\x8F", 1 },       /* crossed swords */
+    { "world_snow", "\xE2\x9D\x84\xEF\xB8\x8F", 0 }, /* snowflake */
+    { "world_jungle", "\xF0\x9F\x8C\xB4", 0 },       /* palm tree */
+    { "world_sewer", "\xF0\x9F\xA7\xAA", 0 },        /* test tube */
+    { "world_underwater", "\xF0\x9F\x8C\x8A", 0 },   /* wave */
+    { "world_sky", "\xE2\x9C\x88\xEF\xB8\x8F", 0 },  /* aeroplane */
+    { "world_space", "\xF0\x9F\x9A\x80", 0 },        /* rocket */
+    { "boss_tiny", "\xE2\x9A\x94\xEF\xB8\x8F", 1 },  /* crossed swords */
     { "boss_dingodile", "\xE2\x9A\x94\xEF\xB8\x8F", 1 },
     { "boss_ngin", "\xE2\x9A\x94\xEF\xB8\x8F", 1 },
     { "boss_cortex", "\xE2\x9A\x94\xEF\xB8\x8F", 1 },
@@ -149,8 +149,8 @@ static void Compose(char *json, size_t size)
 
         TitleCase(name, sizeof(name), gUiLevelNames[level]);
         if (pic >= 0 && pic < (int)(sizeof(sWorlds) / sizeof(sWorlds[0]))) {
-            snprintf(details, sizeof(details), "%s %s%s", sWorlds[pic].emoji, sWorlds[pic].boss ? "Boss: " : "",
-                     name);
+            snprintf(details, sizeof(details), "%s %s%s", sWorlds[pic].emoji,
+                     sWorlds[pic].boss ? "Boss: " : "", name);
             large = sWorlds[pic].asset;
         } else {
             snprintf(details, sizeof(details), "%s %s", EMOJI_MEGA_MIX, name);
@@ -164,9 +164,10 @@ static void Compose(char *json, size_t size)
         snprintf(largeText, sizeof(largeText), "Crash Bandicoot XS");
     }
     if (gHostSettings.discordProgress && progress != NULL) {
-        snprintf(state, sizeof(state), "%s %d%%" DOT "%s %d/20" DOT "%s %d/28" DOT "%s %d/20", EMOJI_PERCENT,
-                 (int)GetCompletionPercent(progress), EMOJI_CRYSTAL, (int)CountCrystals(progress), EMOJI_GEM,
-                 (int)CountGems(progress), EMOJI_RELIC, (int)CountRelics(progress));
+        snprintf(state, sizeof(state), "%s %d%%" DOT "%s %d/20" DOT "%s %d/28" DOT "%s %d/20",
+                 EMOJI_PERCENT, (int)GetCompletionPercent(progress), EMOJI_CRYSTAL,
+                 (int)CountCrystals(progress), EMOJI_GEM, (int)CountGems(progress), EMOJI_RELIC,
+                 (int)CountRelics(progress));
     }
     {
         char d[200];
@@ -180,8 +181,8 @@ static void Compose(char *json, size_t size)
                  "{\"details\":\"%s\"%s%s%s,\"timestamps\":{\"start\":%lld},"
                  "\"assets\":{\"large_image\":\"%s\",\"large_text\":\"%s\","
                  "\"small_image\":\"crash\",\"small_text\":\"%s - %s\"}}",
-                 d, s[0] ? ",\"state\":\"" : "", s, s[0] ? "\"" : "", sSince, large, lt, HOST_PORT_NAME,
-                 HOST_PORT_VERSION);
+                 d, s[0] ? ",\"state\":\"" : "", s, s[0] ? "\"" : "", sSince, large, lt,
+                 HOST_PORT_NAME, HOST_PORT_VERSION);
     }
 }
 
@@ -249,7 +250,8 @@ typedef int Conn;
 static Conn OpenConn(void)
 {
     static const char *const vars[] = { "XDG_RUNTIME_DIR", "TMPDIR", "TMP", "TEMP" };
-    static const char *const subs[] = { "", "app/com.discordapp.Discord/", "snap.discord/", ".flatpak/dev.vencord.Vesktop/xdg-run/" };
+    static const char *const subs[] = { "", "app/com.discordapp.Discord/", "snap.discord/",
+                                        ".flatpak/dev.vencord.Vesktop/xdg-run/" };
     size_t v;
     size_t s;
     int i;
@@ -267,7 +269,8 @@ static Conn OpenConn(void)
 
                 memset(&addr, 0, sizeof(addr));
                 addr.sun_family = AF_UNIX;
-                snprintf(addr.sun_path, sizeof(addr.sun_path), "%s/%sdiscord-ipc-%d", dir, subs[s], i);
+                snprintf(addr.sun_path, sizeof(addr.sun_path), "%s/%sdiscord-ipc-%d", dir, subs[s],
+                         i);
                 fd = socket(AF_UNIX, SOCK_STREAM, 0);
                 if (fd < 0) {
                     return NO_CONN;
@@ -504,9 +507,10 @@ static int Thread(void *unused)
 
             SDL_LockMutex(sLock);
             serial = sWantedSerial;
-            snprintf(cmd, sizeof(cmd),
-                     "{\"cmd\":\"SET_ACTIVITY\",\"args\":{\"pid\":%lld,\"activity\":%s},\"nonce\":\"%d\"}", Pid(),
-                     sWanted, nonce + 1);
+            snprintf(
+                cmd, sizeof(cmd),
+                "{\"cmd\":\"SET_ACTIVITY\",\"args\":{\"pid\":%lld,\"activity\":%s},\"nonce\":\"%d\"}",
+                Pid(), sWanted, nonce + 1);
             SDL_UnlockMutex(sLock);
             if (serial == 0) {
                 /* nothing composed yet */
@@ -584,9 +588,15 @@ void HostDiscordFrame(void)
 
 #else
 
-void HostDiscordInit(void) {}
-void HostDiscordQuit(void) {}
-void HostDiscordFrame(void) {}
+void HostDiscordInit(void)
+{
+}
+void HostDiscordQuit(void)
+{
+}
+void HostDiscordFrame(void)
+{
+}
 
 void HostBordersWriteDiscordAssets(const char *dir)
 {

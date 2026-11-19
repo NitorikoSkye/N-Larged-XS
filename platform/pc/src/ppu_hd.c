@@ -156,7 +156,8 @@ static inline u16 TextTexel(const struct HdFrame *f, u16 cnt, u32 tx, u32 ty)
     if (ty >= 256) {
         block += size == 3 ? 2 : 1;
     }
-    entry = *(const u16 *)(f->vram + ((screenBase + block * 0x800 + ((ty & 0xFF) >> 3) * 64 + ((tx & 0xFF) >> 3) * 2) &
+    entry = *(const u16 *)(f->vram + ((screenBase + block * 0x800 + ((ty & 0xFF) >> 3) * 64 +
+                                       ((tx & 0xFF) >> 3) * 2) &
                                       0xFFFF));
     tile = entry & 0x3FF;
     px = tx & 7;
@@ -204,7 +205,8 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
 
 /* An affine or bitmap BG: each hi-res pixel takes the GBA pixel's texel
  * (screen x, y), moved by bgX/bgY (identity matrices only). */
-static void AffineBgLine(const struct HdView *v, s32 bg, s32 Y, u32 mode, u32 dispcnt, u16 *out, s32 outW)
+static void AffineBgLine(const struct HdView *v, s32 bg, s32 Y, u32 mode, u32 dispcnt, u16 *out,
+                         s32 outW)
 {
     const struct HdFrame *f = v->frame;
     s32 S = v->scale;
@@ -273,7 +275,8 @@ static void AffineBgLine(const struct HdView *v, s32 bg, s32 Y, u32 mode, u32 di
     }
 }
 
-static inline u32 ObjTexel(const struct HdFrame *f, u32 attr0, u32 attr2, u32 width, u32 lx, u32 ly, u32 map1D)
+static inline u32 ObjTexel(const struct HdFrame *f, u32 attr0, u32 attr2, u32 width, u32 lx, u32 ly,
+                           u32 map1D)
 {
     u32 tile = attr2 & 0x3FF;
     u32 addr;
@@ -297,8 +300,8 @@ static inline u32 ObjTexel(const struct HdFrame *f, u32 attr0, u32 attr2, u32 wi
     return (f->vram[0x10000 + (addr & 0x7FFF)] >> ((lx & 1) * 4)) & 0xF;
 }
 
-static inline void PutObjPixel(const struct HdFrame *f, struct ObjPixel *line, u8 *window, s32 x, u32 index,
-                               u32 attr0, u32 attr2, u32 priority, u32 flags)
+static inline void PutObjPixel(const struct HdFrame *f, struct ObjPixel *line, u8 *window, s32 x,
+                               u32 index, u32 attr0, u32 attr2, u32 priority, u32 flags)
 {
     struct ObjPixel *p = &line[x];
 
@@ -312,7 +315,8 @@ static inline void PutObjPixel(const struct HdFrame *f, struct ObjPixel *line, u
         return;
     }
     if (index) {
-        p->color = (attr0 & (1 << 13)) ? Pltt(f, 0x100 + index) : Pltt(f, 0x100 + (attr2 >> 12) * 16 + index);
+        p->color = (attr0 & (1 << 13)) ? Pltt(f, 0x100 + index)
+                                       : Pltt(f, 0x100 + (attr2 >> 12) * 16 + index);
         p->priority = priority;
         p->flags = flags;
     } else if (!(p->flags & OBJ_UNWRITTEN)) {
@@ -322,8 +326,8 @@ static inline void PutObjPixel(const struct HdFrame *f, struct ObjPixel *line, u
 }
 
 /* A button prompt's pixel (prompts.c): its own picture and colours. */
-static inline void PutPromptPixel(struct ObjPixel *line, s32 x, int prompt, u32 lx, u32 ly, u32 attr0, u32 priority,
-                                  u32 flags)
+static inline void PutPromptPixel(struct ObjPixel *line, s32 x, int prompt, u32 lx, u32 ly,
+                                  u32 attr0, u32 priority, u32 flags)
 {
     u32 index = lx < 16 && ly < 16 ? gHostPrompts.art[prompt][ly][lx] : 0;
     struct ObjPixel *p = &line[x];
@@ -341,7 +345,8 @@ static inline void PutPromptPixel(struct ObjPixel *line, s32 x, int prompt, u32 
     }
 }
 
-static void ObjLine(const struct HdView *v, s32 Y, u32 dispcnt, struct ObjPixel *line, u8 *window, s32 outW)
+static void ObjLine(const struct HdView *v, s32 Y, u32 dispcnt, struct ObjPixel *line, u8 *window,
+                    s32 outW)
 {
     const struct HdFrame *f = v->frame;
     s32 S = v->scale;
@@ -421,8 +426,8 @@ static void ObjLine(const struct HdView *v, s32 Y, u32 dispcnt, struct ObjPixel 
                 if (lx < 0 || ly < 0 || lx >= (s32)width || ly >= (s32)height) {
                     continue;
                 }
-                PutObjPixel(f, line, window, X, ObjTexel(f, attr0, attr2, width, lx, ly, map1D), attr0, attr2,
-                            priority, flags);
+                PutObjPixel(f, line, window, X, ObjTexel(f, attr0, attr2, width, lx, ly, map1D),
+                            attr0, attr2, priority, flags);
             }
         } else {
             u32 ly = (attr1 & (1 << 13)) ? height - 1 - inY : (u32)inY;
@@ -438,8 +443,8 @@ static void ObjLine(const struct HdView *v, s32 Y, u32 dispcnt, struct ObjPixel 
                     PutPromptPixel(line, X, prompt, (u32)lx, ly, attr0, priority, flags);
                     continue;
                 }
-                PutObjPixel(f, line, window, X, ObjTexel(f, attr0, attr2, width, lx, ly, map1D), attr0, attr2,
-                            priority, flags);
+                PutObjPixel(f, line, window, X, ObjTexel(f, attr0, attr2, width, lx, ly, map1D),
+                            attr0, attr2, priority, flags);
             }
         }
     spent:
@@ -543,8 +548,9 @@ void HostPpuHdLine(const struct HdView *v, s32 Y, u32 *row)
 
         /* Most hi-res pixels have the same layers as the one before
          * (every pixel is `scale` wide): the same picture. */
-        if (X > 0 && !windows && bgLine[0][X] == bgLine[0][X - 1] && bgLine[1][X] == bgLine[1][X - 1] &&
-            bgLine[2][X] == bgLine[2][X - 1] && bgLine[3][X] == bgLine[3][X - 1] &&
+        if (X > 0 && !windows && bgLine[0][X] == bgLine[0][X - 1] &&
+            bgLine[1][X] == bgLine[1][X - 1] && bgLine[2][X] == bgLine[2][X - 1] &&
+            bgLine[3][X] == bgLine[3][X - 1] &&
             *(const u32 *)&objLine[X] == *(const u32 *)&objLine[X - 1]) {
             row[X] = row[X - 1];
             continue;
@@ -647,7 +653,8 @@ static void LineKey(const struct HdView *v, s32 Y, s32 *key)
     s32 i;
 
     for (i = 0; i < 4; i++) {
-        key[i] = FloorDiv(Y + v->bgY[i] + (s32)(Io16(f, REG_OFFSET_BG0VOFS + 4 * i) & 0x1FF) * S, S);
+        key[i] =
+            FloorDiv(Y + v->bgY[i] + (s32)(Io16(f, REG_OFFSET_BG0VOFS + 4 * i) & 0x1FF) * S, S);
     }
     for (i = 0; i < 128; i++) {
         u32 attr0 = oam[4 * i];
@@ -683,7 +690,8 @@ void HostPpuHdLines(const struct HdView *v, s32 first, s32 end, u32 *out, s32 st
 
         LineKey(v, Y, key);
         if (have && memcmp(key, keys[(Y - 1) & 1], sizeof(keys[0])) == 0) {
-            memcpy(out + (size_t)Y * stride, out + (size_t)(Y - 1) * stride, (size_t)WIDTH * v->scale * 4);
+            memcpy(out + (size_t)Y * stride, out + (size_t)(Y - 1) * stride,
+                   (size_t)WIDTH * v->scale * 4);
         } else {
             HostPpuHdLine(v, Y, out + (size_t)Y * stride);
         }

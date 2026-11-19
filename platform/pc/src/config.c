@@ -166,8 +166,8 @@ static const struct {
 };
 
 static const char *const sBindKeys[HOST_BIND_COUNT] = {
-    "up", "down", "left", "right", "a", "b", "l", "r", "start", "select",
-    "settings_menu", "fullscreen", "screenshot", "fast_forward",
+    "up", "down",  "left",   "right",         "a",          "b",          "l",
+    "r",  "start", "select", "settings_menu", "fullscreen", "screenshot", "fast_forward",
 };
 
 static void PadToText(int v, char *out, size_t size)
@@ -177,7 +177,8 @@ static void PadToText(int v, char *out, size_t size)
 
         snprintf(out, size, "%s", s ? s : "");
     } else if (HOST_PAD_IS_AXIS(v)) {
-        const char *s = SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)((v & 0xFF) >> 1));
+        const char *s =
+            SDL_GameControllerGetStringForAxis((SDL_GameControllerAxis)((v & 0xFF) >> 1));
 
         snprintf(out, size, "%c%s", (v & 1) ? '+' : '-', s ? s : "");
     } else {
@@ -218,8 +219,8 @@ static int WriteSettings(const char *dir, int portable)
     if (f == NULL) {
         return 0;
     }
-    fprintf(f, "# %s %s settings. Written by the game; the settings menu (~) changes them.\n", HOST_PORT_NAME,
-            HOST_PORT_VERSION);
+    fprintf(f, "# %s %s settings. Written by the game; the settings menu (~) changes them.\n",
+            HOST_PORT_NAME, HOST_PORT_VERSION);
     fprintf(f, "portable=%d\n", portable);
     fprintf(f, "frame_rate=%d\n", gHostFpsValues[gHostSettings.frameRate]);
     for (i = 0; i < sizeof(sInts) / sizeof(sInts[0]); i++) {
@@ -234,7 +235,9 @@ static int WriteSettings(const char *dir, int portable)
     for (b = 0; b < HOST_BIND_COUNT; b++) {
         fprintf(f, "key_%s=", sBindKeys[b]);
         for (s = 0; s < HOST_BIND_SLOTS; s++) {
-            const char *name = gHostSettings.keys[b][s] ? SDL_GetScancodeName((SDL_Scancode)gHostSettings.keys[b][s]) : "";
+            const char *name = gHostSettings.keys[b][s]
+                                   ? SDL_GetScancodeName((SDL_Scancode)gHostSettings.keys[b][s])
+                                   : "";
 
             fprintf(f, "%s%s", s ? "," : "", name);
         }
@@ -481,7 +484,8 @@ void HostConfigInit(void)
          * application data stays where it is. */
         Join(appSettings, sizeof(appSettings), sAppDir, SETTINGS_FILE);
         Join(appSave, sizeof(appSave), sAppDir, SAVE_FILE);
-        if (strcmp(sAppDir, sExeDir) != 0 && !Exists(appSettings) && !Exists(appSave) && WriteSettings(sExeDir, 1)) {
+        if (strcmp(sAppDir, sExeDir) != 0 && !Exists(appSettings) && !Exists(appSave) &&
+            WriteSettings(sExeDir, 1)) {
             portable = 1;
             rmdir(sAppDir); /* SDL_GetPrefPath made it; gone if empty */
         }

@@ -62,53 +62,241 @@ static const struct {
     char c;
     const char *rows; /* 5 rows of 3 */
 } sFont[] = {
-    { 'A', ".#." "#.#" "###" "#.#" "#.#" },
-    { 'B', "##." "#.#" "##." "#.#" "##." },
-    { 'C', ".##" "#.." "#.." "#.." ".##" },
-    { 'D', "##." "#.#" "#.#" "#.#" "##." },
-    { 'E', "###" "#.." "##." "#.." "###" },
-    { 'F', "###" "#.." "##." "#.." "#.." },
-    { 'G', ".##" "#.." "#.#" "#.#" ".##" },
-    { 'H', "#.#" "#.#" "###" "#.#" "#.#" },
-    { 'I', "###" ".#." ".#." ".#." "###" },
-    { 'J', "..#" "..#" "..#" "#.#" ".#." },
-    { 'K', "#.#" "#.#" "##." "#.#" "#.#" },
-    { 'L', "#.." "#.." "#.." "#.." "###" },
-    { 'M', "#.#" "###" "###" "#.#" "#.#" },
-    { 'N', "##." "#.#" "#.#" "#.#" "#.#" },
-    { 'O', ".#." "#.#" "#.#" "#.#" ".#." },
-    { 'P', "##." "#.#" "##." "#.." "#.." },
-    { 'Q', ".#." "#.#" "#.#" "##." ".##" },
-    { 'R', "##." "#.#" "##." "#.#" "#.#" },
-    { 'S', ".##" "#.." ".#." "..#" "##." },
-    { 'T', "###" ".#." ".#." ".#." ".#." },
-    { 'U', "#.#" "#.#" "#.#" "#.#" "###" },
-    { 'V', "#.#" "#.#" "#.#" "#.#" ".#." },
-    { 'W', "#.#" "#.#" "###" "###" "#.#" },
-    { 'X', "#.#" "#.#" ".#." "#.#" "#.#" },
-    { 'Y', "#.#" "#.#" ".#." ".#." ".#." },
-    { 'Z', "###" "..#" ".#." "#.." "###" },
-    { '0', ".#." "#.#" "#.#" "#.#" ".#." },
-    { '1', ".#." "##." ".#." ".#." "###" },
-    { '2', "##." "..#" ".#." "#.." "###" },
-    { '3', "##." "..#" ".#." "..#" "##." },
-    { '4', "#.#" "#.#" "###" "..#" "..#" },
-    { '5', "###" "#.." "##." "..#" "##." },
-    { '6', ".##" "#.." "##." "#.#" ".#." },
-    { '7', "###" "..#" ".#." ".#." ".#." },
-    { '8', ".#." "#.#" ".#." "#.#" ".#." },
-    { '9', ".#." "#.#" ".##" "..#" "##." },
-    { '-', "..." "..." "###" "..." "..." },
-    { '=', "..." "###" "..." "###" "..." },
-    { '.', "..." "..." "..." "..." ".#." },
-    { ',', "..." "..." "..." ".#." "#.." },
-    { '/', "..#" "..#" ".#." "#.." "#.." },
-    { ';', "..." ".#." "..." ".#." "#.." },
-    { '\'', ".#." ".#." "..." "..." "..." },
-    { '[', "##." "#.." "#.." "#.." "##." },
-    { ']', ".##" "..#" "..#" "..#" ".##" },
-    { '\\', "#.." "#.." ".#." "..#" "..#" },
-    { '`', "#.." ".#." "..." "..." "..." },
+    { 'A', ".#."
+           "#.#"
+           "###"
+           "#.#"
+           "#.#" },
+    { 'B', "##."
+           "#.#"
+           "##."
+           "#.#"
+           "##." },
+    { 'C', ".##"
+           "#.."
+           "#.."
+           "#.."
+           ".##" },
+    { 'D', "##."
+           "#.#"
+           "#.#"
+           "#.#"
+           "##." },
+    { 'E', "###"
+           "#.."
+           "##."
+           "#.."
+           "###" },
+    { 'F', "###"
+           "#.."
+           "##."
+           "#.."
+           "#.." },
+    { 'G', ".##"
+           "#.."
+           "#.#"
+           "#.#"
+           ".##" },
+    { 'H', "#.#"
+           "#.#"
+           "###"
+           "#.#"
+           "#.#" },
+    { 'I', "###"
+           ".#."
+           ".#."
+           ".#."
+           "###" },
+    { 'J', "..#"
+           "..#"
+           "..#"
+           "#.#"
+           ".#." },
+    { 'K', "#.#"
+           "#.#"
+           "##."
+           "#.#"
+           "#.#" },
+    { 'L', "#.."
+           "#.."
+           "#.."
+           "#.."
+           "###" },
+    { 'M', "#.#"
+           "###"
+           "###"
+           "#.#"
+           "#.#" },
+    { 'N', "##."
+           "#.#"
+           "#.#"
+           "#.#"
+           "#.#" },
+    { 'O', ".#."
+           "#.#"
+           "#.#"
+           "#.#"
+           ".#." },
+    { 'P', "##."
+           "#.#"
+           "##."
+           "#.."
+           "#.." },
+    { 'Q', ".#."
+           "#.#"
+           "#.#"
+           "##."
+           ".##" },
+    { 'R', "##."
+           "#.#"
+           "##."
+           "#.#"
+           "#.#" },
+    { 'S', ".##"
+           "#.."
+           ".#."
+           "..#"
+           "##." },
+    { 'T', "###"
+           ".#."
+           ".#."
+           ".#."
+           ".#." },
+    { 'U', "#.#"
+           "#.#"
+           "#.#"
+           "#.#"
+           "###" },
+    { 'V', "#.#"
+           "#.#"
+           "#.#"
+           "#.#"
+           ".#." },
+    { 'W', "#.#"
+           "#.#"
+           "###"
+           "###"
+           "#.#" },
+    { 'X', "#.#"
+           "#.#"
+           ".#."
+           "#.#"
+           "#.#" },
+    { 'Y', "#.#"
+           "#.#"
+           ".#."
+           ".#."
+           ".#." },
+    { 'Z', "###"
+           "..#"
+           ".#."
+           "#.."
+           "###" },
+    { '0', ".#."
+           "#.#"
+           "#.#"
+           "#.#"
+           ".#." },
+    { '1', ".#."
+           "##."
+           ".#."
+           ".#."
+           "###" },
+    { '2', "##."
+           "..#"
+           ".#."
+           "#.."
+           "###" },
+    { '3', "##."
+           "..#"
+           ".#."
+           "..#"
+           "##." },
+    { '4', "#.#"
+           "#.#"
+           "###"
+           "..#"
+           "..#" },
+    { '5', "###"
+           "#.."
+           "##."
+           "..#"
+           "##." },
+    { '6', ".##"
+           "#.."
+           "##."
+           "#.#"
+           ".#." },
+    { '7', "###"
+           "..#"
+           ".#."
+           ".#."
+           ".#." },
+    { '8', ".#."
+           "#.#"
+           ".#."
+           "#.#"
+           ".#." },
+    { '9', ".#."
+           "#.#"
+           ".##"
+           "..#"
+           "##." },
+    { '-', "..."
+           "..."
+           "###"
+           "..."
+           "..." },
+    { '=', "..."
+           "###"
+           "..."
+           "###"
+           "..." },
+    { '.', "..."
+           "..."
+           "..."
+           "..."
+           ".#." },
+    { ',', "..."
+           "..."
+           "..."
+           ".#."
+           "#.." },
+    { '/', "..#"
+           "..#"
+           ".#."
+           "#.."
+           "#.." },
+    { ';', "..."
+           ".#."
+           "..."
+           ".#."
+           "#.." },
+    { '\'', ".#."
+            ".#."
+            "..."
+            "..."
+            "..." },
+    { '[', "##."
+           "#.."
+           "#.."
+           "#.."
+           "##." },
+    { ']', ".##"
+           "..#"
+           "..#"
+           "..#"
+           ".##" },
+    { '\\', "#.."
+            "#.."
+            ".#."
+            "..#"
+            "..#" },
+    { '`', "#.."
+           ".#."
+           "..."
+           "..."
+           "..." },
 };
 
 static const char *Glyph35(char c)
@@ -165,7 +353,8 @@ static int TextWidth(const char *s)
 /* A round button, 7x7, its top left at x, y. */
 static void Circle(int x, int y, char body, char rim)
 {
-    static const char *const shape[7] = { "..###..", ".#####.", "#######", "#######", "#######", ".#####.", "..###.." };
+    static const char *const shape[7] = { "..###..", ".#####.", "#######", "#######",
+                                          "#######", ".#####.", "..###.." };
     int r;
     int c;
 
@@ -444,11 +633,13 @@ static int KeyLabel(const char *name, char *out, size_t size)
         const char *name;
         const char *label;
     } shortNames[] = {
-        { "Space", "SPC" },       { "Return", "ENT" },     { "Enter", "ENT" },     { "Keypad Enter", "ENT" },
-        { "Left Shift", "SHF" },  { "Right Shift", "SHF" }, { "Left Ctrl", "CTL" }, { "Right Ctrl", "CTL" },
-        { "Left Alt", "ALT" },    { "Right Alt", "ALT" },  { "Tab", "TAB" },       { "Backspace", "BKS" },
-        { "Escape", "ESC" },      { "CapsLock", "CAP" },   { "Delete", "DEL" },    { "Insert", "INS" },
-        { "Home", "HOM" },        { "End", "END" },        { "PageUp", "PGU" },    { "PageDown", "PGD" },
+        { "Space", "SPC" },        { "Return", "ENT" },     { "Enter", "ENT" },
+        { "Keypad Enter", "ENT" }, { "Left Shift", "SHF" }, { "Right Shift", "SHF" },
+        { "Left Ctrl", "CTL" },    { "Right Ctrl", "CTL" }, { "Left Alt", "ALT" },
+        { "Right Alt", "ALT" },    { "Tab", "TAB" },        { "Backspace", "BKS" },
+        { "Escape", "ESC" },       { "CapsLock", "CAP" },   { "Delete", "DEL" },
+        { "Insert", "INS" },       { "Home", "HOM" },       { "End", "END" },
+        { "PageUp", "PGU" },       { "PageDown", "PGD" },
     };
     size_t i;
 
@@ -521,7 +712,8 @@ void HostPromptGlyphDrawn(u32 firstTile, u32 palette)
          * default pad bindings (SDL's B, A, the shoulders). */
         const char *e = getenv("HOST_PROMPTS");
         static const int defaults[4] = { HOST_PAD_BUTTON(PAD_B), HOST_PAD_BUTTON(PAD_A),
-                                         HOST_PAD_BUTTON(PAD_LSHOULDER), HOST_PAD_BUTTON(PAD_RSHOULDER) };
+                                         HOST_PAD_BUTTON(PAD_LSHOULDER),
+                                         HOST_PAD_BUTTON(PAD_RSHOULDER) };
         static const char *const keys[4] = { "X", "Z", "A", "S" };
         int s;
 
@@ -531,7 +723,7 @@ void HostPromptGlyphDrawn(u32 firstTile, u32 palette)
                         : strcmp(e, "playstation") == 0 ? HOST_PROMPTS_PLAYSTATION
                         : strcmp(e, "nintendo") == 0    ? HOST_PROMPTS_NINTENDO
                         : strcmp(e, "keyboard") == 0    ? HOST_PROMPTS_KEYBOARD
-                                                         : 0;
+                                                        : 0;
         }
         for (s = 0; s < 4 && sEnvStyle > 0; s++) {
             if (sEnvStyle == HOST_PROMPTS_KEYBOARD) {
@@ -560,15 +752,15 @@ char gHostStartPrompt[16]; /* a key's name, or "" */
  * tap it (mouse_hooks.cpp makes a tap on it Start), in each language. */
 int gHostTapHint;
 static const char *const sTapHints[6] = {
-    "tap:  load-save",          /* English */
-    "touchez: charg-sauveg",    /* French */
-    "tippen: laden-speichern",  /* German */
-    "toca: cargar-grabar",      /* Spanish */
-    "tocca: carica-salva",      /* Italian */
-    "tik: laden-opslaan",       /* Dutch */
+    "tap:  load-save",         /* English */
+    "touchez: charg-sauveg",   /* French */
+    "tippen: laden-speichern", /* German */
+    "toca: cargar-grabar",     /* Spanish */
+    "tocca: carica-salva",     /* Italian */
+    "tik: laden-opslaan",      /* Dutch */
 };
 extern s32 gLanguage;
-int gHostStartStyle;       /* else a pad style, or 0 */
+int gHostStartStyle; /* else a pad style, or 0 */
 int gHostStartLabels;
 
 static int StartGlyph(int slot)
@@ -576,7 +768,8 @@ static int StartGlyph(int slot)
     int s;
 
     for (s = 0; s < HOST_BIND_SLOTS && gHostStartStyle != 0; s++) {
-        if (HostPromptForPad(slot, gHostStartStyle, gHostSettings.pad[HOST_BIND_START][s], gHostStartLabels)) {
+        if (HostPromptForPad(slot, gHostStartStyle, gHostSettings.pad[HOST_BIND_START][s],
+                             gHostStartLabels)) {
             return 1;
         }
     }
@@ -605,7 +798,7 @@ static void StartFromEnv(void)
     gHostStartStyle = strcmp(e, "xbox") == 0          ? HOST_PROMPTS_XBOX
                       : strcmp(e, "playstation") == 0 ? HOST_PROMPTS_PLAYSTATION
                       : strcmp(e, "nintendo") == 0    ? HOST_PROMPTS_NINTENDO
-                                                       : 0;
+                                                      : 0;
     gHostStartLabels = 1;
     gHostSettings.pad[HOST_BIND_START][0] = HOST_PAD_BUTTON(PAD_START);
 }

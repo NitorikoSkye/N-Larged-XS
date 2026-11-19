@@ -211,10 +211,10 @@ enum {
 struct Vdf {
     int type;
     char *key;
-    char *str;              /* VDF_STRING */
-    unsigned char raw[8];   /* the numbers (types 2-7), as they were */
+    char *str;            /* VDF_STRING */
+    unsigned char raw[8]; /* the numbers (types 2-7), as they were */
     int rawSize;
-    struct Vdf *child;      /* VDF_MAP */
+    struct Vdf *child; /* VDF_MAP */
     struct Vdf *next;
 };
 
@@ -447,8 +447,8 @@ static unsigned int VdfInt(const struct Vdf *n)
 {
     return n == NULL || n->type != VDF_INT
                ? 0
-               : (unsigned int)n->raw[0] | (unsigned int)n->raw[1] << 8 | (unsigned int)n->raw[2] << 16 |
-                     (unsigned int)n->raw[3] << 24;
+               : (unsigned int)n->raw[0] | (unsigned int)n->raw[1] << 8 |
+                     (unsigned int)n->raw[2] << 16 | (unsigned int)n->raw[3] << 24;
 }
 
 /* --- Where Steam is ---------------------------------------------------------- */
@@ -489,8 +489,8 @@ static int FindSteam(char *out, size_t size)
     wchar_t w[MAX_PATH];
     DWORD bytes = sizeof(w);
 
-    if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\Valve\\Steam", L"SteamPath", RRF_RT_REG_SZ, NULL, w, &bytes) !=
-        ERROR_SUCCESS) {
+    if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\Valve\\Steam", L"SteamPath", RRF_RT_REG_SZ,
+                     NULL, w, &bytes) != ERROR_SUCCESS) {
         return 0;
     }
     Utf8(w, out, size);
@@ -526,8 +526,8 @@ static int SteamRunning(const char *steam)
     int running;
 
     (void)steam;
-    if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\Valve\\Steam\\ActiveProcess", L"pid", RRF_RT_REG_DWORD, NULL,
-                     &pid, &bytes) != ERROR_SUCCESS ||
+    if (RegGetValueW(HKEY_CURRENT_USER, L"Software\\Valve\\Steam\\ActiveProcess", L"pid",
+                     RRF_RT_REG_DWORD, NULL, &pid, &bytes) != ERROR_SUCCESS ||
         pid == 0) {
         return 0;
     }
@@ -695,7 +695,8 @@ static int ExePath(char *out, size_t size)
 /* --- Adding --------------------------------------------------------------- */
 
 static void WriteArt(const char *grid, unsigned int appid, const char *name, const char *ext,
-                     const unsigned char *start, const unsigned char *end, char *written, size_t writtenSize)
+                     const unsigned char *start, const unsigned char *end, char *written,
+                     size_t writtenSize)
 {
     static const char *const exts[] = { ".png", ".jpg", ".jpeg", ".webp" };
     char path[1200];
@@ -777,7 +778,8 @@ static int AddForAccount(const char *steam, unsigned int account, const char *ex
     for (n = list->child; n != NULL; n = n->next) {
         struct Vdf *name = VdfFind(n, "AppName");
 
-        if (n->type == VDF_MAP && name != NULL && name->type == VDF_STRING && strcmp(name->str, STEAM_NAME) == 0) {
+        if (n->type == VDF_MAP && name != NULL && name->type == VDF_STRING &&
+            strcmp(name->str, STEAM_NAME) == 0) {
             entry = n;
         }
         if (atoi(n->key) >= index) {

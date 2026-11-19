@@ -213,8 +213,10 @@ static u16 SaveMenuKeys(SaveMenu *m, int left, int right)
  * volume down or up, as Left and Right do. */
 static u16 PauseKeys(PauseMenu *p, int left, int right, int wheel)
 {
-    int row = Row(DISPLAY_ART_Y + 0x4a, p->rowSpacing, 9, p->rowCount, DISPLAY_ART_X, DISPLAY_ART_X + 0x64);
-    int volume = row >= 0 && (p->rows[row].type == PAUSE_ROW_TYPE_MUSIC || p->rows[row].type == PAUSE_ROW_TYPE_SOUND);
+    int row = Row(DISPLAY_ART_Y + 0x4a, p->rowSpacing, 9, p->rowCount, DISPLAY_ART_X,
+                  DISPLAY_ART_X + 0x64);
+    int volume = row >= 0 && (p->rows[row].type == PAUSE_ROW_TYPE_MUSIC ||
+                              p->rows[row].type == PAUSE_ROW_TYPE_SOUND);
 
     if (row >= 0 && gHostMouse.moved && p->cursor != row) {
         p->cursor = row;
@@ -380,8 +382,9 @@ u16 HostMouseGameKeys(void)
  * HUD runs each frame of a level (hud_hook.cpp). */
 int HostTouchMode(void)
 {
-    if ((gHostInSaveMenu && sSaveMenuInstance != NULL) || (sPause != NULL && HostFrame() - sPauseFrame <= 2) ||
-        gLanguageSelect != NULL || (gHostTitleScreen != NULL && gHostTitleScreen->menuShown) || gHostInWarpRoom ||
+    if ((gHostInSaveMenu && sSaveMenuInstance != NULL) ||
+        (sPause != NULL && HostFrame() - sPauseFrame <= 2) || gLanguageSelect != NULL ||
+        (gHostTitleScreen != NULL && gHostTitleScreen->menuShown) || gHostInWarpRoom ||
         ContinueUp()) {
         return HOST_TOUCH_MENU;
     }

@@ -34,7 +34,8 @@
 
 /* The build id the package was made for (make_core_package.py writes
  * it here in the blanked core; zero in a core that was never blanked). */
-const volatile u8 gHostDataBuildId[20] __attribute__((used, aligned(8))) = { 'N', 'L', 'X', 'S', 'B', 'I', 'D' };
+const volatile u8 gHostDataBuildId[20]
+    __attribute__((used, aligned(8))) = { 'N', 'L', 'X', 'S', 'B', 'I', 'D' };
 
 static void Fail(const char *why)
 {

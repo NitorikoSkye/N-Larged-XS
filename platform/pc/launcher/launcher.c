@@ -54,8 +54,8 @@ struct Package {
     char version[17];
     u32 artCount;
     u32 opCount;
-    const unsigned char *art;     /* artCount * 36 */
-    const unsigned char *ops;     /* opCount * 12 */
+    const unsigned char *art; /* artCount * 36 */
+    const unsigned char *ops; /* opCount * 12 */
     const unsigned char *payload;
 };
 
@@ -196,9 +196,9 @@ static int Exists(const char *path)
     return 0;
 }
 
-static char sDir[1024];       /* the launcher's folder, with its separator */
-static char sGamePath[1100];  /* the game's executable */
-static char sIniPath[1100];   /* the ROM last imported */
+static char sDir[1024];      /* the launcher's folder, with its separator */
+static char sGamePath[1100]; /* the game's executable */
+static char sIniPath[1100];  /* the ROM last imported */
 
 static void FindPaths(void)
 {
@@ -521,7 +521,8 @@ static void LoadRealArt(void)
                 u32 off = Le32(e + 28);
                 u32 n = Le32(e + 32);
 
-                if (strncmp((const char *)e, want[i].name, 28) == 0 && n >= want[i].size && off + want[i].size <= size) {
+                if (strncmp((const char *)e, want[i].name, 28) == 0 && n >= want[i].size &&
+                    off + want[i].size <= size) {
                     memcpy(want[i].dst, exe + off, want[i].size);
                     got++;
                 }
@@ -547,7 +548,8 @@ static int RealTextWidth(int large, const char *s)
         u8 c = (u8)*s;
         u8 g = large ? sLargeLookup[c] : sSmallLookup[c];
 
-        w += (c == ' ' || g == 255) ? (large ? 6 : 4) : (large ? sLargeAdvance[g] : sSmallAdvance[g]);
+        w += (c == ' ' || g == 255) ? (large ? 6 : 4)
+                                    : (large ? sLargeAdvance[g] : sSmallAdvance[g]);
     }
     return w;
 }
@@ -563,8 +565,8 @@ static void RealText(int large, int x, int y, const char *s, int pal)
         u32 grey = 40 + l * 45 / 100;
 
         colors[i] = pal == PAL_NORMAL || i == 1 || i == 6 ? c
-                    : pal == PAL_WHITE                     ? 0xFFFFFFFF
-                                                           : 0xFF000000 | grey << 16 | grey << 8 | grey;
+                    : pal == PAL_WHITE                    ? 0xFFFFFFFF
+                                       : 0xFF000000 | grey << 16 | grey << 8 | grey;
     }
     for (; *s; s++) {
         u8 c = (u8)*s;
@@ -603,51 +605,321 @@ static const struct {
     char c;
     const char *rows; /* 7 rows of 5 */
 } sOwnFont[] = {
-    { 'a', ".###." "#...#" "#...#" "#####" "#...#" "#...#" "#...#" },
-    { 'b', "####." "#...#" "#...#" "####." "#...#" "#...#" "####." },
-    { 'c', ".####" "#...." "#...." "#...." "#...." "#...." ".####" },
-    { 'd', "####." "#...#" "#...#" "#...#" "#...#" "#...#" "####." },
-    { 'e', "#####" "#...." "#...." "####." "#...." "#...." "#####" },
-    { 'f', "#####" "#...." "#...." "####." "#...." "#...." "#...." },
-    { 'g', ".####" "#...." "#...." "#..##" "#...#" "#...#" ".####" },
-    { 'h', "#...#" "#...#" "#...#" "#####" "#...#" "#...#" "#...#" },
-    { 'i', "#####" "..#.." "..#.." "..#.." "..#.." "..#.." "#####" },
-    { 'j', "....#" "....#" "....#" "....#" "#...#" "#...#" ".###." },
-    { 'k', "#...#" "#..#." "#.#.." "##..." "#.#.." "#..#." "#...#" },
-    { 'l', "#...." "#...." "#...." "#...." "#...." "#...." "#####" },
-    { 'm', "#...#" "##.##" "#.#.#" "#.#.#" "#...#" "#...#" "#...#" },
-    { 'n', "#...#" "##..#" "#.#.#" "#..##" "#...#" "#...#" "#...#" },
-    { 'o', ".###." "#...#" "#...#" "#...#" "#...#" "#...#" ".###." },
-    { 'p', "####." "#...#" "#...#" "####." "#...." "#...." "#...." },
-    { 'q', ".###." "#...#" "#...#" "#...#" "#.#.#" "#..#." ".##.#" },
-    { 'r', "####." "#...#" "#...#" "####." "#.#.." "#..#." "#...#" },
-    { 's', ".####" "#...." "#...." ".###." "....#" "....#" "####." },
-    { 't', "#####" "..#.." "..#.." "..#.." "..#.." "..#.." "..#.." },
-    { 'u', "#...#" "#...#" "#...#" "#...#" "#...#" "#...#" ".###." },
-    { 'v', "#...#" "#...#" "#...#" "#...#" "#...#" ".#.#." "..#.." },
-    { 'w', "#...#" "#...#" "#...#" "#.#.#" "#.#.#" "##.##" "#...#" },
-    { 'x', "#...#" "#...#" ".#.#." "..#.." ".#.#." "#...#" "#...#" },
-    { 'y', "#...#" "#...#" ".#.#." "..#.." "..#.." "..#.." "..#.." },
-    { 'z', "#####" "....#" "...#." "..#.." ".#..." "#...." "#####" },
-    { '0', ".###." "#...#" "#..##" "#.#.#" "##..#" "#...#" ".###." },
-    { '1', "..#.." ".##.." "..#.." "..#.." "..#.." "..#.." ".###." },
-    { '2', ".###." "#...#" "....#" "...#." "..#.." ".#..." "#####" },
-    { '3', "####." "....#" "....#" ".###." "....#" "....#" "####." },
-    { '4', "#...#" "#...#" "#...#" "#####" "....#" "....#" "....#" },
-    { '5', "#####" "#...." "#...." "####." "....#" "....#" "####." },
-    { '6', ".###." "#...." "#...." "####." "#...#" "#...#" ".###." },
-    { '7', "#####" "....#" "...#." "..#.." "..#.." "..#.." "..#.." },
-    { '8', ".###." "#...#" "#...#" ".###." "#...#" "#...#" ".###." },
-    { '9', ".###." "#...#" "#...#" ".####" "....#" "....#" ".###." },
-    { '.', "....." "....." "....." "....." "....." "....." "..#.." },
-    { ',', "....." "....." "....." "....." "....." "..#.." ".#..." },
-    { '\'', "..#.." "..#.." "....." "....." "....." "....." "....." },
-    { '-', "....." "....." "....." ".###." "....." "....." "....." },
-    { ':', "....." "..#.." "....." "....." "....." "..#.." "....." },
-    { '!', "..#.." "..#.." "..#.." "..#.." "..#.." "....." "..#.." },
-    { '?', ".###." "#...#" "....#" "...#." "..#.." "....." "..#.." },
-    { '%', "##..#" "##..#" "...#." "..#.." ".#..." "#..##" "#..##" },
-    { '+', "....." "..#.." "..#.." "#####" "..#.." "..#.." "....." },
+    { 'a', ".###."
+           "#...#"
+           "#...#"
+           "#####"
+           "#...#"
+           "#...#"
+           "#...#" },
+    { 'b', "####."
+           "#...#"
+           "#...#"
+           "####."
+           "#...#"
+           "#...#"
+           "####." },
+    { 'c', ".####"
+           "#...."
+           "#...."
+           "#...."
+           "#...."
+           "#...."
+           ".####" },
+    { 'd', "####."
+           "#...#"
+           "#...#"
+           "#...#"
+           "#...#"
+           "#...#"
+           "####." },
+    { 'e', "#####"
+           "#...."
+           "#...."
+           "####."
+           "#...."
+           "#...."
+           "#####" },
+    { 'f', "#####"
+           "#...."
+           "#...."
+           "####."
+           "#...."
+           "#...."
+           "#...." },
+    { 'g', ".####"
+           "#...."
+           "#...."
+           "#..##"
+           "#...#"
+           "#...#"
+           ".####" },
+    { 'h', "#...#"
+           "#...#"
+           "#...#"
+           "#####"
+           "#...#"
+           "#...#"
+           "#...#" },
+    { 'i', "#####"
+           "..#.."
+           "..#.."
+           "..#.."
+           "..#.."
+           "..#.."
+           "#####" },
+    { 'j', "....#"
+           "....#"
+           "....#"
+           "....#"
+           "#...#"
+           "#...#"
+           ".###." },
+    { 'k', "#...#"
+           "#..#."
+           "#.#.."
+           "##..."
+           "#.#.."
+           "#..#."
+           "#...#" },
+    { 'l', "#...."
+           "#...."
+           "#...."
+           "#...."
+           "#...."
+           "#...."
+           "#####" },
+    { 'm', "#...#"
+           "##.##"
+           "#.#.#"
+           "#.#.#"
+           "#...#"
+           "#...#"
+           "#...#" },
+    { 'n', "#...#"
+           "##..#"
+           "#.#.#"
+           "#..##"
+           "#...#"
+           "#...#"
+           "#...#" },
+    { 'o', ".###."
+           "#...#"
+           "#...#"
+           "#...#"
+           "#...#"
+           "#...#"
+           ".###." },
+    { 'p', "####."
+           "#...#"
+           "#...#"
+           "####."
+           "#...."
+           "#...."
+           "#...." },
+    { 'q', ".###."
+           "#...#"
+           "#...#"
+           "#...#"
+           "#.#.#"
+           "#..#."
+           ".##.#" },
+    { 'r', "####."
+           "#...#"
+           "#...#"
+           "####."
+           "#.#.."
+           "#..#."
+           "#...#" },
+    { 's', ".####"
+           "#...."
+           "#...."
+           ".###."
+           "....#"
+           "....#"
+           "####." },
+    { 't', "#####"
+           "..#.."
+           "..#.."
+           "..#.."
+           "..#.."
+           "..#.."
+           "..#.." },
+    { 'u', "#...#"
+           "#...#"
+           "#...#"
+           "#...#"
+           "#...#"
+           "#...#"
+           ".###." },
+    { 'v', "#...#"
+           "#...#"
+           "#...#"
+           "#...#"
+           "#...#"
+           ".#.#."
+           "..#.." },
+    { 'w', "#...#"
+           "#...#"
+           "#...#"
+           "#.#.#"
+           "#.#.#"
+           "##.##"
+           "#...#" },
+    { 'x', "#...#"
+           "#...#"
+           ".#.#."
+           "..#.."
+           ".#.#."
+           "#...#"
+           "#...#" },
+    { 'y', "#...#"
+           "#...#"
+           ".#.#."
+           "..#.."
+           "..#.."
+           "..#.."
+           "..#.." },
+    { 'z', "#####"
+           "....#"
+           "...#."
+           "..#.."
+           ".#..."
+           "#...."
+           "#####" },
+    { '0', ".###."
+           "#...#"
+           "#..##"
+           "#.#.#"
+           "##..#"
+           "#...#"
+           ".###." },
+    { '1', "..#.."
+           ".##.."
+           "..#.."
+           "..#.."
+           "..#.."
+           "..#.."
+           ".###." },
+    { '2', ".###."
+           "#...#"
+           "....#"
+           "...#."
+           "..#.."
+           ".#..."
+           "#####" },
+    { '3', "####."
+           "....#"
+           "....#"
+           ".###."
+           "....#"
+           "....#"
+           "####." },
+    { '4', "#...#"
+           "#...#"
+           "#...#"
+           "#####"
+           "....#"
+           "....#"
+           "....#" },
+    { '5', "#####"
+           "#...."
+           "#...."
+           "####."
+           "....#"
+           "....#"
+           "####." },
+    { '6', ".###."
+           "#...."
+           "#...."
+           "####."
+           "#...#"
+           "#...#"
+           ".###." },
+    { '7', "#####"
+           "....#"
+           "...#."
+           "..#.."
+           "..#.."
+           "..#.."
+           "..#.." },
+    { '8', ".###."
+           "#...#"
+           "#...#"
+           ".###."
+           "#...#"
+           "#...#"
+           ".###." },
+    { '9', ".###."
+           "#...#"
+           "#...#"
+           ".####"
+           "....#"
+           "....#"
+           ".###." },
+    { '.', "....."
+           "....."
+           "....."
+           "....."
+           "....."
+           "....."
+           "..#.." },
+    { ',', "....."
+           "....."
+           "....."
+           "....."
+           "....."
+           "..#.."
+           ".#..." },
+    { '\'', "..#.."
+            "..#.."
+            "....."
+            "....."
+            "....."
+            "....."
+            "....." },
+    { '-', "....."
+           "....."
+           "....."
+           ".###."
+           "....."
+           "....."
+           "....." },
+    { ':', "....."
+           "..#.."
+           "....."
+           "....."
+           "....."
+           "..#.."
+           "....." },
+    { '!', "..#.."
+           "..#.."
+           "..#.."
+           "..#.."
+           "..#.."
+           "....."
+           "..#.." },
+    { '?', ".###."
+           "#...#"
+           "....#"
+           "...#."
+           "..#.."
+           "....."
+           "..#.." },
+    { '%', "##..#"
+           "##..#"
+           "...#."
+           "..#.."
+           ".#..."
+           "#..##"
+           "#..##" },
+    { '+', "....."
+           "..#.."
+           "..#.."
+           "#####"
+           "..#.."
+           "..#.."
+           "....." },
 };
 
 static const char *OwnGlyph(char c)
@@ -699,7 +971,8 @@ static void Put(int x, int y, u32 c)
 
 static void OwnText(int large, int x, int y, const char *s, int pal)
 {
-    static const u32 ramp[7] = { 0xFFFFF070, 0xFFFFE040, 0xFFFFC830, 0xFFF8A020, 0xFFF08018, 0xFFE85818, 0xFFD03818 };
+    static const u32 ramp[7] = { 0xFFFFF070, 0xFFFFE040, 0xFFFFC830, 0xFFF8A020,
+                                 0xFFF08018, 0xFFE85818, 0xFFD03818 };
     int scale = large ? 2 : 1;
 
     for (; *s; s++) {
@@ -738,7 +1011,7 @@ static void OwnText(int large, int x, int y, const char *s, int pal)
                                     }
                                 }
                             } else {
-                                u32 col = pal == PAL_WHITE ? 0xFFFFFFFF
+                                u32 col = pal == PAL_WHITE  ? 0xFFFFFFFF
                                           : pal == PAL_GREY ? 0xFF8A8A8A
                                                             : ramp[r];
                                 Put(px, py, col);
@@ -877,7 +1150,7 @@ enum {
 };
 
 static int sCursor = ROW_IMPORT;
-static int sGame;            /* GameState() */
+static int sGame; /* GameState() */
 static char sStatus[256];
 static int sStatusGood;
 
@@ -1119,16 +1392,19 @@ static int RunWindow(void)
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER) != 0) {
         return 1;
     }
-    sWindow = SDL_CreateWindow("N. Larged XS Launcher", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, W * 4, H * 4,
-                               SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+    sWindow =
+        SDL_CreateWindow("N. Larged XS Launcher", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                         W * 4, H * 4, SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
     if (sWindow == NULL) {
         return 1;
     }
-    sRenderer = SDL_CreateRenderer(sWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    sRenderer =
+        SDL_CreateRenderer(sWindow, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (sRenderer == NULL) {
         sRenderer = SDL_CreateRenderer(sWindow, -1, 0);
     }
-    sTex = SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, W, H);
+    sTex =
+        SDL_CreateTexture(sRenderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, W, H);
     SDL_SetTextureScaleMode(sTex, SDL_ScaleModeNearest);
     SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
     Refresh();
@@ -1197,7 +1473,8 @@ static int RunWindow(void)
                 }
                 break;
             case SDL_MOUSEBUTTONDOWN:
-                if (e.button.button == SDL_BUTTON_LEFT && RowAt(e.button.x, e.button.y, &row) && RowEnabled(row)) {
+                if (e.button.button == SDL_BUTTON_LEFT && RowAt(e.button.x, e.button.y, &row) &&
+                    RowEnabled(row)) {
                     sCursor = row;
                     ok = 1;
                 }
@@ -1348,8 +1625,8 @@ int main(int argc, char **argv)
             char hex[41];
 
             HexSha(sPkg.outSha1, hex);
-            printf("N. Larged XS launcher %s (makes %s, %u bytes, SHA-1 %s)\n", sPkg.version, GAME_FILE,
-                   (unsigned)sPkg.outSize, hex);
+            printf("N. Larged XS launcher %s (makes %s, %u bytes, SHA-1 %s)\n", sPkg.version,
+                   GAME_FILE, (unsigned)sPkg.outSize, hex);
             return 0;
         } else if (strcmp(a, "-h") == 0 || strcmp(a, "--help") == 0 || strcmp(a, "/?") == 0) {
             Usage();
@@ -1365,7 +1642,9 @@ int main(int argc, char **argv)
     if (checkRom != NULL) {
         int r = CheckRom(checkRom);
 
-        printf("%s\n", r == 1 ? "the right ROM." : r == 0 ? "not the right ROM." : "can't read it.");
+        printf("%s\n", r == 1   ? "the right ROM."
+                       : r == 0 ? "not the right ROM."
+                                : "can't read it.");
         if (r != 1) {
             return r == 0 ? 2 : 1;
         }
@@ -1374,7 +1653,9 @@ int main(int argc, char **argv)
         int g = GameState();
 
         printf("%s: %s\n", sGamePath,
-               g == 1 ? "here, up to date" : g == 2 ? "here, another version (import again to update)" : "not made yet");
+               g == 1   ? "here, up to date"
+               : g == 2 ? "here, another version (import again to update)"
+                        : "not made yet");
         if (g == 0 && !importRom && !launch) {
             return 3;
         }

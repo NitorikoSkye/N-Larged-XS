@@ -39,10 +39,10 @@ s32 CountGems(const void *progress);
 s32 CountRelics(const void *progress);
 s32 GetCompletionPercent(const void *progress);
 
-static u32 sNow;          /* VBlanks counted */
+static u32 sNow; /* VBlanks counted */
 static u32 sRunStart;
 static int sRunOn;
-static int sLevel = -1;   /* the level being timed */
+static int sLevel = -1; /* the level being timed */
 static u32 sLevelStart;
 static u32 sEarnedAtStart;
 static u32 sBest[LEVELS]; /* 0: none */
@@ -62,8 +62,8 @@ static u32 Earned(void)
         return 0;
     }
     /* a fingerprint of what the counts are */
-    return (u32)GetCompletionPercent(p) * 1000003u + (u32)CountCrystals(p) * 10007u + (u32)CountGems(p) * 101u +
-           (u32)CountRelics(p) * 7u + p[2] * 131071u;
+    return (u32)GetCompletionPercent(p) * 1000003u + (u32)CountCrystals(p) * 10007u +
+           (u32)CountGems(p) * 101u + (u32)CountRelics(p) * 7u + p[2] * 131071u;
 }
 
 #ifdef HOST_SDL
@@ -178,7 +178,8 @@ static void FormatTime(char *out, size_t size, u32 vblanks, int sign)
     const char *pre = sign > 0 ? "+" : sign < 0 ? "-" : "";
 
     if (s >= 3600) {
-        snprintf(out, size, "%s%llu:%02llu:%02llu.%02llu", pre, s / 3600, s / 60 % 60, s % 60, cs % 100);
+        snprintf(out, size, "%s%llu:%02llu:%02llu.%02llu", pre, s / 3600, s / 60 % 60, s % 60,
+                 cs % 100);
     } else {
         snprintf(out, size, "%s%llu:%02llu.%02llu", pre, s / 60, s % 60, cs % 100);
     }

@@ -250,8 +250,10 @@ static int NearestSame(const struct Kept *a, int i, const struct Kept *b, int *d
         s32 y1;
         int d;
 
-        if (b->owner[j].valid || !Visible(&b->f, j) || (ea[4 * i] & 0xFF00) != (eb[4 * j] & 0xFF00) ||
-            (ea[4 * i + 1] & 0xFE00) != (eb[4 * j + 1] & 0xFE00) || ea[4 * i + 2] != eb[4 * j + 2]) {
+        if (b->owner[j].valid || !Visible(&b->f, j) ||
+            (ea[4 * i] & 0xFF00) != (eb[4 * j] & 0xFF00) ||
+            (ea[4 * i + 1] & 0xFE00) != (eb[4 * j + 1] & 0xFE00) ||
+            ea[4 * i + 2] != eb[4 * j + 2]) {
             continue;
         }
         EntryPos(&b->f, j, &x1, &y1);
@@ -284,8 +286,10 @@ static int StaysPut(const struct Kept *a, int i, const struct Kept *b)
         s32 x1;
         s32 y1;
 
-        if (b->owner[j].valid || !Visible(&b->f, j) || (ea[4 * i] & 0xFF00) != (eb[4 * j] & 0xFF00) ||
-            (ea[4 * i + 1] & 0xFE00) != (eb[4 * j + 1] & 0xFE00) || (ea[4 * i + 2] & 0x03FF) != (eb[4 * j + 2] & 0x03FF)) {
+        if (b->owner[j].valid || !Visible(&b->f, j) ||
+            (ea[4 * i] & 0xFF00) != (eb[4 * j] & 0xFF00) ||
+            (ea[4 * i + 1] & 0xFE00) != (eb[4 * j + 1] & 0xFE00) ||
+            (ea[4 * i + 2] & 0x03FF) != (eb[4 * j + 2] & 0x03FF)) {
             continue;
         }
         EntryPos(&b->f, j, &x1, &y1);
@@ -319,7 +323,8 @@ static void MatchEntries(struct Kept *from, const struct Kept *to, int fromIsLat
             for (j = 0; j < 128; j++) {
                 const struct Owner *p = &to->owner[j];
 
-                if (p->valid && p->obj == o->obj && p->occurrence == o->occurrence && Visible(&to->f, j)) {
+                if (p->valid && p->obj == o->obj && p->occurrence == o->occurrence &&
+                    Visible(&to->f, j)) {
                     dx = p->x - o->x;
                     dy = p->y - o->y;
                     found = 1;
@@ -379,11 +384,14 @@ static void Match(void)
         u16 cnt = Io16(c, REG_OFFSET_BG0CNT + 2 * i);
         s32 dx = 0;
         s32 dy = 0;
-        int ok = same && cnt == Io16(p, REG_OFFSET_BG0CNT + 2 * i) && (dispP & dispC & (DISPCNT_BG0_ON << i));
+        int ok = same && cnt == Io16(p, REG_OFFSET_BG0CNT + 2 * i) &&
+                 (dispP & dispC & (DISPCNT_BG0_ON << i));
 
         if (ok && (mode == 0 || (mode == 1 && i < 2))) {
-            dx = Wrap9(Io16(c, REG_OFFSET_BG0HOFS + 4 * i) - Io16(p, REG_OFFSET_BG0HOFS + 4 * i)) * 256;
-            dy = Wrap9(Io16(c, REG_OFFSET_BG0VOFS + 4 * i) - Io16(p, REG_OFFSET_BG0VOFS + 4 * i)) * 256;
+            dx = Wrap9(Io16(c, REG_OFFSET_BG0HOFS + 4 * i) - Io16(p, REG_OFFSET_BG0HOFS + 4 * i)) *
+                 256;
+            dy = Wrap9(Io16(c, REG_OFFSET_BG0VOFS + 4 * i) - Io16(p, REG_OFFSET_BG0VOFS + 4 * i)) *
+                 256;
         } else if (ok && i >= 2) {
             u32 base = 0x10 * (i - 2);
             int identity = 1;
@@ -406,8 +414,8 @@ static void Match(void)
                 ok = 0;
             }
         }
-        sBgMoves[i] = ok && (dx != 0 || dy != 0) && dx <= 48 * 256 && dx >= -48 * 256 && dy <= 48 * 256 &&
-                      dy >= -48 * 256;
+        sBgMoves[i] = ok && (dx != 0 || dy != 0) && dx <= 48 * 256 && dx >= -48 * 256 &&
+                      dy <= 48 * 256 && dy >= -48 * 256;
         sBgDX[i] = dx;
         sBgDY[i] = dy;
     }
@@ -472,7 +480,8 @@ static void SerialParallel(HostLineRun run, void *ctx, int lines)
     run(ctx, 0, lines);
 }
 
-static void Effect(const struct HdFrame *p, const struct HdFrame *c, double alpha, u32 *eva, u32 *evb, u32 *evy)
+static void Effect(const struct HdFrame *p, const struct HdFrame *c, double alpha, u32 *eva,
+                   u32 *evb, u32 *evy)
 {
     u32 ap = Io16(p, REG_OFFSET_BLDALPHA);
     u32 ac = Io16(c, REG_OFFSET_BLDALPHA);
@@ -567,7 +576,8 @@ void HostHdCheckFrame(void)
             }
             if (bad != 0) {
                 if (sCheckBad < 10) {
-                    printf("hd-check: VBlank %u, scale %d: %u pixels differ\n", gHostVBlanks, scale, bad);
+                    printf("hd-check: VBlank %u, scale %d: %u pixels differ\n", gHostVBlanks, scale,
+                           bad);
                 }
                 sCheckBad++;
                 sCheckPixels += bad;
@@ -583,13 +593,15 @@ void HostHdCheckFrame(void)
         for (k = 0; k < 50; k++) {
             HostInterpRender(k / 50.0, 4, big, NULL);
         }
-        printf("hd-bench: %.2f ms a 4x picture (one thread)\n", (double)(clock() - t0) * 1000.0 / CLOCKS_PER_SEC / 50);
+        printf("hd-bench: %.2f ms a 4x picture (one thread)\n",
+               (double)(clock() - t0) * 1000.0 / CLOCKS_PER_SEC / 50);
     }
     if (gHostInterpDumpDir != NULL) {
         u32 frame = HostFrame();
 
         HostInterpCapture();
-        u32 count = getenv("HOST_INTERP_COUNT") != NULL ? (u32)atoi(getenv("HOST_INTERP_COUNT")) : 3;
+        u32 count =
+            getenv("HOST_INTERP_COUNT") != NULL ? (u32)atoi(getenv("HOST_INTERP_COUNT")) : 3;
 
         if (frame >= gHostInterpDumpAt && frame < gHostInterpDumpAt + count && HostInterpReady()) {
             static u32 big[HOST_SCREEN_WIDTH * 4 * HOST_SCREEN_HEIGHT * 4];
@@ -609,7 +621,7 @@ void HostHdCheckFrame(void)
 void HostHdCheckEnd(void)
 {
     if (gHostHdCheck) {
-        printf("hd-check: %u frames at scales 1 and 2, %u differ (%llu pixels)\n", sCheckFrames, sCheckBad,
-               (unsigned long long)sCheckPixels);
+        printf("hd-check: %u frames at scales 1 and 2, %u differ (%llu pixels)\n", sCheckFrames,
+               sCheckBad, (unsigned long long)sCheckPixels);
     }
 }

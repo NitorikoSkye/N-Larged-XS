@@ -105,11 +105,11 @@ static int WritePng(const char *path, const u32 *xrgb, u32 width, u32 height, u3
 
     Be32(ihdr, width);
     Be32(ihdr + 4, height);
-    ihdr[8] = 8;  /* bits per channel */
+    ihdr[8] = 8;               /* bits per channel */
     ihdr[9] = ch == 4 ? 6 : 2; /* RGBA or RGB */
-    ihdr[10] = 0; /* deflate */
-    ihdr[11] = 0; /* adaptive filtering (each row's filter byte: none) */
-    ihdr[12] = 0; /* not interlaced */
+    ihdr[10] = 0;              /* deflate */
+    ihdr[11] = 0;              /* adaptive filtering (each row's filter byte: none) */
+    ihdr[12] = 0;              /* not interlaced */
     ChunkStart(&c, f, "IHDR", sizeof(ihdr));
     ChunkData(&c, ihdr, sizeof(ihdr));
     ChunkEnd(&c);

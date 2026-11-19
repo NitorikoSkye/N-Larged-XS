@@ -96,8 +96,8 @@ struct HostSettings {
     int ghosting;
     /* Interface */
     int showFps;
-    int inputDisplay; /* 0 off, 1 bottom left, 2 bottom right */
-    int hud;          /* HOST_HUD_* */
+    int inputDisplay;  /* 0 off, 1 bottom left, 2 bottom right */
+    int hud;           /* HOST_HUD_* */
     int speedrunTimer; /* HOST_TIMER_* */
     /* Audio, percent */
     int master;
@@ -105,13 +105,13 @@ struct HostSettings {
     int sfx;
     int audioQuality; /* 0 original (the GBA's), 1 high (gax_dsp.c, sdl.c) */
     /* Controls */
-    int deadzone; /* percent */
-    int rumble;   /* 0 off, 1 light, 2 strong (rumble.c) */
-    int prompts;  /* HOST_PROMPTS_* */
+    int deadzone;                               /* percent */
+    int rumble;                                 /* 0 off, 1 light, 2 strong (rumble.c) */
+    int prompts;                                /* HOST_PROMPTS_* */
     int keys[HOST_BIND_COUNT][HOST_BIND_SLOTS]; /* SDL scancodes, 0 none */
     int pad[HOST_BIND_COUNT][HOST_BIND_SLOTS];  /* HOST_PAD_* */
     /* Gameplay */
-    int autoSave; /* HOST_AUTOSAVE_* */
+    int autoSave;   /* HOST_AUTOSAVE_* */
     int lookAround; /* look up/down (look_hook.cpp) */
     int slideGrace; /* HOST_SLIDE_GRACE_*: the slide jump's grace (slide_hook.cpp) */
     /* Extras: Discord Rich Presence (discord.c) */
@@ -120,11 +120,11 @@ struct HostSettings {
     char discordAppId[32]; /* the Discord application's id, digits */
     /* Android (phone.c, the app reads them from the core's settings
      * message): the touch controls, the menus' text and the haptics */
-    int touchSize;     /* 0 small, 1 medium, 2 large, 3 huge */
-    int touchOpacity;  /* percent */
-    int touchInMenus;  /* 0 levels only (menus are tapped), 1 always */
-    int haptics;       /* 0 off, 1 light, 2 strong */
-    int textSize;      /* the settings menu's text: 0 normal, 1 large */
+    int touchSize;    /* 0 small, 1 medium, 2 large, 3 huge */
+    int touchOpacity; /* percent */
+    int touchInMenus; /* 0 levels only (menus are tapped), 1 always */
+    int haptics;      /* 0 off, 1 light, 2 strong */
+    int textSize;     /* the settings menu's text: 0 normal, 1 large */
 };
 extern struct HostSettings gHostSettings;
 
@@ -246,8 +246,8 @@ void HostAutosaveSaved(int row);
 int HostAutosaveSlotInUse(void);
 void HostAutosaveSlotGone(void);
 void HostAutosaveWarpRoom(void);
-int HostAutosaveWrite(int row); /* autosave_hooks.cpp */
-void HostSaveBackup(void);      /* eeprom.c: the save file to <save>.bak */
+int HostAutosaveWrite(int row);   /* autosave_hooks.cpp */
+void HostSaveBackup(void);        /* eeprom.c: the save file to <save>.bak */
 void HostToast(const char *text); /* sdl.c: a few seconds in a corner */
 
 /* discord.c: Rich Presence. The status, for the settings menu. */

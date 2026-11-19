@@ -25,13 +25,15 @@ extern "C" {
 void __real__ZN6Engine3Gfx9OamBuffer3AddEPKv(OamBuffer *self, const void *entry);
 void __real__ZN6Engine3Gfx9OamBuffer6AppendEPvi(OamBuffer *self, void *entries, s32 n);
 void __real__ZN6Engine3Gfx9OamBuffer6CommitEv(OamBuffer *self);
-void __real__ZN6Engine3Gfx14SpriteRenderer4DrawEPN4Game8Entities6SpriteE(SpriteRenderer *self, Sprite *part);
-void __real__ZN6Engine3Gfx14SpriteRenderer6DrawAtEPN4Game8Entities6SpriteEii(SpriteRenderer *self, Sprite *part,
-                                                                                s32 x, s32 y);
-void __real__ZN6Engine3Gfx14SpriteRenderer10DrawPiecesEPN4Game8Entities6SpriteEPi(SpriteRenderer *self,
-                                                                                    Sprite *part, s32 *pos);
-void __real__ZN6Engine3Gfx14SpriteRenderer16DrawAffinePiecesEPN4Game8Entities6SpriteEPi(SpriteRenderer *self,
-                                                                                          Sprite *part, s32 *pos);
+void __real__ZN6Engine3Gfx14SpriteRenderer4DrawEPN4Game8Entities6SpriteE(SpriteRenderer *self,
+                                                                         Sprite *part);
+void __real__ZN6Engine3Gfx14SpriteRenderer6DrawAtEPN4Game8Entities6SpriteEii(SpriteRenderer *self,
+                                                                             Sprite *part, s32 x,
+                                                                             s32 y);
+void __real__ZN6Engine3Gfx14SpriteRenderer10DrawPiecesEPN4Game8Entities6SpriteEPi(
+    SpriteRenderer *self, Sprite *part, s32 *pos);
+void __real__ZN6Engine3Gfx14SpriteRenderer16DrawAffinePiecesEPN4Game8Entities6SpriteEPi(
+    SpriteRenderer *self, Sprite *part, s32 *pos);
 void __real__ZN6Engine3Gfx14SpriteOamQueue3AddEjti(u32 attr01, u16 attr2, s32 priority);
 void __real__ZN6Engine3Gfx14SpriteOamQueue5FlushEv(void);
 
@@ -70,7 +72,8 @@ static void Anchor(Sprite *part, s32 x, s32 y, s32 *ax, s32 *ay)
     }
 }
 
-void __wrap__ZN6Engine3Gfx14SpriteRenderer4DrawEPN4Game8Entities6SpriteE(SpriteRenderer *self, Sprite *part)
+void __wrap__ZN6Engine3Gfx14SpriteRenderer4DrawEPN4Game8Entities6SpriteE(SpriteRenderer *self,
+                                                                         Sprite *part)
 {
     s32 x;
     s32 y;
@@ -81,8 +84,9 @@ void __wrap__ZN6Engine3Gfx14SpriteRenderer4DrawEPN4Game8Entities6SpriteE(SpriteR
     HostInterpTagNone();
 }
 
-void __wrap__ZN6Engine3Gfx14SpriteRenderer6DrawAtEPN4Game8Entities6SpriteEii(SpriteRenderer *self, Sprite *part,
-                                                                                s32 x, s32 y)
+void __wrap__ZN6Engine3Gfx14SpriteRenderer6DrawAtEPN4Game8Entities6SpriteEii(SpriteRenderer *self,
+                                                                             Sprite *part, s32 x,
+                                                                             s32 y)
 {
     s32 ax;
     s32 ay;
@@ -93,19 +97,20 @@ void __wrap__ZN6Engine3Gfx14SpriteRenderer6DrawAtEPN4Game8Entities6SpriteEii(Spr
     HostInterpTagNone();
 }
 
-void __wrap__ZN6Engine3Gfx14SpriteRenderer10DrawPiecesEPN4Game8Entities6SpriteEPi(SpriteRenderer *self,
-                                                                                    Sprite *part, s32 *pos)
+void __wrap__ZN6Engine3Gfx14SpriteRenderer10DrawPiecesEPN4Game8Entities6SpriteEPi(
+    SpriteRenderer *self, Sprite *part, s32 *pos)
 {
     HostInterpTagObject(part, pos[0], pos[1]);
     __real__ZN6Engine3Gfx14SpriteRenderer10DrawPiecesEPN4Game8Entities6SpriteEPi(self, part, pos);
     HostInterpTagNone();
 }
 
-void __wrap__ZN6Engine3Gfx14SpriteRenderer16DrawAffinePiecesEPN4Game8Entities6SpriteEPi(SpriteRenderer *self,
-                                                                                          Sprite *part, s32 *pos)
+void __wrap__ZN6Engine3Gfx14SpriteRenderer16DrawAffinePiecesEPN4Game8Entities6SpriteEPi(
+    SpriteRenderer *self, Sprite *part, s32 *pos)
 {
     HostInterpTagObject(part, pos[0], pos[1]);
-    __real__ZN6Engine3Gfx14SpriteRenderer16DrawAffinePiecesEPN4Game8Entities6SpriteEPi(self, part, pos);
+    __real__ZN6Engine3Gfx14SpriteRenderer16DrawAffinePiecesEPN4Game8Entities6SpriteEPi(self, part,
+                                                                                       pos);
     HostInterpTagNone();
 }
 
