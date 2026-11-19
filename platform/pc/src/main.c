@@ -19,6 +19,7 @@
  * eeprom.c the save, audio.c the sound (GAX2 itself is lib/gax, with
  * platform/pc/units/lib/gax/ in place of what can't run on a host). */
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -255,4 +256,15 @@ int main(int argc, char **argv)
     }
     HostExit(0, "AgbMain returned");
     return 0;
+}
+
+/* A line on stderr for the C++ hooks, which can't include <stdio.h> (the
+ * game declares its own sprintf). */
+void HostLogf(const char *fmt, ...)
+{
+    va_list ap;
+
+    va_start(ap, fmt);
+    vfprintf(stderr, fmt, ap);
+    va_end(ap);
 }

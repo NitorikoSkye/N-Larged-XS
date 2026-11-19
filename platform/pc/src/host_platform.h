@@ -99,7 +99,7 @@ void HostFrontendInit(void);
  * and the Windows executable is CrashBandicootXS-<version>.exe
  * (platform.mk reads the version from here). */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.46"
+#define HOST_PORT_VERSION "v0.47"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);
@@ -171,6 +171,10 @@ static inline int HostPromptGlyph(u32 attr0, u32 attr2)
     }
     return (int)(t >> 1);
 }
+
+/* A line on stderr (main.c), for the C++ hooks, which can't include
+ * <stdio.h>. */
+void HostLogf(const char *fmt, ...);
 
 /* Ends the run: prints how it ended and exits with `status`. */
 void HostExit(int status, const char *how);

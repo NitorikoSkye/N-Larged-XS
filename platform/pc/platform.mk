@@ -297,6 +297,8 @@ HOST_WRAPS += _ZN4Game2Ui9PauseMenu4DrawEv
 HOST_WRAPS += GetUiText
 # The continue prompt's cursor, for the mouse (src/mouse_hooks.cpp).
 HOST_WRAPS += _ZN6Engine4Text4Font8DrawTextEPKh
+# The slide jump's grace (src/slide_hook.cpp): the slide and the fall after it.
+HOST_WRAPS += _ZN4Game5Crash10ActionCtrl10StateSlideEv _ZN4Game5Crash10ActionCtrl13StateAirborneEv
 HOST_WRAPS += _ZN6Engine4Text4Font9DrawGlyphEh
 # The HUD setting (src/hud_hook.cpp) wraps the HUD's update.
 HOST_WRAPS += _ZN4Game2Ui3Hud6UpdateEv _ZN6Engine5Actor13ActorCategory4InitEi \

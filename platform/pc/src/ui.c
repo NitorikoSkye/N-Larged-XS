@@ -597,11 +597,16 @@ static const struct Option sControls[] = {
 
 static const char *const sAutoSaves[HOST_AUTOSAVE_COUNT] = { "off", "slot in use", "slot 4" };
 
+static const char *const sSlideGraces[HOST_SLIDE_GRACE_COUNT] = { "off", "4 frames", "6 frames", "8 frames",
+                                                                   "10 frames" };
+
 static const struct Option sGameplay[] = {
     { "auto save", "after a level with something new: save to the slot in use, or slot 4.",
       OPT_CHOICE, &gHostSettings.autoSave, sAutoSaves, HOST_AUTOSAVE_COUNT, 0 },
     { "look up/down", "hold up or down while standing still to see above or below.", OPT_CHOICE,
       &gHostSettings.lookAround, sOffOn, 2, 0 },
+    { "slide jump grace", "as in crash 2 and 3: a slide off a ledge can still jump for a moment.",
+      OPT_CHOICE, &gHostSettings.slideGrace, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
 };
 
 static const char *const sDiscordStates[HOST_DISCORD_STATUS_COUNT] = {
@@ -691,6 +696,8 @@ static const struct Option sPhoneGameplay[] = {
       OPT_CHOICE, &gHostSettings.autoSave, sPhoneAutoSaves, HOST_AUTOSAVE_COUNT, 0 },
     { "look around", "hold up or down while standing still to see above or below.", OPT_CHOICE,
       &gHostSettings.lookAround, sOffOn, 2, 0 },
+    { "slide grace", "as in crash 2 and 3: a slide off a ledge can still jump for a moment.",
+      OPT_CHOICE, &gHostSettings.slideGrace, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
 };
 
 static const struct Category sCategories[] = {
@@ -699,7 +706,7 @@ static const struct Category sCategories[] = {
     { "touch", "the on-screen buttons: size, opacity, menus and haptics", sPhoneTouch, COUNT(sPhoneTouch) },
     { "interface", "text size, hud and button prompts", sPhoneInterface, COUNT(sPhoneInterface) },
     { "audio", "quality, and master, music and sound fx volume", sPhoneAudio, COUNT(sPhoneAudio) },
-    { "gameplay", "auto save and looking up and down", sPhoneGameplay, COUNT(sPhoneGameplay) },
+    { "gameplay", "auto save, looking around, slide jump grace", sPhoneGameplay, COUNT(sPhoneGameplay) },
 };
 #define SETTINGS_TITLE "settings"
 #else
@@ -711,7 +718,7 @@ static const struct Category sCategories[] = {
     { "interface", "hud, fps counter, input display and timer", sInterface, COUNT(sInterface) },
     { "audio", "quality, and master, music and sound fx volume", sAudio, COUNT(sAudio) },
     { "controls", "keyboard, controller, rumble and button prompts", sControls, COUNT(sControls) },
-    { "gameplay", "auto save and looking up and down", sGameplay, COUNT(sGameplay) },
+    { "gameplay", "auto save, looking up and down, slide jump grace", sGameplay, COUNT(sGameplay) },
     { "extras", "discord status and adding to steam", sExtras, COUNT(sExtras) },
 };
 #endif

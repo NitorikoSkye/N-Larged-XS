@@ -512,6 +512,26 @@ goes where he swims, and the vehicle rooms have their own. Headless runs
 have it off (their settings are zeros) unless `HOST_LOOK=1`; with it on,
 the Dingodile test's game state is the same at every checkpoint.
 
+**Slide jump grace** (v0.47; Gameplay's slide jump grace, off by default;
+src/slide_hook.cpp). In Crash Bandicoot 2 and 3 a slide that runs off a
+ledge can still be jumped out of for a moment; in XS it can't: the
+slide's state (ActionCtrl::StateSlide) tests the ground before A, and
+the frame the floor goes it queues the fall (Y entry 5) without looking
+at A, then hands over to the fall (ACTION_STATE_AIRBORNE_FALL, animation
+0x1B, StateAirborne), which has no slide jump. With the setting at 4, 6,
+8 or 10 frames, for that long after the floor went under a slide (in the
+slide or the fall after it) A held does what the slide does with A on
+the ground: the high jump's sound, the floor flags cleared and
+StartHighJump, if there is room for its animation (HasRoomForAnim(0xB));
+the double jump works from it as from the slide's own. The link wraps
+both states, which only ActionCtrl::stateFuncs calls (another object);
+the wrappers are aligned, since the table holds them as member function
+pointers, whose low bit set would mean a virtual one. HOST_SLIDE_GRACE=N
+sets the frames in headless runs, HOST_SLIDE_LOG=1 logs each slide and
+fall frame. Tested on Jungle Jam's waterfall pit: a slide off the ledge
+before it with A 3 frames after the edge falls in with the setting off,
+and jumps over with 6.
+
 **Discord** (v0.07; Extras, src/discord.c). Rich Presence over Discord's
 local IPC, with no SDK: the named pipe `\\.\pipe\discord-ipc-N` on
 Windows, the `discord-ipc-N` Unix socket elsewhere (the runtime directory,

@@ -55,7 +55,9 @@ drawn in the game's style, with the phone's own options:
   the left border), and button prompts (the
   game's A, B, L, R and Start drawn as your controller's).
 - **Audio:** quality, and master, music and sound effects volumes.
-- **Gameplay:** auto save, looking up and down.
+- **Gameplay:** auto save, looking up and down, and slide jump grace (off,
+  or 4 to 10 frames: as in Crash 2 and 3, a slide off a ledge can still
+  jump for a moment).
 
 ## How it works
 

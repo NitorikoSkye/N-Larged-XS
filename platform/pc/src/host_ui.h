@@ -113,6 +113,7 @@ struct HostSettings {
     /* Gameplay */
     int autoSave; /* HOST_AUTOSAVE_* */
     int lookAround; /* look up/down (look_hook.cpp) */
+    int slideGrace; /* HOST_SLIDE_GRACE_*: the slide jump's grace (slide_hook.cpp) */
     /* Extras: Discord Rich Presence (discord.c) */
     int discord;
     int discordProgress;
@@ -190,6 +191,17 @@ struct HostMouse {
 };
 extern struct HostMouse gHostMouse;
 u16 HostMouseGameKeys(void); /* the buttons the mouse adds this frame */
+/* Gameplay's slide jump grace (slide_hook.cpp): off, or 4, 6, 8 or 10
+ * frames after a slide leaves the ground. */
+enum {
+    HOST_SLIDE_GRACE_OFF,
+    HOST_SLIDE_GRACE_4,
+    HOST_SLIDE_GRACE_6,
+    HOST_SLIDE_GRACE_8,
+    HOST_SLIDE_GRACE_10,
+    HOST_SLIDE_GRACE_COUNT
+};
+
 /* What a touch does now (mouse_hooks.cpp; the Android app's controls). */
 enum {
     HOST_TOUCH_PLAY,     /* a level: the on-screen buttons */

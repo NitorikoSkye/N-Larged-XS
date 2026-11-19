@@ -84,6 +84,7 @@ static const struct {
     { "button_prompts", &gHostSettings.prompts, 0, HOST_PROMPTS_NINTENDO },
     { "auto_save", &gHostSettings.autoSave, 0, HOST_AUTOSAVE_COUNT - 1 },
     { "look_around", &gHostSettings.lookAround, 0, 1 },
+    { "slide_jump_grace", &gHostSettings.slideGrace, 0, HOST_SLIDE_GRACE_COUNT - 1 },
     { "touch_size", &gHostSettings.touchSize, 0, 3 },
     { "touch_opacity", &gHostSettings.touchOpacity, 20, 100 },
     { "touch_in_menus", &gHostSettings.touchInMenus, 0, 1 },
