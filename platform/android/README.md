@@ -138,9 +138,19 @@ status uses on PC, small number tables).
 `gcc-aarch64-linux-gnu g++-aarch64-linux-gnu binutils-aarch64-linux-gnu
 libc6-dev-arm64-cross openjdk-17-jdk-headless android-sdk-platform-23
 android-sdk-build-tools dalvik-exchange apksigner zipalign`, and `pip
-install ziglang` (musl), and `librsvg2-bin` (the buttons' icons). No Gradle, no SDK manager. The APK is signed with
-`crashxs.keystore` (here, so that every build can update the last one
-installed without losing its save).
+install ziglang` (musl), and `librsvg2-bin` (the buttons' icons). No Gradle, no SDK manager.
+
+**Signing.** Android installs an update only if it's signed with the same
+key as the app installed, so whoever has the key can publish updates. The
+release key is therefore never in the repository: a release is built with
+`NLXS_KEYSTORE=path/to/release.p12 NLXS_KEYSTORE_PASS_FILE=path/to/password
+platform/android/build.sh ROM` (alias `nlxs`, or `NLXS_KEY_ALIAS`). Keep the
+key and its password backed up: without them no release can update the
+app already installed. Without `NLXS_KEYSTORE` the APK is signed with a
+development key made in build/ and named `-dev`: for testing, and it can't
+update a release or be updated by one. (Until v0.47 the APKs were signed
+with a key that was in the repository; v0.48 is the first signed with the
+release key, so an earlier install has to be uninstalled once.)
 
 ## Testing without a phone
 

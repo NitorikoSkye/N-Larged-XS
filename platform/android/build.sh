@@ -5,7 +5,9 @@
 # the player's ROM, the app's Java code, and the APK, signed. The ROM is
 # needed to make the packages; the APK holds no part of it. From the
 # project's root:
-#   platform/android/build.sh ROM      -> build/android/NLargedXS-<version>.apk
+#   platform/android/build.sh ROM      -> build/android/NLargedXS-<version>-dev.apk
+#   NLXS_KEYSTORE=release.p12 NLXS_KEYSTORE_PASS_FILE=release.password \
+#   platform/android/build.sh ROM      -> build/android/NLargedXS-<version>.apk (a release)
 # Each ABI gets two cores: musl's (libcrashxs_core.so, the one the app
 # starts) and glibc's (libcrashxs_gnu.so, the one it tries if the first
 # stops before its first picture).
@@ -72,13 +74,29 @@ aapt package -f -M $OUT/AndroidManifest.xml -S $OUT/res -A $OUT/assets -I $JAR -
     -F $OUT/unsigned.apk
 (cd $OUT/stage && aapt add ../unsigned.apk classes.dex lib/*/*.so >/dev/null)
 zipalign -p -f 4 $OUT/unsigned.apk $OUT/aligned.apk
-KS=platform/android/crashxs.keystore
-if [ ! -f $KS ]; then
-    keytool -genkeypair -keystore $KS -storepass crashxs -keypass crashxs -alias crashxs -keyalg RSA \
-        -keysize 2048 -validity 36500 -dname "CN=Crash Bandicoot XS PC port" >/dev/null 2>&1
+# The signature. A release is signed with the release key, which is
+# never in the repository (anyone with it could sign an "update" of the
+# app): NLXS_KEYSTORE names it, NLXS_KEYSTORE_PASS_FILE the file with its
+# password (NLXS_KEY_ALIAS: nlxs). Without them the APK is signed with a
+# development key made once in build/ and named -dev: fine to test, but
+# it won't update a release (nor a release it).
+if [ -n "$NLXS_KEYSTORE" ]; then
+    KS=$NLXS_KEYSTORE
+    PASS=$(cat "${NLXS_KEYSTORE_PASS_FILE:?NLXS_KEYSTORE_PASS_FILE: the release key's password file}")
+    ALIAS=${NLXS_KEY_ALIAS:-nlxs}
+    APK=$OUT/NLargedXS-v$VERSION.apk
+else
+    KS=$OUT/dev.keystore
+    PASS=nlxs-dev
+    ALIAS=dev
+    if [ ! -f $KS ]; then
+        keytool -genkeypair -storetype PKCS12 -keystore $KS -storepass $PASS -keypass $PASS -alias $ALIAS \
+            -keyalg RSA -keysize 2048 -validity 36500 -dname "CN=N. Larged XS development build" >/dev/null 2>&1
+    fi
+    APK=$OUT/NLargedXS-v$VERSION-dev.apk
+    echo "== no NLXS_KEYSTORE: signed with the development key ($APK), not for release"
 fi
-APK=$OUT/NLargedXS-v$VERSION.apk
-apksigner sign --ks $KS --ks-pass pass:crashxs --key-pass pass:crashxs --ks-key-alias crashxs \
+apksigner sign --ks "$KS" --ks-pass "pass:$PASS" --key-pass "pass:$PASS" --ks-key-alias "$ALIAS" \
     --min-sdk-version 21 --out $APK $OUT/aligned.apk
 apksigner verify $APK
 echo "== $APK"
