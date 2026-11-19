@@ -272,9 +272,32 @@ CLASSES = [
     ("hardware", r"platform/gba/include/gba/", r".", "a GBA register offset or field value"),
     ("hardware", r"platform/pc/src/irq\.c", r"VBLANK_LINE", "the GBA display's VBlank line, which the pc platform's frame loop plays"),
     ("coincidence", r"platform/pc/src/sha1\.c", r".", "SHA-1's 80 rounds"),
+    # --- the pc platform's front end (sdl.c, ui.c, the launcher, the
+    # Android stream): what it draws around the GBA's picture -----------
+    ("coincidence", r"platform/pc/", r"\bchar \w+\[(120|160)\]", "a text buffer's size"),
+    ("coincidence", r"platform/pc/src/(ui|phone)\.c", r"gHostFpsValues|fps == 120", "frames a second (Display's frame rate)"),
+    ("coincidence", r"platform/pc/src/prompts\.c", r"\d+, *\d+, *\d+ *\},", "a button prompt's colour (RGB)"),
+    ("coincidence", r"platform/pc/src/sdl\.c", r"SetTextureColorMod", "the ambient border's dimming (a colour)"),
+    ("coincidence", r"platform/pc/src/borders\.c", r"\* 512", "the Discord art assets' size (512x512)"),
+    ("coincidence", r"platform/pc/launcher/launcher\.c", r"\b80\b", "the launcher package's header size"),
+    ("coincidence", r"platform/pc/xbrz/", r"alphaGrad", "xBRZ's blend weights"),
     (
         "hardware",
-        r"platform/pc/src/(ppu\.c|host_platform\.h)|platform/pc/tools/mgba_(screens|gax_trace)\.c",
+        r"platform/pc/launcher/launcher\.c|platform/pc/src/(host_ui\.h|ui\.c|borders\.c)",
+        r"#define [WH] |HOST_UI_(WIDTH|HEIGHT)|gUiPauseArt\[|% 240|\+ 80;",
+        "the GBA's 240x160 screen and the pause screen's art, which the settings menu, the borders and the "
+        "launcher draw at its size",
+    ),
+    ("hardware", r"platform/pc/src/interp\.c", r"\*y (>=|-=)", "OAM's 8-bit Y, wrapping at 256 below the screen"),
+    (
+        "hardware",
+        r"platform/pc/src/mouse_hooks\.cpp",
+        r".",
+        "a place on the game's 240x160 screen: its menus' rows, the save menu's slots, the warp room's arrows",
+    ),
+    (
+        "hardware",
+        r"platform/pc/src/(ppu|ppu_hd)\.c|platform/pc/src/host_platform\.h|platform/pc/tools/mgba_(screens|gax_trace)\.c",
         r".",
         "the GBA PPU's own picture, which the pc platform's PPU draws: 240x160, the bitmap modes' "
         "frames, OAM's 8-bit Y",
