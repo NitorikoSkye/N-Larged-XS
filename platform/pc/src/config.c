@@ -161,6 +161,9 @@ static const struct {
     { "auto_save", &gHostSettings.autoSave, 0, HOST_AUTOSAVE_COUNT - 1 },
     { "look_around", &gHostSettings.lookAround, 0, 1 },
     { "slide_jump_grace", &gHostSettings.slideGrace, 0, HOST_SLIDE_GRACE_COUNT - 1 },
+    { "jump_buffer", &gHostSettings.jumpBuffer, 0, HOST_SLIDE_GRACE_COUNT - 1 },
+    { "late_double_jump", &gHostSettings.lateDoubleJump, 0, 1 },
+    { "infinite_lives", &gHostSettings.infiniteLives, 0, 1 },
     { "discord_status", &gHostSettings.discord, 0, 1 },
     { "discord_show_progress", &gHostSettings.discordProgress, 0, 1 },
 };

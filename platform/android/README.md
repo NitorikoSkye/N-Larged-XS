@@ -55,9 +55,11 @@ drawn in the game's style, with the phone's own options:
   the left border), and button prompts (the
   game's A, B, L, R and Start drawn as your controller's).
 - **Audio:** quality, and master, music and sound effects volumes.
-- **Gameplay:** auto save, looking up and down, and slide jump grace (off,
-  or 4 to 10 frames: as in Crash 2 and 3, a slide off a ledge can still
-  jump for a moment).
+- **Gameplay:** auto save, looking up and down, and the options that change
+  how Crash plays, all off by default: slide jump grace (as in Crash 2 and
+  3, a slide off a ledge can still jump for a moment), jump buffer (A
+  pressed just before landing still jumps), relaxed double jump (for the
+  whole fall, not just near the top) and infinite lives.
 
 ## How it works
 

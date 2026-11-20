@@ -67,8 +67,10 @@ works with keyboard, controller or mouse.
   counter, speedrun timer and a pixel-art input display.
 - **Gameplay:** auto save, look up/down (hold Up or Down while standing still to peek), and
   skip intro.
-  Optional slide jump grace: as in Crash 2 and 3, a slide off a ledge can
-  still jump for a few frames.
+  Optional changes to how Crash plays, all off by default: slide jump
+  grace (as in Crash 2 and 3, a slide off a ledge can still jump for a few
+  frames), jump buffer (A pressed just before landing still jumps),
+  relaxed double jump (for the whole fall) and infinite lives.
 - **Audio:** high-quality resampling, with separate music and sound
   effect volumes.
 - **Extras:** Discord Rich Presence, and **Add to Steam**, which adds the

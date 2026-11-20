@@ -111,9 +111,12 @@ struct HostSettings {
     int keys[HOST_BIND_COUNT][HOST_BIND_SLOTS]; /* SDL scancodes, 0 none */
     int pad[HOST_BIND_COUNT][HOST_BIND_SLOTS];  /* HOST_PAD_* */
     /* Gameplay */
-    int autoSave;   /* HOST_AUTOSAVE_* */
-    int lookAround; /* look up/down (look_hook.cpp) */
-    int slideGrace; /* HOST_SLIDE_GRACE_*: the slide jump's grace (slide_hook.cpp) */
+    int autoSave;       /* HOST_AUTOSAVE_* */
+    int lookAround;     /* look up/down (look_hook.cpp) */
+    int slideGrace;     /* HOST_SLIDE_GRACE_*: the slide jump's grace (gameplay_hooks.cpp) */
+    int jumpBuffer;     /* the same frames' choices: a press before landing jumps on it */
+    int lateDoubleJump; /* the double jump for the whole fall */
+    int infiniteLives;
     /* Extras: Discord Rich Presence (discord.c) */
     int discord;
     int discordProgress;
@@ -191,7 +194,7 @@ struct HostMouse {
 };
 extern struct HostMouse gHostMouse;
 u16 HostMouseGameKeys(void); /* the buttons the mouse adds this frame */
-/* Gameplay's slide jump grace (slide_hook.cpp): off, or 4, 6, 8 or 10
+/* Gameplay's slide jump grace and jump buffer (gameplay_hooks.cpp): off, or 4, 6, 8 or 10
  * frames after a slide leaves the ground. */
 enum {
     HOST_SLIDE_GRACE_OFF,

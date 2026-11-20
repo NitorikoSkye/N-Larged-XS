@@ -512,8 +512,9 @@ goes where he swims, and the vehicle rooms have their own. Headless runs
 have it off (their settings are zeros) unless `HOST_LOOK=1`; with it on,
 the Dingodile test's game state is the same at every checkpoint.
 
-**Slide jump grace** (v0.47; Gameplay's slide jump grace, off by default;
-src/slide_hook.cpp). In Crash Bandicoot 2 and 3 a slide that runs off a
+**Gameplay options** (src/gameplay_hooks.cpp; Gameplay, each off by
+default and in headless runs). *Slide jump grace* (v0.47; Gameplay's
+slide jump grace). In Crash Bandicoot 2 and 3 a slide that runs off a
 ledge can still be jumped out of for a moment; in XS it can't: the
 slide's state (ActionCtrl::StateSlide) tests the ground before A, and
 the frame the floor goes it queues the fall (Y entry 5) without looking
@@ -531,6 +532,35 @@ sets the frames in headless runs, HOST_SLIDE_LOG=1 logs each slide and
 fall frame. Tested on Jungle Jam's waterfall pit: a slide off the ledge
 before it with A 3 frames after the edge falls in with the setting off,
 and jumps over with 6.
+
+*Jump buffer* (v0.49; off, 4, 6, 8 or 10 frames). The game jumps only on
+the frame A goes down with Crash on the ground (INPUT_PRESSED), so a
+press a frame or two before landing is lost, which players describe as
+a delay that comes and goes. StateAirborne's wrapper remembers an A
+press in the air that the double jump didn't take (ActionCtrl::frame,
+the jumps counter, unchanged); landing within the setting's frames with A
+still held, StateLand's wrapper sets A's pressed bit for that frame
+(StateLand hands over to StateIdle, whose jump reads it). Tested on
+Jungle Jam's start: a jump in place lands on frame 1037; A pressed on
+1034 and held lands without jumping with it off, and jumps on the landing
+frame with 6; A pressed on 1026 (11 frames before) doesn't.
+HOST_JUMP_BUFFER=N.
+
+*Relaxed double jump* (v0.49). HandleAirInput tries the double jump
+(TryDoubleJump) only while Crash falls at under 2.5 px a frame, so a
+press later on the way down is ignored ("sometimes the game won't let
+Crash double jump"). Its wrapper tries TryDoubleJump first when he falls
+faster; TryDoubleJump's own conditions stay (the power, once a jump, a
+jump's animation 6, 0xB or 0xC: not after walking off a ledge, not in the
+air spin). Tested with the power given (HOST_TEST_DOUBLE_JUMP=1): A 31
+frames into a jump does nothing normally and flips with it on, A near
+the top flips either way, and a third press after the double jump does
+nothing. HOST_LATE_DOUBLE_JUMP=1.
+
+*Infinite lives* (v0.49): LevelState::LoseLife (every death's; time
+trials already lose none) does nothing; a death still restarts at the
+checkpoint. Tested on the waterfall pit: 5 lives become 4 with it off and
+stay 5 with it on. HOST_INFINITE_LIVES=1.
 
 **Discord** (v0.07; Extras, src/discord.c). Rich Presence over Discord's
 local IPC, with no SDK: the named pipe `\\.\pipe\discord-ipc-N` on

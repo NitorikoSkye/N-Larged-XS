@@ -610,6 +610,12 @@ static const struct Option sGameplay[] = {
       &gHostSettings.lookAround, sOffOn, 2, 0 },
     { "slide jump grace", "as in crash 2 and 3: a slide off a ledge can still jump for a moment.",
       OPT_CHOICE, &gHostSettings.slideGrace, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
+    { "jump buffer", "a pressed just before landing still jumps as you land.", OPT_CHOICE,
+      &gHostSettings.jumpBuffer, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
+    { "relaxed double jump", "the double jump works for the whole fall, not just near the top.",
+      OPT_CHOICE, &gHostSettings.lateDoubleJump, sOffOn, 2, 0 },
+    { "infinite lives", "no lives are lost, and no game over.", OPT_CHOICE,
+      &gHostSettings.infiniteLives, sOffOn, 2, 0 },
 };
 
 static const char *const sDiscordStates[HOST_DISCORD_STATUS_COUNT] = {
@@ -694,6 +700,9 @@ static const struct Option sPhoneAudio[] = {
 
 static const char *const sPhoneAutoSaves[HOST_AUTOSAVE_COUNT] = { "off", "in use", "slot 4" };
 
+static const char *const sRelaxed[] = { "normal", "relaxed" };
+static const char *const sLives[] = { "normal", "infinite" };
+
 static const struct Option sPhoneGameplay[] = {
     { "auto save", "after a level with something new: save to the slot in use, or slot 4.",
       OPT_CHOICE, &gHostSettings.autoSave, sPhoneAutoSaves, HOST_AUTOSAVE_COUNT, 0 },
@@ -701,6 +710,12 @@ static const struct Option sPhoneGameplay[] = {
       &gHostSettings.lookAround, sOffOn, 2, 0 },
     { "slide grace", "as in crash 2 and 3: a slide off a ledge can still jump for a moment.",
       OPT_CHOICE, &gHostSettings.slideGrace, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
+    { "buffer", "jump buffer: a pressed just before landing still jumps as you land.", OPT_CHOICE,
+      &gHostSettings.jumpBuffer, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
+    { "double jump", "relaxed: it works for the whole fall, not just near the top.", OPT_CHOICE,
+      &gHostSettings.lateDoubleJump, sRelaxed, 2, 0 },
+    { "lives", "infinite: no lives are lost, and no game over.", OPT_CHOICE,
+      &gHostSettings.infiniteLives, sLives, 2, 0 },
 };
 
 static const struct Category sCategories[] = {
@@ -711,7 +726,7 @@ static const struct Category sCategories[] = {
       COUNT(sPhoneTouch) },
     { "interface", "text size, hud and button prompts", sPhoneInterface, COUNT(sPhoneInterface) },
     { "audio", "quality, and master, music and sound fx volume", sPhoneAudio, COUNT(sPhoneAudio) },
-    { "gameplay", "auto save, looking around, slide jump grace", sPhoneGameplay,
+    { "gameplay", "auto save, looking around, jumps and lives", sPhoneGameplay,
       COUNT(sPhoneGameplay) },
 };
 #define SETTINGS_TITLE "settings"
@@ -724,7 +739,7 @@ static const struct Category sCategories[] = {
     { "interface", "hud, fps counter, input display and timer", sInterface, COUNT(sInterface) },
     { "audio", "quality, and master, music and sound fx volume", sAudio, COUNT(sAudio) },
     { "controls", "keyboard, controller, rumble and button prompts", sControls, COUNT(sControls) },
-    { "gameplay", "auto save, looking up and down, slide jump grace", sGameplay, COUNT(sGameplay) },
+    { "gameplay", "auto save, looking up and down, jumps and lives", sGameplay, COUNT(sGameplay) },
     { "extras", "discord status and adding to steam", sExtras, COUNT(sExtras) },
 };
 #endif
