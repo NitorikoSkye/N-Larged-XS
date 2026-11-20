@@ -233,11 +233,9 @@ $(HOST_INLINES:.cpp=.o): $(HOST_INLINES) $(HOST_RENAMES) | $(GENERATED_HEADERS)
 
 # xBRZ (platform/pc/xbrz/, the "cartoon" filters): modern C++, built on
 # its own, not with the game's flags.
-# (With the window, and in the Android core: stream.c's pictures.)
-HOST_XBRZ_OBJS :=
-ifneq ($(filter 1,$(HOST_SDL) $(HOST_ANDROID)),)
+# (Always: the window's filters, and stream.c's pictures for the Android
+# app, which every build but Windows's has.)
 HOST_XBRZ_OBJS := $(PLATFORM_BUILDDIR)/xbrz/xbrz.o $(PLATFORM_BUILDDIR)/xbrz/xbrz_c.o
-endif
 HOST_OBJS := $(HOST_XBRZ_OBJS) $(C_OBJS) $(CXX_OBJS) $(PLATFORM_OBJS) $(HOST_GAX_OBJS) $(HOST_GAX_DATA:.c=.o) $(HOST_INLINES:.cpp=.o) \
 	$(HOST_UI_ASSETS:.c=.o)
 
