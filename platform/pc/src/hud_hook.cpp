@@ -22,6 +22,8 @@ extern "C" {
 #include "host_ui.h"
 }
 
+#include "infinity_glyph.h"
+
 using Engine::Gfx::OamBuffer;
 using Game::Ui::Hud;
 
@@ -29,6 +31,10 @@ using Game::Ui::Hud;
 extern s32 sSpriteOamQueueCount __asm__("_ZN6Engine3Gfx14SpriteOamQueue5countE");
 
 extern "C" {
+
+void *memset(void *d, int c, unsigned long n);
+void *memcpy(void *d, const void *s, unsigned long n);
+extern u8 gHostPltt[];
 
 extern s32 gHostPlayingLevel; /* level_pick.c */
 
@@ -67,6 +73,9 @@ void __wrap__ZN4Game2Ui3Hud6UpdateEv(Hud *self)
     gHostHud.frame = HostFrame();
     /* (the HUD's own copies only follow while a counter is slid in) */
     gHostHud.lives = gLevelState->GetLives() > 0 ? gLevelState->GetLives() : 0;
+    gHostHud.infiniteLives = HostInfiniteLives();
+    memcpy(gHostHud.pal, (const u8 *)gHostPltt + 0x200 + 32 * self->parts[0].palette,
+           sizeof(gHostHud.pal));
     gHostHud.wumpa = gLevelState->GetWumpa();
     gHostHud.crates = gLevelState->GetCrateCount();
     gHostHud.crateTotal = self->crateTotal;
@@ -109,7 +118,102 @@ void __wrap__ZN4Game2Ui3Hud6UpdateEv(Hud *self)
         }                                                                                   \
     }
 
-COUNTER_WRAP(11UpdateLivesEv)
+/* Gameplay's infinite lives (gameplay_hooks.cpp): the lives count is an
+ * infinity sign (infinity_glyph.h), in the digits' place and palette.
+ * Hud::UpdateLives draws the icon with its digits hidden (their frames
+ * and the shown count put back after, so nothing it keeps changes), then
+ * the sign: one 32x16 OBJ, its tiles queued like a sprite's
+ * (ObjVramCursor::Upload, from sInfinityTiles: the queue copies them at
+ * the next VBlank). */
+static u8 sInfinityTiles[32 * 16 / 2];
+
+static void BuildInfinityTiles(void)
+{
+    static int sBuilt;
+    int x;
+    int y;
+
+    if (sBuilt) {
+        return;
+    }
+    for (y = 0; y < 16; y++) {
+        for (x = 0; x < 32; x++) {
+            char ch = sInfinityLarge[y][x];
+            int v = ch <= '9' ? ch - '0' : ch - 'A' + 10;
+            int tile = (y / 8) * 4 + x / 8;
+            u8 *b = &sInfinityTiles[tile * 32 + (y % 8) * 4 + (x % 8) / 2];
+
+            *b |= (x & 1) ? v << 4 : v;
+        }
+    }
+    sBuilt = 1;
+}
+
+static void DrawInfinity(Hud *self)
+{
+    Game::Ui::HudPart *digit = &self->parts[0];
+    struct oam_attrs oam;
+    s32 x = Q8_TO_INT(digit->x) - 7;
+    s32 y = Q8_TO_INT(digit->y) - 7 + gHudSlideOffset;
+    s32 tile;
+
+    if (y + 16 <= 0 || gOamBuffer == NULL) {
+        return;
+    }
+    BuildInfinityTiles();
+    tile = gObjVramCursor->Upload(sInfinityTiles, sizeof(sInfinityTiles));
+    if (tile < 0) {
+        return;
+    }
+    memset(&oam, 0, sizeof(oam));
+    oam.y = y;
+    oam.x = x;
+    oam.shape = 1; /* wide */
+    oam.size = 2;  /* 32x16 */
+    oam.tileNum = tile;
+    oam.priority = digit->GetPriority();
+    oam.palette = digit->palette;
+    gOamBuffer->Add(&oam);
+}
+
+void __real__ZN4Game2Ui3Hud11UpdateLivesEv(Hud *self);
+
+static void UpdateLives(Hud *self)
+{
+    s32 shown = self->shownLives;
+    s32 f0 = self->parts[0].frame;
+    s32 f1 = self->parts[1].frame;
+
+    if (!HostInfiniteLives() || self->livesSlide == HUD_SLIDE_STATE_HIDDEN) {
+        __real__ZN4Game2Ui3Hud11UpdateLivesEv(self);
+        return;
+    }
+    /* the count as it is: no new digits */
+    self->shownLives = gLevelState->GetLives() > 0 ? gLevelState->GetLives() : 0;
+    self->parts[0].frame = -1;
+    self->parts[1].frame = -1;
+    __real__ZN4Game2Ui3Hud11UpdateLivesEv(self);
+    self->parts[0].frame = f0;
+    self->parts[1].frame = f1;
+    self->shownLives = shown;
+    DrawInfinity(self);
+}
+
+void __wrap__ZN4Game2Ui3Hud11UpdateLivesEv(Hud *self)
+{
+    s32 oam = gOamBuffer != NULL ? gOamBuffer->count : 0;
+    s32 queued = sSpriteOamQueueCount;
+
+    UpdateLives(self);
+    if (gHostSettings.hud == HOST_HUD_BORDERS && gHostHudInBorder) {
+        if (gOamBuffer != NULL && gOamBuffer->count > oam) {
+            gOamBuffer->count = oam;
+        }
+        if (sSpriteOamQueueCount > queued) {
+            sSpriteOamQueueCount = queued;
+        }
+    }
+}
 COUNTER_WRAP(11UpdateWumpaEv)
 COUNTER_WRAP(12UpdateCratesEv)
 COUNTER_WRAP(11UpdateClockEv)

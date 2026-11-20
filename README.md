@@ -70,7 +70,8 @@ works with keyboard, controller or mouse.
   Optional changes to how Crash plays, all off by default: slide jump
   grace (as in Crash 2 and 3, a slide off a ledge can still jump for a few
   frames), jump buffer (A pressed just before landing still jumps),
-  relaxed double jump (for the whole fall) and infinite lives.
+  relaxed double jump (for the whole fall) and infinite lives (the lives
+  count becomes an infinity sign).
 - **Audio:** high-quality resampling, with separate music and sound
   effect volumes.
 - **Extras:** Discord Rich Presence, and **Add to Steam**, which adds the

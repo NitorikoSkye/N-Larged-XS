@@ -157,8 +157,12 @@ struct HostHud {
     s32 seconds;
     s32 tenths;
     s32 boss;
+    s32 infiniteLives; /* Gameplay's infinite lives: the count is a sign */
+    u16 pal[16];       /* the lives digits' palette (BGR555) */
 };
 extern struct HostHud gHostHud;
+/* gameplay_hooks.cpp: Gameplay's infinite lives (HOST_INFINITE_LIVES=1). */
+int HostInfiniteLives(void);
 
 /* timer.c: Interface's Speedrun timer. */
 enum {

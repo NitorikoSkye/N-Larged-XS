@@ -4,8 +4,8 @@
      this app shows it, plays it and sends it the buttons. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.crashbandicootxs.port"
-    android:versionCode="49"
-    android:versionName="0.49">
+    android:versionCode="50"
+    android:versionName="0.50">
 
     <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34" />
     <uses-feature android:glEsVersion="0x00020000" android:required="false" />

@@ -30,7 +30,8 @@
  * not in the air spin). HOST_LATE_DOUBLE_JUMP=1 for the tests.
  *
  * Infinite lives: LevelState::LoseLife (every death calls it; time trials
- * already lose none) does nothing. HOST_INFINITE_LIVES=1 for the tests.
+ * already lose none) only shows the count, which hud_hook.cpp draws as an
+ * infinity sign. HOST_INFINITE_LIVES=1 for the tests.
  *
  * The link wraps the states the slide, the fall and the landing run in,
  * which only ActionCtrl::stateFuncs calls (another object), HandleAirInput
@@ -41,6 +42,7 @@
 #include "game/crash/action_ctrl.hpp"
 #include "game/crash/player.hpp"
 #include "game/level/level_state.hpp"
+#include "game/ui/hud.hpp"
 #include "engine/audio/audio.hpp"
 
 extern "C" {
@@ -246,11 +248,21 @@ void __wrap__ZN4Game5Crash10ActionCtrl14HandleAirInputEv(ActionCtrl *self)
 
 void __real__ZN4Game5Level10LevelState8LoseLifeEv(LevelState *self);
 
-void __wrap__ZN4Game5Level10LevelState8LoseLifeEv(LevelState *self)
+int HostInfiniteLives(void)
 {
     static int sEnv = -1;
 
-    if (Setting("HOST_INFINITE_LIVES", &sEnv, gHostSettings.infiniteLives)) {
+    return Setting("HOST_INFINITE_LIVES", &sEnv, gHostSettings.infiniteLives);
+}
+
+void __wrap__ZN4Game5Level10LevelState8LoseLifeEv(LevelState *self)
+{
+    if (HostInfiniteLives()) {
+        /* the death still shows the count (now the infinity sign,
+         * hud_hook.cpp), as LoseLife does */
+        if (self->timeTrial == 0) {
+            gHud->ShowLives();
+        }
         return;
     }
     __real__ZN4Game5Level10LevelState8LoseLifeEv(self);

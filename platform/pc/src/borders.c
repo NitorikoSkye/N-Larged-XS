@@ -620,6 +620,39 @@ static void LayOutHud(struct HudLayout *l, int x0, int x1, const struct HostHud 
     }
 }
 
+#include "infinity_glyph.h"
+
+/* Gameplay's infinite lives: the lives row's count is the infinity sign
+ * (infinity_glyph.h, its small size), coloured by the HUD digits'
+ * palette (hud_hook.cpp copies it), right-aligned at x1 like a number. */
+static void HudInfinity(u32 *c, int w, int h, int x1, int y, const struct HostHud *hud)
+{
+    int gw = (int)strlen(sInfinitySmall[0]);
+    int gh = (int)(sizeof(sInfinitySmall) / sizeof(sInfinitySmall[0]));
+    int x0 = x1 - gw;
+    int y0 = y + 13 - 11; /* on the digits' baseline (y + 13), a little up */
+    int gx;
+    int gy;
+
+    for (gy = 0; gy < gh; gy++) {
+        for (gx = 0; gx < gw; gx++) {
+            char ch = sInfinitySmall[gy][gx];
+            int v = ch <= '9' ? ch - '0' : ch - 'A' + 10;
+            int px = x0 + gx;
+            int py = y0 + gy;
+            u16 bgr;
+
+            if (v == 0 || px < 0 || py < 0 || px >= w || py >= h) {
+                continue;
+            }
+            bgr = hud->pal[v];
+            c[py * w + px] = 0xFF000000u | (u32)((bgr & 31) * 255 / 31) << 16 |
+                             (u32)(((bgr >> 5) & 31) * 255 / 31) << 8 |
+                             (u32)(((bgr >> 10) & 31) * 255 / 31);
+        }
+    }
+}
+
 static void HudPanel(u32 *c, int w, int h, int x0, int x1, int y, const struct HostHud *hud)
 {
     struct HudLayout l;
@@ -646,7 +679,11 @@ static void HudPanel(u32 *c, int w, int h, int x0, int x1, int y, const struct H
             if (sHudIcons[i] >= 0) {
                 Icon(c, w, h, sHudIcons[i], cx, ry + 8, 0);
             }
-            HudNumber(c, w, h, x1 - 4, ry + 1, l.text[i], 0);
+            if (i == 0 && hud->infiniteLives) {
+                HudInfinity(c, w, h, x1 - 4, ry + 1, hud);
+            } else {
+                HudNumber(c, w, h, x1 - 4, ry + 1, l.text[i], 0);
+            }
         }
         ry += 20;
     }

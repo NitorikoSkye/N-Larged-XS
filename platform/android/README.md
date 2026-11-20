@@ -59,7 +59,8 @@ drawn in the game's style, with the phone's own options:
   how Crash plays, all off by default: slide jump grace (as in Crash 2 and
   3, a slide off a ledge can still jump for a moment), jump buffer (A
   pressed just before landing still jumps), relaxed double jump (for the
-  whole fall, not just near the top) and infinite lives.
+  whole fall, not just near the top) and infinite lives (the lives count
+  becomes an infinity sign).
 
 ## How it works
 

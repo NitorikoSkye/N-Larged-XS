@@ -558,8 +558,15 @@ the top flips either way, and a third press after the double jump does
 nothing. HOST_LATE_DOUBLE_JUMP=1.
 
 *Infinite lives* (v0.49): LevelState::LoseLife (every death's; time
-trials already lose none) does nothing; a death still restarts at the
-checkpoint. Tested on the waterfall pit: 5 lives become 4 with it off and
+trials already lose none) only shows the lives counter; a death still
+restarts at the checkpoint. From v0.50 the count is an infinity sign
+(src/hud_hook.cpp): Hud::UpdateLives's wrapper draws the icon with its
+digits hidden (their frames and the shown count put back after), then
+the sign as one 32x16 OBJ in the digits' palette, its tiles queued with
+ObjVramCursor::Upload like a sprite frame's; the left border's HUD
+(borders.c) draws a small one in the lives row. Both come from
+tools/infinity_glyph.py (src/infinity_glyph.h: palette indices, drawn
+from a lemniscate with the digits' shading). Tested on the waterfall pit: 5 lives become 4 with it off and
 stay 5 with it on. HOST_INFINITE_LIVES=1.
 
 **Discord** (v0.07; Extras, src/discord.c). Rich Presence over Discord's
