@@ -325,7 +325,7 @@ public class MainActivity extends Activity {
                 in.readFully(head);
                 int type = (head[0] & 0xFF) | (head[1] & 0xFF) << 8 | (head[2] & 0xFF) << 16 | (head[3] & 0xFF) << 24;
                 int n = (head[4] & 0xFF) | (head[5] & 0xFF) << 8 | (head[6] & 0xFF) << 16 | (head[7] & 0xFF) << 24;
-                if (n < 0 || n > 4 << 20 || type < 1 || type > 8) {
+                if (n < 0 || n > 4 << 20 || type < 1 || type > 9) {
                     throw new IOException("bad message from the game: type " + type + ", " + n + " bytes");
                 }
                 byte[] data = new byte[n];
@@ -363,6 +363,10 @@ public class MainActivity extends Activity {
                     }
                     if (n == 16 + h[2] * h[3] * 2) {
                         view.setBar(h[0], h[1], h[2], h[3], data, 16);
+                    }
+                } else if (type == 9) {
+                    if (n >= 4) {
+                        vibrate(data[0] & 0xFF, (data[2] & 0xFF) | (data[3] & 0xFF) << 8);
                     }
                 } else if (type == 7) {
                     view.setIcons(data);
@@ -617,10 +621,52 @@ public class MainActivity extends Activity {
     }
 
     void touchUsed() {
+        lastPad = null;
         setPadStyle(PROMPTS_GBA);
     }
 
+    /* --- Vibration (Touch's vibration; the core's message 9, rumble.c) --- */
+
+    /** The controller used last, or null for the touch screen. */
+    private volatile InputDevice lastPad;
+
+    /** A buzz: the controller in use if it can, else the phone. */
+    private void vibrate(int strength, int ms) {
+        android.os.Vibrator v = null;
+        InputDevice pad = lastPad;
+
+        if (pad != null && Build.VERSION.SDK_INT >= 16) {
+            android.os.Vibrator pv = pad.getVibrator();
+            if (pv != null && pv.hasVibrator()) {
+                v = pv;
+            }
+        }
+        if (v == null) {
+            v = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+        }
+        if (v == null || !v.hasVibrator() || ms <= 0) {
+            return;
+        }
+        try {
+            if (Build.VERSION.SDK_INT >= 26) {
+                /* VibrationEffect is newer than the API this is built
+                 * against (build.sh's android-23): by reflection */
+                Class<?> effect = Class.forName("android.os.VibrationEffect");
+                boolean amplitude = (Boolean) android.os.Vibrator.class.getMethod("hasAmplitudeControl").invoke(v);
+                int amp = amplitude ? Math.max(1, Math.min(255, strength)) : -1; /* -1: DEFAULT_AMPLITUDE */
+                Object one = effect.getMethod("createOneShot", long.class, int.class).invoke(null, (long) ms, amp);
+                android.os.Vibrator.class.getMethod("vibrate", effect).invoke(v, one);
+            } else {
+                /* no strength: a weak one is shorter */
+                v.vibrate(Math.max(20, ms * strength / 255));
+            }
+        } catch (Exception e) {
+            /* a vibrator that went away */
+        }
+    }
+
     private void controllerUsed(InputDevice d) {
+        lastPad = d;
         int style = PROMPTS_XBOX;
         if (d != null && Build.VERSION.SDK_INT >= 19) {
             int vendor = d.getVendorId();

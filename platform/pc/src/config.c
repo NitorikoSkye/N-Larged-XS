@@ -162,6 +162,7 @@ static const struct {
     { "look_around", &gHostSettings.lookAround, 0, 1 },
     { "slide_jump_grace", &gHostSettings.slideGrace, 0, HOST_SLIDE_GRACE_COUNT - 1 },
     { "jump_buffer", &gHostSettings.jumpBuffer, 0, HOST_SLIDE_GRACE_COUNT - 1 },
+    { "ledge_jump_grace", &gHostSettings.ledgeGrace, 0, HOST_SLIDE_GRACE_COUNT - 1 },
     { "late_double_jump", &gHostSettings.lateDoubleJump, 0, 1 },
     { "infinite_lives", &gHostSettings.infiniteLives, 0, 1 },
     { "discord_status", &gHostSettings.discord, 0, 1 },

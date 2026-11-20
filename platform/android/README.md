@@ -59,8 +59,12 @@ drawn in the game's style, with the phone's own options:
   level's porthole and name on the left and your progress on the right,
   both kept above the touch buttons).
 - **Touch:** the buttons' size (small to huge) and opacity, whether they
-  also show in the menus, haptics (off, light, strong), icons (changing
-  with what Crash can do, or fixed) and layout (the editor).
+  also show in the menus, the d-pad (the GBA's cross, a joystick, or a
+  separate button each way) and whether it floats (appears wherever your
+  left thumb lands), haptics (off, light, strong), vibration (the phone,
+  or your controller, buzzes with hits, explosions, crates and bosses:
+  off, light, strong), icons (changing with what Crash can do, or fixed)
+  and layout (the editor).
 - **Interface:** text size (normal, or large: the menu's rows in the
   game's big font, four to a page), the HUD (in the game, hidden, or in
   the left border), and button prompts (the
@@ -69,8 +73,9 @@ drawn in the game's style, with the phone's own options:
 - **Gameplay:** auto save, looking up and down, and the options that change
   how Crash plays, all off by default: slide jump grace (as in Crash 2 and
   3, a slide off a ledge can still jump for a moment), jump buffer (A
-  pressed just before landing still jumps), relaxed double jump (for the
-  whole fall, not just near the top) and infinite lives (the lives count
+  pressed just before landing still jumps), ledge grace (coyote time:
+  walking off a ledge can still jump for a moment), relaxed double jump (for
+  the whole fall, not just near the top) and infinite lives (the lives count
   becomes an infinity sign).
 
 ## How it works

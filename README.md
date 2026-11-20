@@ -46,8 +46,9 @@ Crash can do right now (crouch, slide or body slam; the double jump in the
 air; swim, polar and jetpack actions), and you can move and resize them in
 a layout editor; menus and the warp room are tapped directly, and the
 phone's back button is B (or pause in a level). The cog at the top opens
-the settings, with phone options: touch button size, opacity, haptics,
-icons and layout, large text, 60 or 120 frames a second. Like the
+the settings, with phone options: touch button size, opacity, d-pad style
+(cross, joystick or separate buttons, fixed or floating), haptics,
+vibration, icons and layout, large text, 60 or 120 frames a second. Like the
 launcher, the APK contains no part of the game. See
 [platform/android/README.md](platform/android/README.md).
 
@@ -72,7 +73,8 @@ works with keyboard, controller or mouse.
   skip intro.
   Optional changes to how Crash plays, all off by default: slide jump
   grace (as in Crash 2 and 3, a slide off a ledge can still jump for a few
-  frames), jump buffer (A pressed just before landing still jumps),
+  frames), ledge jump grace (coyote time off any ledge), jump buffer (A
+  pressed just before landing still jumps),
   relaxed double jump (for the whole fall) and infinite lives (the lives
   count becomes an infinity sign).
 - **Audio:** high-quality resampling, with separate music and sound

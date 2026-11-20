@@ -40,7 +40,12 @@ import java.nio.ByteBuffer;
  * ride B dashes, with the jetpack A fires and L and R roll. An icon
  * changes with a short fade; a button with nothing to do now is faint.
  * Touch's icons "fixed" keeps jump, spin, turbo and slam. Start pauses,
- * Select shows the counters. Holding the turbo run's button for a moment
+ * Select shows the counters. Touch's d-pad is the GBA's cross, a
+ * joystick (a knob that follows the thumb; eight ways past a small dead
+ * zone) or a separate button each way; floating, it appears wherever the
+ * left thumb lands on the left half of the screen (and rests, faint, at
+ * its place). Touch's vibration buzzes the controller in use, or the
+ * phone (the core's message 9; MainActivity). Holding the turbo run's button for a moment
  * locks it on (Auto, for the time trials): it stays held, in levels,
  * until the button is tapped again.
  *
@@ -85,6 +90,15 @@ public class GameView extends View {
     private boolean smooth;
     private volatile int mode = MODE_ANY;
     private int borders = 2;
+    /* Touch's d-pad: 0 the cross, 1 a joystick, 2 a button each way; and
+     * whether it appears where the left thumb lands (floating) */
+    static final int DPAD_CROSS = 0, DPAD_STICK = 1, DPAD_BUTTONS = 2;
+    private int dpadStyle;
+    private boolean dpadFloating;
+    /* The finger working the d-pad by its offset from an anchor (the
+     * joystick, or any floating style), or -1; where it is. */
+    private int padOwner = -1;
+    private float anchorX, anchorY, thumbX, thumbY;
 
     /* The themed borders' bars (0 left, 1 right, 2 above, flipped below)
      * and their pixel sizes; the ambient border's tiny picture. */
@@ -250,6 +264,8 @@ public class GameView extends View {
         scaling = v[4];
         smooth = v[5] != 0;
         borders = v.length > 7 ? v[7] : 0;
+        dpadStyle = v.length > 8 ? Math.max(0, Math.min(2, v[8])) : 0;
+        dpadFloating = v.length > 9 && v[9] != 0;
         post(new Runnable() {
             public void run() {
                 layout(getWidth(), getHeight());
@@ -479,25 +495,8 @@ public class GameView extends View {
 
         line.setColor(Color.argb(alpha(230), 255, 255, 255));
         text.setColor(Color.argb(alpha(255), 255, 255, 255));
-        /* The D-pad: a cross, each arm lit while held. */
-        float arm = padR * 0.36f;
-        int[] bits = { MainActivity.KEY_UP, MainActivity.KEY_DOWN, MainActivity.KEY_LEFT, MainActivity.KEY_RIGHT };
-        RectF[] arms = {
-            new RectF(padX - arm, padY - padR, padX + arm, padY - arm),
-            new RectF(padX - arm, padY + arm, padX + arm, padY + padR),
-            new RectF(padX - padR, padY - arm, padX - arm, padY + arm),
-            new RectF(padX + arm, padY - arm, padX + padR, padY + arm),
-        };
-        fill.setColor(fillColor(false));
-        c.drawRect(padX - arm, padY - arm, padX + arm, padY + arm, fill);
-        fill.setColor(Color.argb(alpha(255), 255, 255, 255));
-        for (int i = 0; i < 4; i++) {
-            Paint armFill = new Paint(fill);
-            armFill.setColor(fillColor((keys & bits[i]) != 0));
-            c.drawRoundRect(arms[i], u, u, armFill);
-            c.drawRoundRect(arms[i], u, u, line);
-            arrow(c, arms[i], i);
-        }
+        drawPad(c, u);
+        line.setColor(Color.argb(alpha(230), 255, 255, 255));
         iconPaint.setAlpha(Math.min(255, alpha(255) + 60));
         button(c, aX, aY, aR, 0, "A", (keys & MainActivity.KEY_A) != 0);
         button(c, bX, bY, bR, 1, "B", (keys & MainActivity.KEY_B) != 0);
@@ -519,9 +518,99 @@ public class GameView extends View {
         pill(c, startRect, -2, "START", (keys & MainActivity.KEY_START) != 0);
     }
 
+    private static final int[] DIRS = { MainActivity.KEY_UP, MainActivity.KEY_DOWN, MainActivity.KEY_LEFT,
+            MainActivity.KEY_RIGHT };
+
+    /** Where a separate direction button is (0 up, 1 down, 2 left, 3 right)
+     * around the d-pad's centre, and its radius. */
+    private float dirX(float cx, int i) {
+        return cx + (i == 2 ? -1 : i == 3 ? 1 : 0) * padR * 0.62f;
+    }
+
+    private float dirY(float cy, int i) {
+        return cy + (i == 0 ? -1 : i == 1 ? 1 : 0) * padR * 0.62f;
+    }
+
+    /** The d-pad in its style: where the thumb anchored it while in use,
+     * else at its place (fainter there when it floats: it shows where it
+     * rests, but follows the thumb). */
+    private void drawPad(Canvas c, float u) {
+        boolean held = padOwner >= 0;
+        float cx = held && dpadFloating ? anchorX : padX;
+        float cy = held && dpadFloating ? anchorY : padY;
+        int was = touchOpacity;
+
+        if (dpadFloating && !held && !editing) {
+            touchOpacity = touchOpacity * 55 / 100;
+        }
+        line.setColor(Color.argb(alpha(230), 255, 255, 255));
+        fill.setColor(Color.argb(alpha(255), 255, 255, 255));
+        if (dpadStyle == DPAD_STICK) {
+            /* a base with a notch each way, and the knob where the thumb is */
+            Paint base = new Paint(fill);
+            base.setColor(fillColor(false));
+            c.drawCircle(cx, cy, padR, base);
+            c.drawCircle(cx, cy, padR, line);
+            for (int i = 0; i < 4; i++) {
+                float k = padR * 0.16f;
+                RectF r = new RectF(dirX(cx, i) * 1.25f - cx * 0.25f - k, dirY(cy, i) * 1.25f - cy * 0.25f - k,
+                        dirX(cx, i) * 1.25f - cx * 0.25f + k, dirY(cy, i) * 1.25f - cy * 0.25f + k);
+                Paint tri = new Paint(fill);
+                tri.setColor(Color.argb((keys & DIRS[i]) != 0 ? alpha(255) : alpha(150), 255, 255, 255));
+                arrow(c, r, i, tri);
+            }
+            float kx = cx, ky = cy;
+            if (held) {
+                float dx = thumbX - anchorX, dy = thumbY - anchorY;
+                float d = (float) Math.hypot(dx, dy), max = padR * 0.55f;
+                if (d > max) {
+                    dx *= max / d;
+                    dy *= max / d;
+                }
+                kx += dx;
+                ky += dy;
+            }
+            Paint knob = new Paint(fill);
+            knob.setColor(fillColor((keys & (DIRS[0] | DIRS[1] | DIRS[2] | DIRS[3])) != 0));
+            c.drawCircle(kx, ky, padR * 0.42f, knob);
+            c.drawCircle(kx, ky, padR * 0.42f, line);
+        } else if (dpadStyle == DPAD_BUTTONS) {
+            /* a round button each way */
+            float r = padR * 0.36f;
+            for (int i = 0; i < 4; i++) {
+                float x = dirX(cx, i), y = dirY(cy, i);
+                Paint f = new Paint(fill);
+                f.setColor(fillColor((keys & DIRS[i]) != 0));
+                c.drawCircle(x, y, r, f);
+                c.drawCircle(x, y, r, line);
+                arrow(c, new RectF(x - r * 0.75f, y - r * 0.75f, x + r * 0.75f, y + r * 0.75f), i, fill);
+            }
+        } else {
+            /* the cross, each arm lit while held */
+            float arm = padR * 0.36f;
+            RectF[] arms = {
+                new RectF(cx - arm, cy - padR, cx + arm, cy - arm),
+                new RectF(cx - arm, cy + arm, cx + arm, cy + padR),
+                new RectF(cx - padR, cy - arm, cx - arm, cy + arm),
+                new RectF(cx + arm, cy - arm, cx + padR, cy + arm),
+            };
+            Paint mid = new Paint(fill);
+            mid.setColor(fillColor(false));
+            c.drawRect(cx - arm, cy - arm, cx + arm, cy + arm, mid);
+            for (int i = 0; i < 4; i++) {
+                Paint armFill = new Paint(fill);
+                armFill.setColor(fillColor((keys & DIRS[i]) != 0));
+                c.drawRoundRect(arms[i], u, u, armFill);
+                c.drawRoundRect(arms[i], u, u, line);
+                arrow(c, arms[i], i, fill);
+            }
+        }
+        touchOpacity = was;
+    }
+
     /** A white triangle in a D-pad arm, pointing its way (0 up, 1 down,
      * 2 left, 3 right). */
-    private void arrow(Canvas c, RectF arm, int dir) {
+    private void arrow(Canvas c, RectF arm, int dir, Paint paint) {
         float cx = arm.centerX(), cy = arm.centerY();
         float k = Math.min(arm.width(), arm.height()) * 0.28f;
         Path p = new Path();
@@ -532,7 +621,7 @@ public class GameView extends View {
         default: p.moveTo(cx + k, cy); p.lineTo(cx - k * 0.6f, cy - k); p.lineTo(cx - k * 0.6f, cy + k); break;
         }
         p.close();
-        c.drawPath(p, fill);
+        c.drawPath(p, paint);
     }
 
     private void drawIcon(Canvas c, Bitmap icon, float cx, float cy, float size, int alpha) {
@@ -691,6 +780,7 @@ public class GameView extends View {
 
     void startEditing() {
         editing = true;
+        padOwner = -1;
         selected = -1;
         dragId = -1;
         touchKeys = 0;
@@ -863,20 +953,48 @@ public class GameView extends View {
 
     /* --- Touch --- */
 
+    /** Eight ways from an offset: each direction a 45-degree sector either
+     * side of its axis takes the diagonals with it; nothing inside `dead`. */
+    private static int directions(float dx, float dy, float dead) {
+        int k = 0;
+
+        if (Math.hypot(dx, dy) <= dead) {
+            return 0;
+        }
+        double a = Math.toDegrees(Math.atan2(dy, dx));
+        if (a > -67.5 && a < 67.5) k |= MainActivity.KEY_RIGHT;
+        if (a > 112.5 || a < -112.5) k |= MainActivity.KEY_LEFT;
+        if (a > 22.5 && a < 157.5) k |= MainActivity.KEY_DOWN;
+        if (a < -22.5 && a > -157.5) k |= MainActivity.KEY_UP;
+        return k;
+    }
+
+    /** The d-pad works by a finger's offset from an anchor (not by where
+     * the finger is): the joystick, and any floating style. */
+    private boolean padByOffset() {
+        return dpadFloating || dpadStyle == DPAD_STICK;
+    }
+
     private int keysAt(float x, float y) {
         int k = 0;
         float dx = x - padX, dy = y - padY;
         float d = (float) Math.hypot(dx, dy);
 
-        if (d < padR * 1.7f && d > padR * 0.18f) {
-            /* Eight ways: each direction a 45-degree sector either side of
-             * its axis takes the diagonals with it. */
-            double a = Math.toDegrees(Math.atan2(dy, dx));
-            if (a > -67.5 && a < 67.5) k |= MainActivity.KEY_RIGHT;
-            if (a > 112.5 || a < -112.5) k |= MainActivity.KEY_LEFT;
-            if (a > 22.5 && a < 157.5) k |= MainActivity.KEY_DOWN;
-            if (a < -22.5 && a > -157.5) k |= MainActivity.KEY_UP;
-            return k;
+        if (!padByOffset()) {
+            if (dpadStyle == DPAD_BUTTONS) {
+                /* each its own button: a finger between two presses both */
+                float r = padR * 0.36f * 1.4f;
+                for (int i = 0; i < 4; i++) {
+                    if (Math.hypot(x - dirX(padX, i), y - dirY(padY, i)) < r) {
+                        k |= DIRS[i];
+                    }
+                }
+                if (k != 0) {
+                    return k;
+                }
+            } else if (d < padR * 1.7f && d > padR * 0.18f) {
+                return directions(dx, dy, 0);
+            }
         }
         float da = (float) Math.hypot(x - aX, y - aY);
         float db = (float) Math.hypot(x - bX, y - bY);
@@ -957,13 +1075,44 @@ public class GameView extends View {
             swipeId = -1;
         }
         boolean shown = controlsShown();
+        /* the d-pad by offset: a finger takes it (the joystick's on it; a
+         * floating one anywhere on the left that isn't another button),
+         * until it lifts */
+        boolean tookPad = false;
+        if (shown && down && padByOffset() && padOwner < 0) {
+            float x = e.getX(index), y = e.getY(index);
+            boolean other = keysAt(x, y) != 0;
+            if (dpadFloating ? (x < getWidth() * 0.5f && !other)
+                    : Math.hypot(x - padX, y - padY) < padR * 1.3f) {
+                padOwner = id;
+                anchorX = dpadFloating ? x : padX;
+                anchorY = dpadFloating ? y : padY;
+                thumbX = x;
+                thumbY = y;
+                tookPad = true;
+            }
+        }
+        if ((up && id == padOwner) || action == MotionEvent.ACTION_CANCEL || !shown) {
+            padOwner = -1;
+        }
         /* the buttons */
         int k = 0;
         if (shown && action != MotionEvent.ACTION_CANCEL) {
             for (int i = 0; i < e.getPointerCount(); i++) {
-                if (!(up && i == index) && e.getPointerId(i) != gearId) {
+                int pid = e.getPointerId(i);
+                if ((up && i == index) || pid == gearId) {
+                    continue;
+                }
+                if (pid == padOwner) {
+                    thumbX = e.getX(i);
+                    thumbY = e.getY(i);
+                    k |= directions(thumbX - anchorX, thumbY - anchorY, padR * 0.22f);
+                } else {
                     k |= keysAt(e.getX(i), e.getY(i));
                 }
+            }
+            if (padOwner >= 0) {
+                invalidate(); /* the knob, or where the d-pad floats */
             }
         }
         if ((k & ~touchKeys) != 0) {
@@ -987,7 +1136,8 @@ public class GameView extends View {
         }
         /* a finger on the picture that isn't on a button: a tap there, or a
          * swipe that scrolls */
-        if (down && swipeId < 0 && (!shown || keysAt(e.getX(index), e.getY(index)) == 0)) {
+        if (down && swipeId < 0 && !tookPad && id != padOwner
+                && (!shown || keysAt(e.getX(index), e.getY(index)) == 0)) {
             swipeId = id;
             swipeX = e.getX(index);
             swipeY = swipeLastY = e.getY(index);

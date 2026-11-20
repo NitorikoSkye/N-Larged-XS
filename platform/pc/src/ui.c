@@ -610,6 +610,9 @@ static const struct Option sGameplay[] = {
       &gHostSettings.lookAround, sOffOn, 2, 0 },
     { "slide jump grace", "as in crash 2 and 3: a slide off a ledge can still jump for a moment.",
       OPT_CHOICE, &gHostSettings.slideGrace, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
+    { "ledge jump grace",
+      "coyote time: walking or running off a ledge can still jump for a moment.", OPT_CHOICE,
+      &gHostSettings.ledgeGrace, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
     { "jump buffer", "a pressed just before landing still jumps as you land.", OPT_CHOICE,
       &gHostSettings.jumpBuffer, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
     { "relaxed double jump", "the double jump works for the whole fall, not just near the top.",
@@ -648,6 +651,7 @@ static const char *const sTouchSizes[] = { "small", "medium", "large", "huge" };
 static const char *const sTouchMenus[] = { "levels", "always" };
 static const char *const sHaptics[] = { "off", "light", "strong" };
 static const char *const sTouchIcons[] = { "changing", "fixed" };
+static const char *const sDpadStyles[] = { "cross", "stick", "buttons" };
 void HostStreamEditLayout(void); /* stream.c */
 static const char *const sTextSizes[] = { "normal", "large" };
 
@@ -678,6 +682,12 @@ static const struct Option sPhoneTouch[] = {
       &gHostSettings.touchInMenus, sTouchMenus, 2, HOST_APPLY_VIDEO },
     { "haptics", "a buzz as you press an on-screen button.", OPT_CHOICE, &gHostSettings.haptics,
       sHaptics, 3, HOST_APPLY_VIDEO },
+    { "d-pad", "cross: the gba's. stick: a joystick. buttons: each way its own button.", OPT_CHOICE,
+      &gHostSettings.dpadStyle, sDpadStyles, 3, HOST_APPLY_VIDEO },
+    { "floating", "on: the d-pad appears wherever your left thumb lands.", OPT_CHOICE,
+      &gHostSettings.dpadFloating, sOffOn, 2, HOST_APPLY_VIDEO },
+    { "vibration", "the phone buzzes with hits, explosions, crates and bosses.", OPT_CHOICE,
+      &gHostSettings.rumble, sHaptics, 3, 0 },
     { "icons", "changing: each button shows what it does right now. fixed: always the same.",
       OPT_CHOICE, &gHostSettings.touchIcons, sTouchIcons, 2, 0 },
     { "layout", "move and resize the buttons: drag them, pinch, or - and +.", OPT_ACTION, NULL,
@@ -716,6 +726,8 @@ static const struct Option sPhoneGameplay[] = {
       &gHostSettings.lookAround, sOffOn, 2, 0 },
     { "slide grace", "as in crash 2 and 3: a slide off a ledge can still jump for a moment.",
       OPT_CHOICE, &gHostSettings.slideGrace, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
+    { "ledge", "ledge grace, coyote time: walking or running off a ledge can still jump a moment.",
+      OPT_CHOICE, &gHostSettings.ledgeGrace, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
     { "buffer", "jump buffer: a pressed just before landing still jumps as you land.", OPT_CHOICE,
       &gHostSettings.jumpBuffer, sSlideGraces, HOST_SLIDE_GRACE_COUNT, 0 },
     { "double jump", "relaxed: it works for the whole fall, not just near the top.", OPT_CHOICE,
@@ -728,8 +740,8 @@ static const struct Category sCategories[] = {
     { "general", "skipping the intro", sPhoneGeneral, COUNT(sPhoneGeneral) },
     { "display", "frame rate, scaling, filter, colours and borders", sPhoneDisplay,
       COUNT(sPhoneDisplay) },
-    { "touch", "the on-screen buttons: size, opacity, menus, haptics, icons and layout",
-      sPhoneTouch, COUNT(sPhoneTouch) },
+    { "touch", "the on-screen buttons: size, d-pad, haptics, vibration, icons, layout", sPhoneTouch,
+      COUNT(sPhoneTouch) },
     { "interface", "text size, hud and button prompts", sPhoneInterface, COUNT(sPhoneInterface) },
     { "audio", "quality, and master, music and sound fx volume", sPhoneAudio, COUNT(sPhoneAudio) },
     { "gameplay", "auto save, looking around, jumps and lives", sPhoneGameplay,

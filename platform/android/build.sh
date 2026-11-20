@@ -23,7 +23,9 @@ SDK=/usr/lib/android-sdk
 JAR=$SDK/platforms/android-23/android.jar
 J=$(nproc)
 VERSION=$(sed -n 's/^#define HOST_PORT_VERSION "v\(.*\)"/\1/p' platform/pc/src/host_platform.h)
-CODE=$(echo "$VERSION" | awk -F. '{ printf "%d", $1 * 100 + $2 }')
+# the build number: major, minor and patch as one number that only goes up
+# (0.51.1 -> 5101, 0.52 -> 5200; v0.51 was 51, before the patch numbers)
+CODE=$(echo "$VERSION" | awk -F. '{ printf "%d", $1 * 10000 + $2 * 100 + $3 }')
 MC=platform/android/musl-cc
 
 echo "== the cores (v$VERSION)"

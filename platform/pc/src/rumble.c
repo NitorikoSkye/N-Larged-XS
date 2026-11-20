@@ -9,7 +9,9 @@
  * yeti's stomp) scales it, and only effects in a level count (the
  * company logos and the cutscenes use some of them too). Every open
  * controller that can rumble does (SDL_GameControllerRumble); the next
- * one replaces the last unless it's weaker. */
+ * one replaces the last unless it's weaker. On Android (HOST_ANDROID) the
+ * same table buzzes the phone, or the controller in use (the app does
+ * that, from stream.c's message 9). */
 
 #include <stddef.h>
 
@@ -22,10 +24,6 @@
 extern s32 gHostPlayingLevel;
 
 void __real__ZN6Engine5Audio12AudioContext7PlaySfxEjj(void *self, u32 id, u32 volume);
-
-#ifdef HOST_SDL
-
-#include <SDL.h>
 
 struct Buzz {
     u8 id;
@@ -59,6 +57,10 @@ static const struct Buzz sBuzz[] = {
     { SFX_GEM, 90, 140, 220 },
     { SFX_EXTRA_LIFE, 40, 90, 90 },
 };
+
+#ifdef HOST_SDL
+
+#include <SDL.h>
 
 static Uint32 sUntil;
 static u32 sStrength; /* of the one buzzing */
@@ -106,6 +108,54 @@ static void Rumble(u32 id, u32 volume)
     for (i = 0; i < sizeof(sBuzz) / sizeof(sBuzz[0]); i++) {
         if (sBuzz[i].id == id) {
             Buzz(&sBuzz[i], volume);
+            return;
+        }
+    }
+}
+
+#elif defined(HOST_ANDROID)
+
+/* The phone (Touch's vibration, the same setting): its one motor, as
+ * strong as the controller's stronger one would be; the app vibrates the
+ * controller in use instead when it can (stream.c's message 9). */
+void HostStreamRumble(u32 strength, u32 ms); /* stream.c */
+char *getenv(const char *name);
+
+static u32 sUntilFrame;
+static u32 sStrength; /* of the one buzzing */
+
+static void Rumble(u32 id, u32 volume)
+{
+    size_t i;
+
+    /* HOST_RUMBLE_LOG=1: headless runs log what they'd send (the tests) */
+    int log = getenv("HOST_RUMBLE_LOG") != NULL;
+
+    if ((gHostSettings.rumble == 0 && !log) || (gHostOptions.headless && !log) ||
+        gHostPlayingLevel < 0) {
+        return;
+    }
+    for (i = 0; i < sizeof(sBuzz) / sizeof(sBuzz[0]); i++) {
+        if (sBuzz[i].id == id) {
+            const struct Buzz *b = &sBuzz[i];
+            u32 scale = gHostSettings.rumble == 1 ? 128 : 256; /* light, strong (tests: strong) */
+            u32 top = b->low > b->high ? b->low : b->high;
+            u32 strength = top * scale / 256 * (volume > 0x100 ? 0x100 : volume) / 0x100;
+            u32 now = HostFrame();
+
+            if (strength < 8) {
+                return;
+            }
+            if ((s32)(sUntilFrame - now) > 0 && strength < sStrength) {
+                return; /* a stronger one is still buzzing */
+            }
+            sUntilFrame = now + b->ms * 60 / 1000;
+            sStrength = strength;
+            if (log) {
+                HostLogf("rumble %u: sfx 0x%02x strength %u for %u ms\n", now, b->id, strength,
+                         b->ms);
+            }
+            HostStreamRumble(strength, b->ms);
             return;
         }
     }

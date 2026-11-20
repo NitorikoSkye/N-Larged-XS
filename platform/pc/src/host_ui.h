@@ -115,6 +115,7 @@ struct HostSettings {
     int lookAround;     /* look up/down (look_hook.cpp) */
     int slideGrace;     /* HOST_SLIDE_GRACE_*: the slide jump's grace (gameplay_hooks.cpp) */
     int jumpBuffer;     /* the same frames' choices: a press before landing jumps on it */
+    int ledgeGrace;     /* coyote time off a ledge: HOST_SLIDE_GRACE_* frames */
     int lateDoubleJump; /* the double jump for the whole fall */
     int infiniteLives;
     /* Extras: Discord Rich Presence (discord.c) */
@@ -129,6 +130,8 @@ struct HostSettings {
     int haptics;      /* 0 off, 1 light, 2 strong */
     int textSize;     /* the settings menu's text: 0 normal, 1 large */
     int touchIcons;   /* HOST_TOUCH_ICONS_*: the buttons' icons follow the game */
+    int dpadStyle;    /* 0 cross, 1 joystick, 2 a button each way */
+    int dpadFloating; /* the d-pad appears where the left thumb lands */
 };
 extern struct HostSettings gHostSettings;
 

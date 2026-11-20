@@ -18,7 +18,8 @@
  * - type 4, the settings the app uses (HOST_ANDROID builds: phone.c), as
  *   little-endian s32s: the touch controls' size, opacity and whether
  *   they show in menus, the haptics, the scaling, the filter, the frames
- *   a second, the borders; at the start and when they change;
+ *   a second, the borders, the d-pad's style and whether it floats; at
+ *   the start and when they change;
  * - type 5, a toast's text (auto save's "saved");
  * - type 6, a themed border's bar (borders.c; SendBar below), when it
  *   changes;
@@ -26,7 +27,9 @@
  *   (HOST_ICON_*, HOST_ICON_DIM; touch_context.cpp), when they change in
  *   a level;
  * - type 8, open the touch buttons' layout editor (Touch's layout; no
- *   bytes): the app draws it over the settings menu, which stays open.
+ *   bytes): the app draws it over the settings menu, which stays open;
+ * - type 9, a buzz (rumble.c): its strength (a byte, 1-255), a byte
+ *   unused, its length in ms (u16).
  * In, on stdin, 8-byte messages: a type byte, a byte unused, then up to
  * three little-endian u16s:
  * - 1, the GBA's keys held (KEYINPUT's bits, set for pressed);
@@ -378,6 +381,20 @@ static void ReadInput(int menu)
 /* --- What goes to the app ---------------------------------------------------- */
 
 #ifdef HOST_ANDROID
+/* A buzz for the phone or the controller in use (message 9; rumble.c). */
+void HostStreamRumble(u32 strength, u32 ms)
+{
+    u8 m[4];
+
+    if (gHostStream) {
+        m[0] = (u8)(strength > 255 ? 255 : strength);
+        m[1] = 0;
+        m[2] = (u8)ms;
+        m[3] = (u8)(ms >> 8);
+        Message(9, m, sizeof(m));
+    }
+}
+
 /* Touch's layout: the app's editor (message 8). */
 void HostStreamEditLayout(void)
 {
@@ -412,7 +429,7 @@ static void SendState(int mode)
     }
 #endif
     if (sSettingsDirty) {
-        s32 v[8];
+        s32 v[10];
 
         sSettingsDirty = 0;
         v[0] = gHostSettings.touchSize;
@@ -423,6 +440,8 @@ static void SendState(int mode)
         v[5] = gHostSettings.filter;
         v[6] = gHostFpsValues[gHostSettings.frameRate];
         v[7] = gHostSettings.borders;
+        v[8] = gHostSettings.dpadStyle;
+        v[9] = gHostSettings.dpadFloating;
         Message(4, v, sizeof(v));
     }
 }

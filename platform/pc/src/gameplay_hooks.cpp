@@ -15,6 +15,17 @@
  * works from it as from the slide's). Room for the jump's animation is
  * checked as the slide checks it. HOST_SLIDE_GRACE=N for the tests.
  *
+ * Ledge jump grace: coyote time for walking or running off a ledge. The
+ * game has a little of its own: while the floor's probe has tried at most
+ * twice (ActionCtrl::CheckLeftGround), Crash is "just off the ground"
+ * (ACTION_STATE_LEFT_GROUND, StateLeftGround), where A still jumps; then
+ * the fall (ACTION_STATE_AIRBORNE_FALL, animation 0x1B), whose state
+ * (StateAirborne) doesn't. Here, for the setting's frames (off, 4, 6, 8 or
+ * 10) from the frame the floor went (its own frames included), A pressed
+ * in that fall does what StateLeftGround does with A: the jump (state
+ * ACTION_STATE_JUMP, animation 0x13, Y entry 7). Not after a slide (the
+ * slide's own grace) or a jump. HOST_LEDGE_GRACE=N for the tests.
+ *
  * Jump buffer: the game jumps only on the frame A goes down with Crash on
  * the ground, so a press a frame or two before landing is lost. Here a
  * press in the air (one the double jump didn't take) is remembered, and
@@ -113,6 +124,35 @@ static int Setting(const char *env, int *cache, int value)
     return *cache > 0 ? *cache : value;
 }
 
+static const int sGraceChoices[HOST_SLIDE_GRACE_COUNT] = { 0, 4, 6, 8, 10 };
+
+static int LedgeFrames(void)
+{
+    static int sEnv = -1;
+    int i = gHostSettings.ledgeGrace;
+
+    return Setting("HOST_LEDGE_GRACE", &sEnv,
+                   i > 0 && i < HOST_SLIDE_GRACE_COUNT ? sGraceChoices[i] : 0);
+}
+
+/* The ledge grace: the frame the floor went under a walk or a run, and
+ * the last frame of that fall seen (a gap: a new one). */
+static u32 sLedgeStart, sLedgeLast;
+static int sLedgeFromSlide;
+static u32 sSlideLast; /* the last frame in the slide's state */
+
+/* A frame off a ledge (StateLeftGround's, or the fall's): counts it. */
+static void LedgeFrame(void)
+{
+    u32 now = HostFrame();
+
+    if (now - sLedgeLast > 1) {
+        sLedgeStart = now;
+        sLedgeFromSlide = now - sSlideLast <= 1;
+    }
+    sLedgeLast = now;
+}
+
 static int BufferFrames(void)
 {
     static const int frames[HOST_SLIDE_GRACE_COUNT] = { 0, 4, 6, 8, 10 };
@@ -174,12 +214,26 @@ __attribute__((aligned(4))) void __wrap__ZN4Game5Crash10ActionCtrl10StateSlideEv
 __attribute__((aligned(4))) void
 __wrap__ZN4Game5Crash10ActionCtrl13StateAirborneEv(ActionCtrl *self);
 __attribute__((aligned(4))) void __wrap__ZN4Game5Crash10ActionCtrl9StateLandEv(ActionCtrl *self);
+__attribute__((aligned(4))) void
+__wrap__ZN4Game5Crash10ActionCtrl15StateLeftGroundEv(ActionCtrl *self);
+
+void __real__ZN4Game5Crash10ActionCtrl15StateLeftGroundEv(ActionCtrl *self);
+
+void __wrap__ZN4Game5Crash10ActionCtrl15StateLeftGroundEv(ActionCtrl *self)
+{
+    if ((self->part->hitAxes & PART_DIR_DOWN) == 0) {
+        LedgeFrame();
+    }
+    Log("left", self);
+    __real__ZN4Game5Crash10ActionCtrl15StateLeftGroundEv(self);
+}
 
 void __wrap__ZN4Game5Crash10ActionCtrl10StateSlideEv(ActionCtrl *self)
 {
     int grace = GraceFrames();
 
     Log("slide", self);
+    sSlideLast = HostFrame();
     if (grace > 0) {
         if (self->part->hitAxes != 0) {
             /* on the ground: the grace starts when it goes */
@@ -210,6 +264,23 @@ void __wrap__ZN4Game5Crash10ActionCtrl13StateAirborneEv(ActionCtrl *self)
     if (self->state == ACTION_STATE_AIRBORNE_FALL && sGrace >= 0 && GraceJump(self)) {
         sBufferedAt = 0;
         return;
+    }
+    /* a fall off a ledge (not a jump's: no jump yet, the fall's animation) */
+    if (self->state == ACTION_STATE_AIRBORNE_FALL && self->frame == 0 && self->part->tag == 0x1B) {
+        int frames = LedgeFrames();
+
+        LedgeFrame();
+        if (frames > 0 && !sLedgeFromSlide && HostFrame() - sLedgeStart < (u32)frames &&
+            (gKeys.half.pressed & A_BUTTON)) {
+            /* StateLeftGround's jump */
+            self->SetMode(ACTION_STATE_JUMP);
+            self->SetTargetAnim(self->part, 0x13);
+            self->frame = 0;
+            self->QueueY(0, 1, 7);
+            sBufferedAt = 0;
+            Log("LEDGE JUMP", self);
+            return;
+        }
     }
     __real__ZN4Game5Crash10ActionCtrl13StateAirborneEv(self);
     /* a press the double jump didn't take: for the landing */

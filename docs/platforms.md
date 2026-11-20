@@ -557,6 +557,20 @@ frames into a jump does nothing normally and flips with it on, A near
 the top flips either way, and a third press after the double jump does
 nothing. HOST_LATE_DOUBLE_JUMP=1.
 
+*Ledge jump grace* (v0.51.1; off, 4, 6, 8 or 10 frames): coyote time off
+a ledge. The game's own: CheckLeftGround puts Crash "just off the ground"
+(ACTION_STATE_LEFT_GROUND, StateLeftGround, where A jumps) only while the
+floor's probe has tried at most twice; walking off Jungle Jam's waterfall
+ledge goes straight to the fall (ACTION_STATE_AIRBORNE_FALL, animation
+0x1B, frame 1658), whose state doesn't jump: no grace at all there.
+StateLeftGround's wrapper (and StateAirborne's, in that fall) counts the
+frames from the floor going; within the setting's, A pressed in the fall
+does StateLeftGround's jump (ACTION_STATE_JUMP, animation 0x13, Y entry
+7). Not after a slide (StateSlide's wrapper notes its last frame: the
+slide's own grace) or a jump (the jumps counter, the animation). Tested:
+A 3 frames off the ledge jumps with 6 (Crash rises 35 px) and not with it
+off; A 9 frames off doesn't with 6. HOST_LEDGE_GRACE=N.
+
 *Infinite lives* (v0.49): LevelState::LoseLife (every death's; time
 trials already lose none) only shows the lives counter; a death still
 restarts at the checkpoint. From v0.50 the count is an infinity sign
@@ -679,6 +693,23 @@ ways. What the phone build adds:
   1, 8, 12, 16, 20; the jetpack levels 6, 14, 17 and the hovercraft 21;
   the polar rides, levels 3, 5 and 10's room 1). The app fades between
   icons (140 ms) and draws a faint one at a third.
+- *D-pad styles* (v0.51.1; settings message's v[8], v[9]): Touch's d-pad
+  is the cross, a joystick or a button each way, and floating or not.
+  The joystick and any floating style go by a finger's offset from an
+  anchor (the joystick's centre; where a floating one was touched, on
+  the left half, off the other buttons): eight ways past a dead zone of
+  a fifth of its radius, the knob following the thumb. Fixed, the cross
+  goes by where the finger is (as before) and the buttons each by their
+  own circle (between two: both). A floating d-pad rests, faint, at its
+  place (the layout editor's).
+- *Vibration* (v0.51.1; rumble.c's HOST_ANDROID part, message 9): the PC
+  port's rumble table (sound effects in a level) as a strength (the
+  stronger motor's, Touch's vibration light or strong, the effect's
+  volume) and a length; the app vibrates the controller used last if it
+  has a motor, else the phone (VibrationEffect by reflection on 26 and
+  up: the app builds against API 23). HOST_RUMBLE_LOG=1 logs them in
+  headless runs (tested: crates 110, a bounce 45, the pit's death 230 for
+  380 ms).
 - *Layout editor* (v0.51; message 8, sent by Touch's layout): the app
   draws it over the settings menu (which stays open, the game waiting):
   drag a control, pinch it or - and + (0.6 to 2 times), Reset, Done or
