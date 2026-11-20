@@ -79,14 +79,15 @@ static u32 sPauseFrame;
  * wrapper below takes it and opens the settings menu, over the pause
  * menu, which waits for it). Six rows in a time trial ("restart trial"
  * last) are closer together to fit. */
-/* HOST_GAME_MENUS_ONLY=1: neither the row nor the warp room's cog, for the
- * tests that compare pictures with the game's own (the regressions). */
+/* Headless runs (the tests, which compare the game's pictures with its
+ * own and mGBA's) leave the row and the warp room's cog out, as they leave
+ * the options out; HOST_PORT_MENUS=1 puts them in, to test them. */
 static int GameOnlyTest(void)
 {
     static int sOn = -1;
 
     if (sOn < 0) {
-        sOn = getenv("HOST_GAME_MENUS_ONLY") != NULL;
+        sOn = gHostOptions.headless && getenv("HOST_PORT_MENUS") == NULL;
     }
     return sOn;
 }

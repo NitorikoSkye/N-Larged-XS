@@ -278,11 +278,11 @@ the panel's dark at 150), and the warp room's cog (top right, art (220,
 4): cog_glyph.h from tools/cog_glyph.py, the small font's palette indices,
 one 16x16 OBJ in palette 15 drawn after the hint; a click or a tap on it
 opens them). On Android the app's cog is gone: a cross at the top middle
-closes the settings while they're open. HOST_GAME_MENUS_ONLY=1 leaves
-the row and the cog out, for the regressions that compare pictures with
-the game's own (with it they match exactly; without, the pause menu's and
-the warp room's frames differ by the row and the cog, and the cog's tiles
-stay in unused OBJ VRAM). It is drawn
+closes the settings while they're open. Headless runs leave the
+row and the cog out (the regressions and CI's comparisons with mGBA see
+the game's own menus: they match exactly); HOST_PORT_MENUS=1 puts them in,
+to test them (then the pause menu's and the warp room's frames differ by
+the row and the cog, and the cog's tiles stay in unused OBJ VRAM). It is drawn
 by the platform in the game's own style from the game's own pieces
 (tools/ui_assets.py writes the HUD fonts and the pause screen's art as C):
 the categories in the pause screen's left box, a category's options in
