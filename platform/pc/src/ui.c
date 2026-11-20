@@ -646,7 +646,6 @@ static const struct Option sExtras[] = {
 #ifdef HOST_ANDROID
 /* The Android app's menu (phone.c keeps the settings; the app draws the
  * picture and the touch controls as they say). */
-static const char *const sPhoneFilters[] = { "pixels", "smooth" };
 static const char *const sTouchSizes[] = { "small", "medium", "large", "huge" };
 static const char *const sTouchMenus[] = { "levels", "always" };
 static const char *const sHaptics[] = { "off", "light", "strong" };
@@ -665,10 +664,16 @@ static const struct Option sPhoneDisplay[] = {
       &gHostSettings.frameRate, sFpsNames, HOST_FPS_COUNT, HOST_APPLY_VIDEO, FpsAvailable },
     { "scaling", "fit keeps the shape, integer keeps pixels even.", OPT_CHOICE,
       &gHostSettings.scaling, sScalings, HOST_SCALING_COUNT, HOST_APPLY_VIDEO },
-    { "filter", "sharp pixels, or smoothed as they are scaled up.", OPT_CHOICE,
-      &gHostSettings.filter, sPhoneFilters, 2, HOST_APPLY_VIDEO },
+    { "filter", "how the pixels are scaled up. cartoon smooths the outlines.", OPT_CHOICE,
+      &gHostSettings.filter, sFilters, HOST_FILTER_COUNT, HOST_APPLY_VIDEO },
+    { "scanlines", "dark lines between the rows of pixels, like a crt.", OPT_CHOICE,
+      &gHostSettings.scanlines, sScanlines, 3, HOST_APPLY_VIDEO },
+    { "lcd grid", "the gaps between the pixels of the gba's screen.", OPT_CHOICE,
+      &gHostSettings.lcdGrid, sOffOn, 2, HOST_APPLY_VIDEO },
     { "colours", "the game's own colours, or as the gba's darker screen shows them.", OPT_CHOICE,
       &gHostSettings.colors, sColorModes, 2, HOST_APPLY_VIDEO },
+    { "ghosting", "lcd ghosting: each frame fades out slowly, as on the gba's screen.", OPT_CHOICE,
+      &gHostSettings.ghosting, sOffOn, 2, HOST_APPLY_VIDEO },
     { "borders", "beside the picture: black, its colours blurred, or the world's art.", OPT_CHOICE,
       &gHostSettings.borders, sBorders, HOST_BORDERS_COUNT, HOST_APPLY_VIDEO, NULL, NotStretched },
 };
@@ -738,7 +743,7 @@ static const struct Option sPhoneGameplay[] = {
 
 static const struct Category sCategories[] = {
     { "general", "skipping the intro", sPhoneGeneral, COUNT(sPhoneGeneral) },
-    { "display", "frame rate, scaling, filter, colours and borders", sPhoneDisplay,
+    { "display", "frame rate, scaling, filters, screen effects and borders", sPhoneDisplay,
       COUNT(sPhoneDisplay) },
     { "touch", "the on-screen buttons: size, d-pad, haptics, vibration, icons, layout", sPhoneTouch,
       COUNT(sPhoneTouch) },

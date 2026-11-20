@@ -1,0 +1,9 @@
+#pragma once
+#include <limits.h>
+namespace std {
+template <class T> struct numeric_limits;
+template <> struct numeric_limits<int> {
+    static constexpr int min() { return INT_MIN; }
+    static constexpr int max() { return INT_MAX; }
+};
+} // namespace std

@@ -55,8 +55,9 @@ drawn in the game's style, with the phone's own options:
 - **General:** skip intro.
 - **Display:** frame rate (60, or 120 on a 120 Hz screen: pictures between
   the game's own, the game at its own speed), scaling (fit, integer,
-  stretch), filter (pixels or smooth), colours (the game's own, or the
-  GBA's darker screen), borders beside the picture (black, ambient: its
+  stretch), filter (as on PC: pixels, smooth, sharp smooth, scale2x,
+  scale3x, cartoon and cartoon soft), scanlines (off, light, dark), LCD
+  grid, colours (the game's own, or the GBA's darker screen), LCD ghosting, borders beside the picture (black, ambient: its
   colours blurred, or themed: the PC port's warp room walls, with the
   level's porthole and name on the left and your progress on the right,
   both kept above the touch buttons).

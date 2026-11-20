@@ -110,13 +110,18 @@ def main():
         kind, n = struct.unpack("<II", head)
         body = p.stdout.read(n)
         if kind == 1:
-            w, h = (240, 160) if n == 240 * 160 * 2 else (480, 320)
+            # any 3:2 size: 240x160, or 480x320 / 720x480 (120 a second,
+            # the scalers)
+            w = int(round((n / 2 * 1.5) ** 0.5))
+            h = w * 2 // 3
+            if last is None or last[0] != w:
+                print(f"{pictures}: picture {w}x{h}")
             last = (w, h, body)
             pictures += 1
         elif kind == 3:
             print(f"{pictures}: touch {TOUCH.get(body[0], body[0])}")
         elif kind == 4:
-            print(f"{pictures}: settings {struct.unpack('<8i', body)}")
+            print(f"{pictures}: settings {struct.unpack('<%di' % (len(body) // 4), body)}")
         elif kind == 5:
             print(f"{pictures}: toast {body.decode()}")
         elif kind == 6:

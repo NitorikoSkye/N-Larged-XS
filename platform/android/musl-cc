@@ -18,9 +18,16 @@ ZIG=$(python3 -c "import ziglang, os; print(os.path.dirname(ziglang.__file__))")
 INC=$ZIG/lib/libc/include
 M=$(pwd)/build/android/musl/$ARCH
 
+# C++: the few C++ library pieces xBRZ uses, on musl (platform/pc/xbrz/minstd;
+# GCC's libstdc++ headers assume glibc).
+CXXINC=
+if [ "$DRV" = g++ ]; then
+    CXXINC="-isystem $(cd "$(dirname "$0")/../pc/xbrz/minstd" && pwd)"
+fi
+
 case " $* " in
 *" -c "*|*" -E "*|*" -S "*)
-    exec $GCC -nostdinc -isystem "$($GCC -print-file-name=include)" \
+    exec $GCC -nostdinc $CXXINC -isystem "$($GCC -print-file-name=include)" \
         -isystem $INC/$ARCH-linux-musl -isystem $INC/generic-musl \
         -isystem $INC/$ARCH-linux-any -isystem $INC/any-linux-any \
         -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=0 -fno-stack-protector "$@" ;;

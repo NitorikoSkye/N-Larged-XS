@@ -99,7 +99,7 @@ void HostFrontendInit(void);
  * and the Windows executable is CrashBandicootXS-<version>.exe
  * (platform.mk reads the version from here). */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.52"
+#define HOST_PORT_VERSION "v0.52.1"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);
@@ -175,6 +175,13 @@ static inline int HostPromptGlyph(u32 attr0, u32 attr2)
 /* A line on stderr (main.c), for the C++ hooks, which can't include
  * <stdio.h>. */
 void HostLogf(const char *fmt, ...);
+/* scalers.c: Scale2x and Scale3x (EPX), w x h in, 2w x 2h (3w x 3h) out. */
+void HostScale2x(const u32 *in, u32 *out, int w, int h);
+void HostScale3x(const u32 *in, u32 *out, int w, int h);
+/* xbrz/xbrz_c.cpp: xBRZ (the cartoon filters), lines yFirst to yLast. */
+void HostXbrzScale(int factor, const unsigned int *src, unsigned int *dst, int w, int h, int yFirst,
+                   int yLast);
+void HostXbrzWarm(void);
 
 /* Ends the run: prints how it ended and exits with `status`. */
 void HostExit(int status, const char *how);

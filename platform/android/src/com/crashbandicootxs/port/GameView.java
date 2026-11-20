@@ -21,8 +21,12 @@ import java.nio.ByteBuffer;
  * The game's picture and the touch controls (platform/android/README.md).
  *
  * The picture is scaled as the settings say (fit, whole multiples, or
- * stretched; sharp or smooth), from the core's 240x160 pictures or, at 120
- * frames a second, its 480x320 ones.
+ * stretched), with Display's filter as on PC: pixels, smooth, sharp smooth
+ * (whole pixels up, then smoothly down), the scalers (Scale2x, Scale3x, the
+ * cartoon xBRZ: the core sends their 2x or 3x pictures, and LCD ghosting
+ * blended in) and the scanlines' and LCD grid's mask over it. The core's
+ * pictures are 240x160, or 480x320 at 120 frames a second, or the
+ * scalers'.
  *
  * What a touch does follows the core's touch mode (stream.c): in a level,
  * the GBA's buttons on the screen (the D-pad on the left, A and B on the
@@ -67,9 +71,10 @@ public class GameView extends View {
     static final int MODE_PLAY = 0, MODE_MENU = 1, MODE_SETTINGS = 2, MODE_ANY = 3;
 
     private final MainActivity activity;
-    private final Bitmap small = Bitmap.createBitmap(W, H, Bitmap.Config.RGB_565);
-    private final Bitmap large = Bitmap.createBitmap(W * 2, H * 2, Bitmap.Config.RGB_565);
-    private Bitmap shown = small;
+    /* The pictures by their scale: 1x, 2x (120 a second, Scale2x, cartoon
+     * soft), 3x (Scale3x, cartoon), made as they first come. */
+    private final Bitmap[] byScale = new Bitmap[4];
+    private Bitmap shown = picture(1);
     private volatile byte[] pending;
     private volatile int pendingW = W;
     private volatile String error;
@@ -89,7 +94,18 @@ public class GameView extends View {
     private boolean touchInMenus;
     private int haptics = 1;
     private int scaling;
-    private boolean smooth;
+    /* Display's filter (HOST_FILTER_*: 0 pixels, 1 smooth, 2 sharp smooth,
+     * 3 Scale2x, 4 Scale3x, 5 cartoon, 6 cartoon soft; the scalers and the
+     * ghosting are the core's, the scaling and the masks the app's),
+     * scanlines (0-2) and the LCD grid. */
+    private int filter;
+    private int scanlines;
+    private boolean lcdGrid;
+    private Bitmap mask;      /* the scanlines' and grid's, at the picture's size */
+    private int maskKind = -1;
+    private Bitmap sharp;     /* sharp smooth's whole-pixel step */
+    private Canvas sharpCanvas;
+    private final Paint multiply = new Paint();
     private volatile int mode = MODE_ANY;
     private int borders = 2;
     /* Touch's d-pad: 0 the cross, 1 a joystick, 2 a button each way; and
@@ -264,7 +280,9 @@ public class GameView extends View {
         touchInMenus = v[2] != 0;
         haptics = v[3];
         scaling = v[4];
-        smooth = v[5] != 0;
+        filter = v[5];
+        scanlines = v.length > 10 ? v[10] : 0;
+        lcdGrid = v.length > 11 && v[11] != 0;
         borders = v.length > 7 ? v[7] : 0;
         dpadStyle = v.length > 8 ? Math.max(0, Math.min(2, v[8])) : 0;
         dpadFloating = v.length > 9 && v[9] != 0;
@@ -369,14 +387,13 @@ public class GameView extends View {
         byte[] p = pending;
 
         if (p != null) {
-            shown = pendingW == W ? small : large;
+            shown = picture(Math.max(1, Math.min(3, pendingW / W)));
             shown.copyPixelsFromBuffer(ByteBuffer.wrap(p));
             pending = null;
         }
         pixels.setFilterBitmap(false);
         drawBorders(c);
-        pixels.setFilterBitmap(smooth);
-        c.drawBitmap(shown, null, gameRect, pixels);
+        drawPicture(c);
         if (error != null) {
             drawError(c, error);
             return;
@@ -391,6 +408,88 @@ public class GameView extends View {
         if (mode == MODE_SETTINGS) {
             drawGear(c); /* the settings menu's close button */
         }
+    }
+
+    private Bitmap picture(int k) {
+        if (byScale[k] == null) {
+            byScale[k] = Bitmap.createBitmap(W * k, H * k, Bitmap.Config.RGB_565);
+        }
+        return byScale[k];
+    }
+
+    /** The picture into its place as Display's filter scales it, then the
+     * scanlines' and LCD grid's mask multiplied over it (as on PC, sdl.c). */
+    private void drawPicture(Canvas c) {
+        int gw = gameRect.width(), gh = gameRect.height();
+        boolean linear = filter == 1 || filter == 5 || filter == 6;
+
+        if (filter == 2 && (gw > shown.getWidth() || gh > shown.getHeight())) {
+            /* sharp smooth: whole pixels up to at or above the place's
+             * size, then smoothly down to it: square pixels, soft edges */
+            int k = Math.max(1, (gh + shown.getHeight() - 1) / shown.getHeight());
+            int tw = shown.getWidth() * k, th = shown.getHeight() * k;
+            if (tw > 4096 || th > 4096) {
+                k = Math.max(1, 4096 / shown.getWidth());
+                tw = shown.getWidth() * k;
+                th = shown.getHeight() * k;
+            }
+            if (sharp == null || sharp.getWidth() != tw || sharp.getHeight() != th) {
+                sharp = Bitmap.createBitmap(tw, th, Bitmap.Config.RGB_565);
+                sharpCanvas = new Canvas(sharp);
+            }
+            pixels.setFilterBitmap(false);
+            sharpCanvas.drawBitmap(shown, null, new Rect(0, 0, tw, th), pixels);
+            pixels.setFilterBitmap(true);
+            c.drawBitmap(sharp, null, gameRect, pixels);
+        } else {
+            pixels.setFilterBitmap(linear);
+            c.drawBitmap(shown, null, gameRect, pixels);
+        }
+        int kind = scanlines + (lcdGrid ? 3 : 0);
+        if (kind != 0 && gw > 0 && gh > 0) {
+            if (mask == null || maskKind != kind || mask.getWidth() != gw || mask.getHeight() != gh) {
+                mask = makeMask(gw, gh, kind);
+                maskKind = kind;
+                multiply.setXfermode(new android.graphics.PorterDuffXfermode(android.graphics.PorterDuff.Mode.MULTIPLY));
+            }
+            c.drawBitmap(mask, gameRect.left, gameRect.top, multiply);
+        }
+    }
+
+    /** The mask at the picture's size on the screen: each GBA row (and
+     * column) gets its line however it is scaled (sdl.c's MaskTexture). */
+    private static Bitmap makeMask(int w, int h, int kind) {
+        int[] row = new int[w];
+        Bitmap m = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        double[] colGrid = new double[w];
+
+        for (int x = 0; x < w; x++) {
+            double fx = (x + 0.5) * W / w;
+            colGrid[x] = kind >= 3 && fx - Math.floor(fx) > 0.78 ? 0.80 : 1.0;
+        }
+        for (int y = 0; y < h; y++) {
+            double fy = (y + 0.5) * H / h;
+            double ry = fy - Math.floor(fy);
+            double v = 1.0;
+            if (kind % 3 != 0) {
+                /* scanlines: the bottom third of each row, light or dark */
+                double depth = kind % 3 == 1 ? 0.30 : 0.55;
+                if (ry > 0.67) {
+                    v = 1.0 - depth;
+                } else if (ry > 0.55) {
+                    v = 1.0 - depth / 2;
+                }
+            }
+            if (kind >= 3 && ry > 0.78) {
+                v *= 0.80; /* the LCD grid: the gaps at each pixel's right and bottom */
+            }
+            for (int x = 0; x < w; x++) {
+                int g = (int) (v * colGrid[x] * 255 + 0.5);
+                row[x] = 0xFF000000 | g << 16 | g << 8 | g;
+            }
+            m.setPixels(row, 0, w, 0, y, w, 1);
+        }
+        return m;
     }
 
     private void drawBorders(Canvas c) {

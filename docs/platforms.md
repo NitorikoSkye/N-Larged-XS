@@ -733,6 +733,24 @@ ways. What the phone build adds:
   up: the app builds against API 23). HOST_RUMBLE_LOG=1 logs them in
   headless runs (tested: crates 110, a bounce 45, the pit's death 230 for
   380 ms).
+- *Filters* (v0.52.1): Display has the PC port's Graphics: the filter
+  (pixels, smooth, sharp smooth, scale2x, scale3x, cartoon, cartoon
+  soft), scanlines, the LCD grid, colours and LCD ghosting. The core
+  (stream.c's SendGame) runs the scalers on the 1x picture (the pictures
+  between frames drawn at 1x for them): Scale2x and cartoon soft (xBRZ)
+  2x, Scale3x and cartoon (xBRZ) 3x, all at most 2x at 120 a second, and
+  blends the ghosting (half a picture each 60th); the app (GameView)
+  scales the picture it gets: nearest, linear (smooth, the cartoons), or
+  sharp smooth (nearest to whole pixels at or above its place, then
+  linear down), and multiplies the scanlines' and grid's mask over it
+  (the settings message's v[10], v[11]; made at the picture's place as
+  sdl.c's MaskTexture). Scale2x and Scale3x are scalers.c's now (sdl.c's
+  too); xBRZ is built for the Android cores as well: the musl ones with
+  platform/pc/xbrz/minstd (the few C++ library pieces it uses: GCC's
+  libstdc++ headers assume glibc), no thread-safe statics and plain
+  atexit (no libstdc++ guards or crtbegin's __dso_handle there). Tested
+  with stream_test.py on the cores (x86-64 musl natively, ARM64 under
+  qemu): the picture sizes per filter, 120 a second's cap.
 - *Layout editor* (v0.51; message 8, sent by Touch's layout): the app
   draws it over the settings menu (which stays open, the game waiting):
   drag a control, pinch it or - and + (0.6 to 2 times), Reset, Done or

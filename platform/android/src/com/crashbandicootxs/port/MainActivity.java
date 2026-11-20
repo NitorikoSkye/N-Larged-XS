@@ -331,14 +331,13 @@ public class MainActivity extends Activity {
                 byte[] data = new byte[n];
                 in.readFully(data);
                 if (type == 1) {
-                    int w;
-                    if (n == GameView.W * GameView.H * 2) {
-                        w = GameView.W;
-                    } else if (n == GameView.W * GameView.H * 8) {
-                        w = GameView.W * 2;
-                    } else {
+                    /* 240x160, or 2x or 3x (120 a second, the scalers):
+                     * always 3:2, RGB565 */
+                    int k = (int) Math.round(Math.sqrt(n / 2.0 / (GameView.W * GameView.H)));
+                    if (k < 1 || k > 3 || n != GameView.W * GameView.H * 2 * k * k) {
                         throw new IOException("bad picture from the game: " + n + " bytes");
                     }
+                    int w = GameView.W * k;
                     gotPicture = true;
                     view.setFrame(data, w);
                 } else if (type == 3) {

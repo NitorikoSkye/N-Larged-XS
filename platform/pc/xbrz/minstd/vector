@@ -1,0 +1,21 @@
+#pragma once
+#include <stddef.h>
+#include <stdlib.h>
+namespace std {
+/* A fixed-size array, zeroed: what xBRZ's table needs of a vector. */
+template <class T> class vector {
+  public:
+    explicit vector(size_t count) : p_(static_cast<T *>(calloc(count ? count : 1, sizeof(T)))), n_(count) {}
+    ~vector() { free(p_); }
+    vector(const vector &) = delete;
+    vector &operator=(const vector &) = delete;
+    T &operator[](size_t i) { return p_[i]; }
+    const T &operator[](size_t i) const { return p_[i]; }
+    size_t size() const { return n_; }
+    T *data() { return p_; }
+
+  private:
+    T *p_;
+    size_t n_;
+};
+} // namespace std

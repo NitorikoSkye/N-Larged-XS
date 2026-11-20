@@ -10,7 +10,9 @@
  *   bits a channel, so nothing is lost but green's extra bit), or 480x320
  *   at 120 frames a second (the pictures between the game's frames,
  *   interp.c, drawn at twice the size so that what moves half a pixel
- *   shows it); the length says which;
+ *   shows it), or 480x320 or 720x480 through Display's scalers (Scale2x,
+ *   Scale3x, xBRZ: SendGame), with LCD ghosting; the length says which
+ *   (always 3:2);
  * - type 2, sound: 16-bit mono samples at 48000 Hz (the block resampled
  *   from GAX2's rate as sdl.c does it);
  * - type 3, what a touch does now (HOST_TOUCH_*, one byte), when it
@@ -18,8 +20,9 @@
  * - type 4, the settings the app uses (HOST_ANDROID builds: phone.c), as
  *   little-endian s32s: the touch controls' size, opacity and whether
  *   they show in menus, the haptics, the scaling, the filter, the frames
- *   a second, the borders, the d-pad's style and whether it floats; at
- *   the start and when they change;
+ *   a second, the borders, the d-pad's style and whether it floats, the
+ *   scanlines and the LCD grid (the app's masks over the picture); at the
+ *   start and when they change;
  * - type 5, a toast's text (auto save's "saved");
  * - type 6, a themed border's bar (borders.c; SendBar below), when it
  *   changes;
@@ -429,7 +432,7 @@ static void SendState(int mode)
     }
 #endif
     if (sSettingsDirty) {
-        s32 v[10];
+        s32 v[12];
 
         sSettingsDirty = 0;
         v[0] = gHostSettings.touchSize;
@@ -442,6 +445,8 @@ static void SendState(int mode)
         v[7] = gHostSettings.borders;
         v[8] = gHostSettings.dpadStyle;
         v[9] = gHostSettings.dpadFloating;
+        v[10] = gHostSettings.scanlines;
+        v[11] = gHostSettings.lcdGrid;
         Message(4, v, sizeof(v));
     }
 }
@@ -606,12 +611,113 @@ static void Parallel(HostLineRun run, void *ctx, int lines)
 
 #define HD_SCALE 2
 
+/* --- The game's pictures through the filters (Display's, as on PC) -------- */
+
+/* The pixel-art scalers take the GBA's own 240x160 (the pictures between
+ * frames are drawn at 1x for them), here at a size the pipe carries well:
+ * Scale2x 2x, Scale3x 3x, the cartoon filter xBRZ 3x (the app scales the
+ * rest, smoothly), cartoon soft xBRZ 2x; at 120 a second all at most 2x
+ * (twice the pictures). 1: none. */
+static int UpscaleFactor(void)
+{
+    int f = gHostSettings.filter;
+    int fast = gHostSettings.frameRate == HOST_FPS_120 && sDisplayHz >= 119;
+
+    switch (f) {
+    case HOST_FILTER_SCALE2X:
+    case HOST_FILTER_CARTOON_SOFT:
+        return 2;
+    case HOST_FILTER_SCALE3X:
+    case HOST_FILTER_CARTOON:
+        return fast ? 2 : 3;
+    default:
+        return 1;
+    }
+}
+
+struct XbrzJob {
+    int factor;
+    const u32 *src;
+    u32 *dst;
+};
+
+static void XbrzLines(void *ctx, int first, int end)
+{
+    struct XbrzJob *j = ctx;
+
+    HostXbrzScale(j->factor, j->src, j->dst, HOST_SCREEN_WIDTH, HOST_SCREEN_HEIGHT, first, end);
+}
+
+/* A game picture (w x h; 240x160 for the scalers) through the scaler and
+ * LCD ghosting, then out. `dt`: the 60ths of a second since the last one
+ * (ghosting keeps half a picture each 60th, as on PC). */
+static void SendGame(const u32 *src, int w, int h, double dt)
+{
+    static u32 scaled[HOST_SCREEN_WIDTH * 3 * HOST_SCREEN_HEIGHT * 3];
+    static u32 *ghost;
+    static int ghostW;
+    static int ghostH;
+    int k = w == HOST_SCREEN_WIDTH ? UpscaleFactor() : 1;
+    const u32 *p = src;
+    size_t n;
+
+    if (k > 1) {
+        int f = gHostSettings.filter;
+
+        if (f == HOST_FILTER_CARTOON || f == HOST_FILTER_CARTOON_SOFT) {
+            struct XbrzJob job;
+
+            HostXbrzWarm();
+            job.factor = k;
+            job.src = src;
+            job.dst = scaled;
+            Parallel(XbrzLines, &job, h);
+        } else if (k == 2) {
+            HostScale2x(src, scaled, w, h);
+        } else {
+            HostScale3x(src, scaled, w, h);
+        }
+        p = scaled;
+        w *= k;
+        h *= k;
+    }
+    n = (size_t)w * h;
+    if (gHostSettings.ghosting) {
+        u32 keep = (u32)(256.0 * pow(0.5, dt < 0.05 ? 0.05 : dt > 4 ? 4 : dt) + 0.5);
+        size_t i;
+
+        if (ghost == NULL || ghostW != w || ghostH != h) {
+            free(ghost);
+            ghost = malloc(n * 4);
+            if (ghost == NULL) {
+                SendPicture(p, w, h);
+                return;
+            }
+            memcpy(ghost, p, n * 4);
+            ghostW = w;
+            ghostH = h;
+        }
+        for (i = 0; i < n; i++) {
+            u32 a = p[i];
+            u32 b = ghost[i];
+            u32 rb = ((a & 0xFF00FF) * (256 - keep) + (b & 0xFF00FF) * keep) >> 8 & 0xFF00FF;
+            u32 g = ((a & 0x00FF00) * (256 - keep) + (b & 0x00FF00) * keep) >> 8 & 0x00FF00;
+
+            ghost[i] = rb | g;
+        }
+        p = ghost;
+    }
+    SendPicture(p, w, h);
+}
+
 static void SendBetween(double alpha)
 {
     static u32 hd[HOST_SCREEN_WIDTH * HD_SCALE * HOST_SCREEN_HEIGHT * HD_SCALE];
+    /* with a scaler: the in-between picture at 1x, for it to scale */
+    int scale = UpscaleFactor() > 1 ? 1 : HD_SCALE;
 
-    HostInterpRender(alpha, HD_SCALE, hd, Parallel);
-    SendPicture(hd, HOST_SCREEN_WIDTH * HD_SCALE, HOST_SCREEN_HEIGHT * HD_SCALE);
+    HostInterpRender(alpha, scale, hd, Parallel);
+    SendGame(hd, HOST_SCREEN_WIDTH * scale, HOST_SCREEN_HEIGHT * scale, 0.5);
 }
 
 /* --- Each frame ------------------------------------------------------------ */
@@ -701,7 +807,7 @@ void HostStreamVBlank(void)
     } else {
         HostInterpReset();
     }
-    SendPicture(gHostScreen, HOST_SCREEN_WIDTH, HOST_SCREEN_HEIGHT);
+    SendGame(gHostScreen, HOST_SCREEN_WIDTH, HOST_SCREEN_HEIGHT, 1.0);
     Pace(1.0);
 }
 

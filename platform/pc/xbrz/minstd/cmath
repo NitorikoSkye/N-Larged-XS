@@ -1,0 +1,6 @@
+#pragma once
+#include <math.h>
+namespace std {
+inline double sqrt(double v) { return ::sqrt(v); }
+inline float sqrt(float v) { return ::sqrtf(v); }
+} // namespace std

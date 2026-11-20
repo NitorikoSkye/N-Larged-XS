@@ -233,9 +233,9 @@ $(HOST_INLINES:.cpp=.o): $(HOST_INLINES) $(HOST_RENAMES) | $(GENERATED_HEADERS)
 
 # xBRZ (platform/pc/xbrz/, the "cartoon" filters): modern C++, built on
 # its own, not with the game's flags.
-# (Only with the window: without SDL, as the Android core, no filters.)
+# (With the window, and in the Android core: stream.c's pictures.)
 HOST_XBRZ_OBJS :=
-ifeq ($(HOST_SDL),1)
+ifneq ($(filter 1,$(HOST_SDL) $(HOST_ANDROID)),)
 HOST_XBRZ_OBJS := $(PLATFORM_BUILDDIR)/xbrz/xbrz.o $(PLATFORM_BUILDDIR)/xbrz/xbrz_c.o
 endif
 HOST_OBJS := $(HOST_XBRZ_OBJS) $(C_OBJS) $(CXX_OBJS) $(PLATFORM_OBJS) $(HOST_GAX_OBJS) $(HOST_GAX_DATA:.c=.o) $(HOST_INLINES:.cpp=.o) \
@@ -409,9 +409,12 @@ $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.cpp $(HOST_RENAMES)
 	$(HOST_CXX) $(HOST_CPPFLAGS) -iquote $(PLATFORM_DIR)/src $(HOST_CXXFLAGS) $(DEPFLAGS) -c -o $@ $<
 	$(HOST_OBJCOPY) --redefine-syms=$(HOST_RENAMES) $@
 
+# (No thread-safe statics and plain atexit: HostXbrzWarm makes the table
+# on one thread first, and the Android musl cores have neither libstdc++'s
+# guards nor crtbegin's __dso_handle; xbrz/minstd has their headers.)
 $(PLATFORM_BUILDDIR)/xbrz/%.o: $(PLATFORM_DIR)/xbrz/%.cpp $(PLATFORM_DIR)/xbrz/xbrz.h
 	@mkdir -p $(dir $@)
-	$(HOST_CXX) -std=c++17 -O2 -fno-exceptions -fno-rtti -w -c -o $@ $<
+	$(HOST_CXX) -std=c++17 -O2 -fno-exceptions -fno-rtti -fno-threadsafe-statics -fno-use-cxa-atexit -w -c -o $@ $<
 
 $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.S
 	@mkdir -p $(dir $@)
