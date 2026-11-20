@@ -279,9 +279,11 @@ GetUiText(HOST_TEXT_SETTINGS), prompts.c, per language: settings, options,
 optionen, ajustes, opzioni, opties; type "resume", and its A taken by
 KeyInput::Update's wrapper, so the pause menu stays and waits under the
 settings), and the warp room's cog (top right, art (220,
-4): cog_glyph.h from tools/cog_glyph.py, the small font's palette indices,
-one 16x16 OBJ in palette 15 drawn after the hint; a click or a tap on it
-opens them). On Android the app's cog is gone: a cross at the top middle
+4): cog_glyph.h from tools/cog_glyph.py, one 16x16 OBJ drawn after the
+hint; from v0.51.4 in the large font's palette, as Font::ResetPalette
+finds it, with its digits' palette indices: outline 6, the fill red to
+yellow down its rows as the record time's digits are shaded; a click or
+a tap on it opens them). On Android the app's cog is gone: a cross at the top middle
 closes the settings while they're open. Headless runs leave the
 row and the cog out (the regressions and CI's comparisons with mGBA see
 the game's own menus: they match exactly); HOST_PORT_MENUS=1 puts them in,

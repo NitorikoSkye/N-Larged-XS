@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """Draws the warp room's settings cog (mouse_hooks.cpp): a gear in the
-game's small font's look, as the font's own palette indices, so the
-palette the warp room's hint is drawn in colours it as it colours the hint:
-6 the outline, and the fill top to bottom as a glyph's rows are filled
-(2, 0xB, 8, 9, 4: the small font's 's').
+game's large digits' look (the record time's), as the large font's own
+palette indices, so its palette colours it as it colours them: 6 the
+outline, and the fill top to bottom as a digit's rows are filled (its
+'0': 2 red, 0xB, 0xA orange, 8, 9, 4 yellow).
 
     cog_glyph.py > platform/pc/src/cog_glyph.h
 
 16x16, one OBJ: eight teeth round a ring, a hole in the middle."""
 import math
 
-ROWS = [2, 0xB, 8, 9, 4, 4]  # the font's fill, a glyph's rows from the top
+# the fill of each of the cog's 16 rows, as a large digit's rows are filled
+ROWS = [2, 2, 0xB, 0xB, 0xA, 0xA, 8, 8, 8, 9, 9, 9, 4, 4, 4, 4]
 
 
 # The cog's shape, placed by hand (generated curves are lumpy this small):
@@ -46,7 +47,7 @@ def main():
         for x in range(16):
             v = 0
             if inside(x + 0.5, y + 0.5):
-                v = ROWS[min(len(ROWS) - 1, int((y - 1) * len(ROWS) / 14))] if y >= 1 else ROWS[0]
+                v = ROWS[y]
             row += "%X" % v
         rows.append(row)
     # the outline: a font glyph's dark edge round every filled pixel

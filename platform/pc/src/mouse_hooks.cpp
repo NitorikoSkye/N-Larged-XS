@@ -166,14 +166,27 @@ s32 __wrap__ZN6Engine3Sys8KeyInput6UpdateEv(Engine::Sys::KeyInput *self)
 }
 
 /* The warp room's settings cog (cog_glyph.h), top right: drawn after the
- * hint under the pads (with the small font, in its palette, 15: the
- * glyph is the font's own palette indices), one 16x16 OBJ, its tiles
- * queued like a sprite's. A tap or a click on it opens the settings
- * (WarpRoomKeys). */
+ * hint under the pads, in the large font's palette (the glyph is its
+ * digits' own palette indices: their outline and their red to yellow
+ * shading, as the record time's), one 16x16 OBJ, its tiles queued like a
+ * sprite's. A tap or a click on it opens the settings (WarpRoomKeys). */
 #define COG_X 220
 #define COG_Y 4
 static u8 sCogTiles[16 * 16 / 2];
 static u32 sCogFrame;
+
+/* The large font's own palette (its digits': the warp room's record
+ * time), as Font::ResetPalette finds it, the font's left as it was. */
+static int LargeFontPalette(void)
+{
+    u8 was = gLargeFont->oam_scratch.palette;
+    int palette;
+
+    gLargeFont->ResetPalette();
+    palette = gLargeFont->oam_scratch.palette;
+    gLargeFont->SetPalette(was);
+    return palette;
+}
 
 static void DrawCog(void)
 {
@@ -210,7 +223,7 @@ static void DrawCog(void)
     oam.size = 1;  /* 16x16 */
     oam.tileNum = tile;
     oam.priority = 0;
-    oam.palette = 0xF;
+    oam.palette = LargeFontPalette();
     gOamBuffer->Add(&oam);
 }
 
