@@ -165,8 +165,8 @@ s32 __wrap__ZN6Engine3Sys8KeyInput6UpdateEv(Engine::Sys::KeyInput *self)
     return result;
 }
 
-/* The warp room's settings cog (cog_glyph.h), top right: drawn after the
- * hint under the pads, in the large font's palette (the glyph is its
+/* The warp room's settings cog (cog_glyph.h), top right: drawn with the
+ * pads (once a frame), in the large font's palette (the glyph is its
  * digits' own palette indices: their outline and their red to yellow
  * shading, as the record time's), one 16x16 OBJ, its tiles queued like a
  * sprite's. A tap or a click on it opens the settings (WarpRoomKeys). */
@@ -244,10 +244,20 @@ void __wrap__ZN6Engine4Text4Font8DrawTextEPKh(Engine::Text::Font *self, const u8
         sContinueSel = self->posY >= DISPLAY_ART_Y + 0x91;
     }
     __real__ZN6Engine4Text4Font8DrawTextEPKh(self, text);
-    /* the warp room's hint, under the pads: the cog with it */
-    if (gHostInWarpRoom && self == gSmallFont && self->posY == DISPLAY_ART_Y + 0x96) {
+}
+
+/* The warp room's draw ends each frame (also while the pads scroll to
+ * another level, when the hint isn't drawn) with OamBuffer::HideUnused:
+ * the cog goes in just before, while the warp room itself is up (not the
+ * save menu over it). */
+void __real__ZN6Engine3Gfx9OamBuffer10HideUnusedEv(Engine::Gfx::OamBuffer *self);
+
+void __wrap__ZN6Engine3Gfx9OamBuffer10HideUnusedEv(Engine::Gfx::OamBuffer *self)
+{
+    if (gHostInWarpRoom && !gHostInSaveMenu && sLevelSelectInstance != NULL && self == gOamBuffer) {
         DrawCog();
     }
+    __real__ZN6Engine3Gfx9OamBuffer10HideUnusedEv(self);
 }
 
 static int ContinueUp(void)

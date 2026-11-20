@@ -279,8 +279,10 @@ GetUiText(HOST_TEXT_SETTINGS), prompts.c, per language: settings, options,
 optionen, ajustes, opzioni, opties; type "resume", and its A taken by
 KeyInput::Update's wrapper, so the pause menu stays and waits under the
 settings), and the warp room's cog (top right, art (220,
-4): cog_glyph.h from tools/cog_glyph.py, one 16x16 OBJ drawn after the
-hint; from v0.51.4 in the large font's palette, as Font::ResetPalette
+4): cog_glyph.h from tools/cog_glyph.py, one 16x16 OBJ added each frame
+just before the warp room's draw ends (OamBuffer::HideUnused's wrapper,
+while LevelSelect is up and the save menu isn't: also while the pads
+scroll to another level, when the hint isn't drawn; v0.51.5); from v0.51.4 in the large font's palette, as Font::ResetPalette
 finds it, with its digits' palette indices: outline 6, the fill red to
 yellow down its rows as the record time's digits are shaded; a click or
 a tap on it opens them). On Android the app's cog is gone: a cross at the top middle
