@@ -157,6 +157,10 @@ enum {
     HOST_ICON_DASH, /* the polar ride's dash */
 };
 #define HOST_ICON_DIM 0x80 /* nothing to do now: drawn faint */
+
+/* The pause menu's "settings" row's label (mouse_hooks.cpp): GetUiText's
+ * id for it, past the game's texts (prompts.c answers it). */
+#define HOST_TEXT_SETTINGS 0x200
 int HostTouchIcons(u8 out[4], int playing);
 
 /* The Discord application Rich Presence talks as (its name is what the

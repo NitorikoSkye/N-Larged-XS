@@ -31,7 +31,9 @@ import java.nio.ByteBuffer;
  * diagonals); anywhere else (the menus, the warp room, the settings menu)
  * they're hidden and a tap goes to the game where it lands, a swipe up or
  * down scrolls. "In menus: always" keeps the buttons in the menus too.
- * The settings button sits at the top middle. A controller in use hides
+ * The settings are opened from the pause menu's "settings" row or the warp
+ * room's cog (the core's, mouse_hooks.cpp), or a controller's Guide
+ * button; while they're open a close button sits at the top middle. A controller in use hides
  * the buttons until the screen is touched again. The buttons show what
  * do (icons/*.svg, white), and follow the game (the core's message 7,
  * touch_context.cpp): A jumps, and is the double jump in the air while it
@@ -386,7 +388,9 @@ public class GameView extends View {
         if (controlsShown()) {
             drawControls(c);
         }
-        drawGear(c);
+        if (mode == MODE_SETTINGS) {
+            drawGear(c); /* the settings menu's close button */
+        }
     }
 
     private void drawBorders(Canvas c) {
@@ -1013,8 +1017,11 @@ public class GameView extends View {
         return new RectF(r.left - g, r.top - g, r.right + g, r.bottom + g);
     }
 
+    /** The close button, while the settings menu is open (the settings are
+     * opened from the pause menu, the warp room's cog, or a controller's
+     * Guide button). */
     private boolean onGear(float x, float y) {
-        return Math.hypot(x - gearX, y - gearY) < gearR * 1.6f;
+        return mode == MODE_SETTINGS && Math.hypot(x - gearX, y - gearY) < gearR * 1.6f;
     }
 
     /** The picture's pixel under (x, y), or null outside it. */

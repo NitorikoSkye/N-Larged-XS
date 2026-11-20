@@ -45,8 +45,9 @@ In levels the GBA's buttons are on the screen, their icons following what
 Crash can do right now (crouch, slide or body slam; the double jump in the
 air; swim, polar and jetpack actions), and you can move and resize them in
 a layout editor; menus and the warp room are tapped directly, and the
-phone's back button is B (or pause in a level). The cog at the top opens
-the settings, with phone options: touch button size, opacity, d-pad style
+phone's back button is B (or pause in a level). The pause menu's
+**settings** row (or the cog in the warp room's top corner) opens the
+settings, with phone options: touch button size, opacity, d-pad style
 (cross, joystick or separate buttons, fixed or floating), haptics,
 vibration, icons and layout, large text, 60 or 120 frames a second. Like the
 launcher, the APK contains no part of the game. See
@@ -54,8 +55,9 @@ launcher, the APK contains no part of the game. See
 
 ## Features
 
-Press **~** (or the controller's Guide button / right stick click) in game
-to open the settings menu, which is drawn in the game's own style. It
+Press **~** (or the controller's Guide button / right stick click) in game,
+pick **settings** in the pause menu, or click the cog in the warp room's top
+corner to open the settings menu, which is drawn in the game's own style. It
 works with keyboard, controller or mouse.
 
 - **Display:** windowed or borderless fullscreen; integer scaling;

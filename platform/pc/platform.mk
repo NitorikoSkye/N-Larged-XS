@@ -299,7 +299,7 @@ HOST_WRAPS += GetUiText
 HOST_WRAPS += _ZN6Engine4Text4Font8DrawTextEPKh
 # Gameplay's options (src/gameplay_hooks.cpp): the slide jump grace, the
 # jump buffer, the relaxed double jump and infinite lives.
-HOST_WRAPS += _ZN4Game5Crash10ActionCtrl10StateSlideEv _ZN4Game5Crash10ActionCtrl13StateAirborneEv _ZN4Game5Crash10ActionCtrl15StateLeftGroundEv \
+HOST_WRAPS += _ZN4Game5Crash10ActionCtrl10StateSlideEv _ZN4Game5Crash10ActionCtrl13StateAirborneEv _ZN4Game5Crash10ActionCtrl15StateLeftGroundEv _ZN6Engine3Sys8KeyInput6UpdateEv \
 	_ZN4Game5Crash10ActionCtrl9StateLandEv _ZN4Game5Crash10ActionCtrl14HandleAirInputEv \
 	_ZN4Game5Level10LevelState8LoseLifeEv
 HOST_WRAPS += _ZN6Engine4Text4Font9DrawGlyphEh

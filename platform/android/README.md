@@ -47,7 +47,9 @@ in a level, and closes the settings menu. A controller works too (it hides
 the touch buttons until you touch the screen again), and its Guide button
 opens the settings.
 
-**The settings** (the cog at the top middle): the PC port's settings menu,
+**The settings** (the pause menu's **settings** row, or the cog in the warp
+room's top corner; while open, the cross at the top middle closes them):
+the PC port's settings menu,
 drawn in the game's style, with the phone's own options:
 
 - **General:** skip intro.

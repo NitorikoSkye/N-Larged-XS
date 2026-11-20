@@ -28,6 +28,8 @@
 #include "game/ui/save_menu.hpp"
 #include "game/ui/level_select.hpp"
 #include "engine/audio/audio.hpp"
+#include "engine/sys/key_input.hpp"
+#include "game/entities/sprite_obj.hpp"
 
 extern "C" {
 #include "core.h"
@@ -37,6 +39,8 @@ extern "C" {
 #include "host_platform.h"
 #include "host_ui.h"
 }
+
+#include "cog_glyph.h"
 
 using Game::Ui::LanguageSelect;
 using Game::Ui::LevelSelect;
@@ -60,9 +64,38 @@ char *getenv(const char *name); /* <stdlib.h> clashes with the game's rand */
 TitleScreen *gHostTitleScreen;
 int gHostInSaveMenu;
 extern int gHostInWarpRoom; /* level_pick.c */
+void *memset(void *d, int c, unsigned long n);
+char *getenv(const char *name);
+
 
 static PauseMenu *sPause;
 static u32 sPauseFrame;
+
+/* The pause menu's "settings" row (docs/platforms.md, "The settings
+ * menu"): the game's rows (gPauseMenuRows) with it before "quit", its
+ * label the port's (HOST_TEXT_SETTINGS: prompts.c's GetUiText, in each
+ * language). Its type is "resume", so nothing the game does with a row
+ * can go wrong with it; its A never reaches the game (KeyInput::Update's
+ * wrapper below takes it and opens the settings menu, over the pause
+ * menu, which waits for it). Six rows in a time trial ("restart trial"
+ * last) are closer together to fit. */
+/* HOST_GAME_MENUS_ONLY=1: neither the row nor the warp room's cog, for the
+ * tests that compare pictures with the game's own (the regressions). */
+static int GameOnlyTest(void)
+{
+    static int sOn = -1;
+
+    if (sOn < 0) {
+        sOn = getenv("HOST_GAME_MENUS_ONLY") != NULL;
+    }
+    return sOn;
+}
+
+static const struct pause_row sHostPauseRows[6] = {
+    { 0x32, PAUSE_ROW_TYPE_RESUME }, { 0x30, PAUSE_ROW_TYPE_MUSIC },
+    { 0x31, PAUSE_ROW_TYPE_SOUND },  { HOST_TEXT_SETTINGS, PAUSE_ROW_TYPE_RESUME },
+    { 0x33, PAUSE_ROW_TYPE_QUIT },   { 0x34, PAUSE_ROW_TYPE_RESTART },
+};
 
 void __real__ZN4Game2Ui9PauseMenu4DrawEv(PauseMenu *self);
 
@@ -70,7 +103,89 @@ void __wrap__ZN4Game2Ui9PauseMenu4DrawEv(PauseMenu *self)
 {
     sPause = self;
     sPauseFrame = HostFrame();
+    if (self->rows == gPauseMenuRows && !GameOnlyTest()) {
+        self->rows = sHostPauseRows;
+        self->rowCount++;
+        if (self->rowCount > 5) {
+            self->rowSpacing = 0xD; /* the last row ends at y 148, the panel at 150 */
+        }
+    }
     __real__ZN4Game2Ui9PauseMenu4DrawEv(self);
+}
+
+static int PauseOnSettings(void)
+{
+    PauseMenu *p = sPause;
+
+    return p != NULL && HostFrame() - sPauseFrame <= 2 && p->rows == sHostPauseRows &&
+           p->cursor >= 0 && p->cursor < p->rowCount &&
+           p->rows[p->cursor].labelId == HOST_TEXT_SETTINGS;
+}
+
+s32 __real__ZN6Engine3Sys8KeyInput6UpdateEv(Engine::Sys::KeyInput *self);
+
+s32 __wrap__ZN6Engine3Sys8KeyInput6UpdateEv(Engine::Sys::KeyInput *self)
+{
+    s32 result = __real__ZN6Engine3Sys8KeyInput6UpdateEv(self);
+
+    if ((gKeys.half.pressed & A_BUTTON) && PauseOnSettings()) {
+        gKeys.half.pressed &= ~A_BUTTON;
+        gAudioContext->PlaySfx(SFX_MENU_SELECT, 0x100);
+        if (gHostOptions.headless) {
+            HostLogf("pause menu: settings at %u\n", (unsigned)HostFrame()); /* the tests */
+        }
+        HostUiOpen(); /* the next frame waits while it's open */
+    }
+    return result;
+}
+
+/* The warp room's settings cog (cog_glyph.h), top right: drawn after the
+ * hint under the pads (with the small font, in its palette, 15: the
+ * glyph is the font's own palette indices), one 16x16 OBJ, its tiles
+ * queued like a sprite's. A tap or a click on it opens the settings
+ * (WarpRoomKeys). */
+#define COG_X 220
+#define COG_Y 4
+static u8 sCogTiles[16 * 16 / 2];
+static u32 sCogFrame;
+
+static void DrawCog(void)
+{
+    static int sBuilt;
+    struct oam_attrs oam;
+    s32 tile;
+    int x;
+    int y;
+
+    if (sCogFrame == HostFrame() || gOamBuffer == NULL || GameOnlyTest()) {
+        return;
+    }
+    sCogFrame = HostFrame();
+    if (!sBuilt) {
+        for (y = 0; y < 16; y++) {
+            for (x = 0; x < 16; x++) {
+                char ch = sCogGlyph[y][x];
+                int v = ch <= '9' ? ch - '0' : ch - 'A' + 10;
+
+                sCogTiles[((y / 8) * 2 + x / 8) * 32 + (y % 8) * 4 + (x % 8) / 2] |=
+                    (x & 1) ? v << 4 : v;
+            }
+        }
+        sBuilt = 1;
+    }
+    tile = gObjVramCursor->Upload(sCogTiles, sizeof(sCogTiles));
+    if (tile < 0) {
+        return;
+    }
+    memset(&oam, 0, sizeof(oam));
+    oam.y = DISPLAY_ART_Y + COG_Y;
+    oam.x = DISPLAY_ART_X + COG_X;
+    oam.shape = 0; /* square */
+    oam.size = 1;  /* 16x16 */
+    oam.tileNum = tile;
+    oam.priority = 0;
+    oam.palette = 0xF;
+    gOamBuffer->Add(&oam);
 }
 
 /* The continue prompt (game over's "continue?"): its cursor, drawn as
@@ -90,6 +205,10 @@ void __wrap__ZN6Engine4Text4Font8DrawTextEPKh(Engine::Text::Font *self, const u8
         sContinueSel = self->posY >= DISPLAY_ART_Y + 0x91;
     }
     __real__ZN6Engine4Text4Font8DrawTextEPKh(self, text);
+    /* the warp room's hint, under the pads: the cog with it */
+    if (gHostInWarpRoom && self == gSmallFont && self->posY == DISPLAY_ART_Y + 0x96) {
+        DrawCog();
+    }
 }
 
 static int ContinueUp(void)
@@ -280,6 +399,13 @@ static u16 WarpRoomKeys(int left, int wheel)
         sTarget = -1;
         sEnter = 0;
         return wheel > 0 ? DPAD_UP : DPAD_DOWN;
+    }
+    /* the settings cog (DrawCog), top right */
+    if (left && x >= COG_X - 4 && x < COG_X + 20 && y >= 0 && y < COG_Y + 20) {
+        sTarget = -1;
+        sEnter = 0;
+        HostUiOpen();
+        return 0;
     }
     /* the hint under the pads ("start:  load-save", or "tap: load-save"
      * on the phone): Start, which opens the save menu */

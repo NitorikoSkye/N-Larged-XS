@@ -759,6 +759,16 @@ static const char *const sTapHints[6] = {
     "tocca: carica-salva",     /* Italian */
     "tik: laden-opslaan",      /* Dutch */
 };
+/* The pause menu's "settings" row (HOST_TEXT_SETTINGS; mouse_hooks.cpp), in
+ * each language, in the font's letters. */
+static const char *const sSettingsLabels[6] = {
+    "settings", /* English */
+    "options",  /* French */
+    "optionen", /* German */
+    "ajustes",  /* Spanish */
+    "opzioni",  /* Italian */
+    "opties",   /* Dutch */
+};
 extern s32 gLanguage;
 int gHostStartStyle; /* else a pad style, or 0 */
 int gHostStartLabels;
@@ -809,7 +819,12 @@ const u8 *__wrap_GetUiText(s32 index)
 {
     static u8 buf[96];
     static int sFree = 2; /* the glyph slot the screen leaves free */
-    const u8 *text = __real_GetUiText(index);
+    const u8 *text;
+
+    if (index == HOST_TEXT_SETTINGS) {
+        return (const u8 *)sSettingsLabels[gLanguage >= 0 && gLanguage < 6 ? gLanguage : 0];
+    }
+    text = __real_GetUiText(index);
     const char *t = (const char *)text;
     const char *at;
     const char *word;
