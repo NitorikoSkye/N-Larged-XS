@@ -575,10 +575,10 @@ static const struct Option sAudio[] = {
       &gHostSettings.audioQuality, sQualities, 2, HOST_APPLY_AUDIO },
     { "master volume", "everything the game plays.", OPT_PERCENT, &gHostSettings.master, NULL, 0,
       HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
-    { "music volume", "the music. the pause menu's music setting also applies.", OPT_PERCENT,
-      &gHostSettings.music, NULL, 0, HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
-    { "sound fx volume", "the sound effects. the pause menu's sound setting also applies.",
-      OPT_PERCENT, &gHostSettings.sfx, NULL, 0, HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
+    { "music volume", "the music.", OPT_PERCENT, &gHostSettings.music, NULL, 0, HOST_APPLY_AUDIO,
+      NULL, NULL, NULL, 0, 100 },
+    { "sound fx volume", "the sound effects.", OPT_PERCENT, &gHostSettings.sfx, NULL, 0,
+      HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
 };
 
 static const char *const sRumbles[] = { "off", "light", "strong" };
@@ -708,10 +708,10 @@ static const struct Option sPhoneAudio[] = {
       &gHostSettings.audioQuality, sQualities, 2, HOST_APPLY_AUDIO },
     { "master", "everything the game plays.", OPT_PERCENT, &gHostSettings.master, NULL, 0,
       HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
-    { "music", "the music. the pause menu's music setting also applies.", OPT_PERCENT,
-      &gHostSettings.music, NULL, 0, HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
-    { "sound fx", "the sound effects. the pause menu's sound setting also applies.", OPT_PERCENT,
-      &gHostSettings.sfx, NULL, 0, HOST_APPLY_AUDIO, NULL, NULL, NULL, 0, 100 },
+    { "music", "the music.", OPT_PERCENT, &gHostSettings.music, NULL, 0, HOST_APPLY_AUDIO, NULL,
+      NULL, NULL, 0, 100 },
+    { "sound fx", "the sound effects.", OPT_PERCENT, &gHostSettings.sfx, NULL, 0, HOST_APPLY_AUDIO,
+      NULL, NULL, NULL, 0, 100 },
 };
 
 static const char *const sPhoneAutoSaves[HOST_AUTOSAVE_COUNT] = { "off", "in use", "slot 4" };

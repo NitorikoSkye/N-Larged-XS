@@ -71,14 +71,16 @@ char *getenv(const char *name);
 static PauseMenu *sPause;
 static u32 sPauseFrame;
 
-/* The pause menu's "settings" row (docs/platforms.md, "The settings
- * menu"): the game's rows (gPauseMenuRows) with it before "quit", its
- * label the port's (HOST_TEXT_SETTINGS: prompts.c's GetUiText, in each
- * language). Its type is "resume", so nothing the game does with a row
- * can go wrong with it; its A never reaches the game (KeyInput::Update's
- * wrapper below takes it and opens the settings menu, over the pause
- * menu, which waits for it). Six rows in a time trial ("restart trial"
- * last) are closer together to fit. */
+/* The pause menu (docs/platforms.md, "The settings menu"): the game's rows
+ * (gPauseMenuRows) without its music and sound volumes (the settings'
+ * Audio has them; the game's own are held at its default, below) and with
+ * a "settings" row before "quit", its label the port's
+ * (HOST_TEXT_SETTINGS: prompts.c's GetUiText, in each language). Its type
+ * is "resume", so nothing the game does with a row can go wrong with it;
+ * its A never reaches the game (KeyInput::Update's wrapper below takes it
+ * and opens the settings menu, over the pause menu, which waits for it).
+ * Three rows (four in a time trial: "restart trial" last), further apart
+ * in the same box. */
 /* Headless runs (the tests, which compare the game's pictures with its
  * own and mGBA's) leave the row and the warp room's cog out, as they leave
  * the options out; HOST_PORT_MENUS=1 puts them in, to test them. */
@@ -92,11 +94,34 @@ static int GameOnlyTest(void)
     return sOn;
 }
 
-static const struct pause_row sHostPauseRows[6] = {
-    { 0x32, PAUSE_ROW_TYPE_RESUME }, { 0x30, PAUSE_ROW_TYPE_MUSIC },
-    { 0x31, PAUSE_ROW_TYPE_SOUND },  { HOST_TEXT_SETTINGS, PAUSE_ROW_TYPE_RESUME },
-    { 0x33, PAUSE_ROW_TYPE_QUIT },   { 0x34, PAUSE_ROW_TYPE_RESTART },
+static const struct pause_row sHostPauseRows[4] = {
+    { 0x32, PAUSE_ROW_TYPE_RESUME },
+    { HOST_TEXT_SETTINGS, PAUSE_ROW_TYPE_RESUME },
+    { 0x33, PAUSE_ROW_TYPE_QUIT },
+    { 0x34, PAUSE_ROW_TYPE_RESTART },
 };
+
+/* The game's own music and sound volumes (AudioContext's, which the pause
+ * menu's rows set and a save keeps) stay at the game's default, 0xC0 (75%:
+ * what a new game sets, spawn_markers.cpp), whatever a save says: the
+ * settings' Audio is the volume now, and the game sounds as loud as it
+ * did by default. */
+#define GAME_VOLUME 0xC0
+
+void __real__ZN6Engine5Audio12AudioContext14SetMusicVolumeEj(void *self, u32 value);
+void __real__ZN6Engine5Audio12AudioContext12SetSfxVolumeEj(void *self, u32 value);
+
+void __wrap__ZN6Engine5Audio12AudioContext14SetMusicVolumeEj(void *self, u32 value)
+{
+    __real__ZN6Engine5Audio12AudioContext14SetMusicVolumeEj(self,
+                                                            GameOnlyTest() ? value : GAME_VOLUME);
+}
+
+void __wrap__ZN6Engine5Audio12AudioContext12SetSfxVolumeEj(void *self, u32 value)
+{
+    __real__ZN6Engine5Audio12AudioContext12SetSfxVolumeEj(self,
+                                                          GameOnlyTest() ? value : GAME_VOLUME);
+}
 
 void __real__ZN4Game2Ui9PauseMenu4DrawEv(PauseMenu *self);
 
@@ -105,11 +130,11 @@ void __wrap__ZN4Game2Ui9PauseMenu4DrawEv(PauseMenu *self)
     sPause = self;
     sPauseFrame = HostFrame();
     if (self->rows == gPauseMenuRows && !GameOnlyTest()) {
+        /* the game's four (five in a time trial) less the two volumes,
+         * and settings */
         self->rows = sHostPauseRows;
-        self->rowCount++;
-        if (self->rowCount > 5) {
-            self->rowSpacing = 0xD; /* the last row ends at y 148, the panel at 150 */
-        }
+        self->rowCount--;
+        self->rowSpacing = 0x14;
     }
     __real__ZN4Game2Ui9PauseMenu4DrawEv(self);
 }

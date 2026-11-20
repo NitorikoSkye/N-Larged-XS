@@ -269,12 +269,16 @@ build's.
 (or a controller's Guide button or right stick click) opens the PC
 port's own settings while the game waits in VBlankIntrWait. From v0.51.2
 also (PC and Android; mouse_hooks.cpp): the pause menu's "settings" row,
-before "quit" (the game's rows with it, PauseMenu::Draw's wrapper; label
+before "quit" (the game's rows with it, PauseMenu::Draw's wrapper; from
+v0.51.3 without the game's music and sound volume rows: resume,
+settings, quit and in a time trial restart, 0x14 apart, on the panel's
+bars; the game's own volumes, AudioContext::SetMusicVolume and
+SetSfxVolume, held at its new-game default 0xC0 whatever a save says, so
+the settings' Audio is the volume and the game as loud as by default; label
 GetUiText(HOST_TEXT_SETTINGS), prompts.c, per language: settings, options,
 optionen, ajustes, opzioni, opties; type "resume", and its A taken by
 KeyInput::Update's wrapper, so the pause menu stays and waits under the
-settings; six rows in a time trial 13 px apart, the last ending at y 148,
-the panel's dark at 150), and the warp room's cog (top right, art (220,
+settings), and the warp room's cog (top right, art (220,
 4): cog_glyph.h from tools/cog_glyph.py, the small font's palette indices,
 one 16x16 OBJ in palette 15 drawn after the hint; a click or a tap on it
 opens them). On Android the app's cog is gone: a cross at the top middle
