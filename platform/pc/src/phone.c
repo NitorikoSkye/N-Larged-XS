@@ -93,6 +93,7 @@ static const struct {
     { "touch_in_menus", &gHostSettings.touchInMenus, 0, 1 },
     { "haptics", &gHostSettings.haptics, 0, 2 },
     { "text_size", &gHostSettings.textSize, 0, 1 },
+    { "touch_icons", &gHostSettings.touchIcons, 0, 1 },
 };
 
 static char sPath[1024];

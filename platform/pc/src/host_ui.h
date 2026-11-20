@@ -128,8 +128,33 @@ struct HostSettings {
     int touchInMenus; /* 0 levels only (menus are tapped), 1 always */
     int haptics;      /* 0 off, 1 light, 2 strong */
     int textSize;     /* the settings menu's text: 0 normal, 1 large */
+    int touchIcons;   /* HOST_TOUCH_ICONS_*: the buttons' icons follow the game */
 };
 extern struct HostSettings gHostSettings;
+
+/* touch_context.cpp: the touch buttons' icons (stream.c's message 7, one
+ * byte each for A, B, L and R; GameView.java draws them). */
+enum {
+    HOST_TOUCH_ICONS_CHANGING, /* what the button does now */
+    HOST_TOUCH_ICONS_FIXED,    /* jump, spin, turbo and slam, always */
+};
+enum {
+    HOST_ICON_NONE,
+    HOST_ICON_JUMP,
+    HOST_ICON_DOUBLE_JUMP,
+    HOST_ICON_SPIN,
+    HOST_ICON_CROUCH,
+    HOST_ICON_SLIDE,
+    HOST_ICON_SLAM,
+    HOST_ICON_TURBO,
+    HOST_ICON_STROKE, /* underwater: a stroke */
+    HOST_ICON_SHOOT,  /* the jetpack's shot */
+    HOST_ICON_ROLL_LEFT,
+    HOST_ICON_ROLL_RIGHT,
+    HOST_ICON_DASH, /* the polar ride's dash */
+};
+#define HOST_ICON_DIM 0x80 /* nothing to do now: drawn faint */
+int HostTouchIcons(u8 out[4], int playing);
 
 /* The Discord application Rich Presence talks as (its name is what the
  * profile says is being played; its art assets are the pictures), unless

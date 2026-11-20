@@ -41,10 +41,13 @@ The launcher also has a command line, e.g.
 Download `NLargedXS-<version>.apk` from the [Releases](../../releases) page
 and install it. On first launch, tap **Import ROM** and pick the same
 European ROM; the app keeps it in its own storage, so this happens once.
-In levels the GBA's buttons are on the screen; menus and the warp room are
-tapped directly, and the phone's back button is B (or pause in a level).
-The cog at the top opens the settings, with phone options: touch button
-size, opacity and haptics, large text, 60 or 120 frames a second. Like the
+In levels the GBA's buttons are on the screen, their icons following what
+Crash can do right now (crouch, slide or body slam; the double jump in the
+air; swim, polar and jetpack actions), and you can move and resize them in
+a layout editor; menus and the warp room are tapped directly, and the
+phone's back button is B (or pause in a level). The cog at the top opens
+the settings, with phone options: touch button size, opacity, haptics,
+icons and layout, large text, 60 or 120 frames a second. Like the
 launcher, the APK contains no part of the game. See
 [platform/android/README.md](platform/android/README.md).
 

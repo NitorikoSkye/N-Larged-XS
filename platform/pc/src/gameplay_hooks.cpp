@@ -129,6 +129,11 @@ static int LateDoubleJump(void)
     return Setting("HOST_LATE_DOUBLE_JUMP", &sEnv, gHostSettings.lateDoubleJump);
 }
 
+int HostLateDoubleJump(void)
+{
+    return LateDoubleJump();
+}
+
 /* The jump buffer: when A was last pressed in the air (0: none to keep). */
 static u32 sBufferedAt;
 

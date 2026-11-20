@@ -655,6 +655,36 @@ ways. What the phone build adds:
   buttons; or anywhere else, where a tap is A and Start (the intro, the
   title's "press start", a power's dialog, the credits). The phone's back
   is the right button in a menu and Start in a level.
+- *Button icons* (v0.51; touch_context.cpp, message 7): each frame of a
+  level the core works out what A, B, L and R do now and sends a byte
+  each (HOST_ICON_*, HOST_ICON_DIM for nothing to do) when that changes.
+  On foot, from the action controller's state (gPlayer->mover): A jumps,
+  in the air the double jump while TryDoubleJump/HandleAirInput would take
+  it (the power, no jump of it yet, a jump's animation or the takeoff,
+  not the air spin or a slam, and below 2.5 px a frame falling unless
+  Gameplay's double jump is relaxed); R crouches, slides in RUN or
+  TURBO_RUN and slams in the air (faint once slamming, in the air spin
+  or a high jump); L is the turbo run once its power is had, faint in the
+  air and while hanging; all faint while dying or warping. Underwater
+  (PLAYER_CTRL_MODE_SWIM) A strokes, B and R spin. In a vehicle room
+  (hud_hook.cpp's ActorCategory::Init wrapper sets gHostCategoryType:
+  categories 0-2 the polar ride, 3-6 the jetpack and the hovercraft
+  fight): polar A jumps, B dashes; jetpack A fires, L and R roll, B
+  faint. The hover room steers with the D-pad alone: all faint. States,
+  not the terrain's contact, and a new set must hold 3 frames, so slopes
+  don't blink it. Touch's icons "fixed" (touch_icons) sends jump, spin,
+  turbo and slam always. HOST_TOUCH_ICONS_LOG=1 logs the sets in headless
+  runs too (tested: Jungle Jam standing, running, jumping, the double
+  jump with HOST_TEST_DOUBLE_JUMP, normal and relaxed; the swim levels
+  1, 8, 12, 16, 20; the jetpack levels 6, 14, 17 and the hovercraft 21;
+  the polar rides, levels 3, 5 and 10's room 1). The app fades between
+  icons (140 ms) and draws a faint one at a third.
+- *Layout editor* (v0.51; message 8, sent by Touch's layout): the app
+  draws it over the settings menu (which stays open, the game waiting):
+  drag a control, pinch it or - and + (0.6 to 2 times), Reset, Done or
+  back. Kept in the app's preferences ("touch_layout": each control's
+  centre as a share of the screen, its size as a multiple of the default,
+  which Touch's size still scales).
 - *Prompts* (HostPromptsPhone, prompts.c): the app says which controller
   was used last (by its vendor: Sony, Nintendo, else Xbox's layout; the
   touch screen, the GBA's), and button prompts' "auto" follows it, the

@@ -37,6 +37,22 @@ void *memcpy(void *d, const void *s, unsigned long n);
 extern u8 gHostPltt[];
 
 extern s32 gHostPlayingLevel; /* level_pick.c */
+extern int gHostStream;       /* stream.c */
+char *getenv(const char *name);
+
+/* HOST_TOUCH_ICONS_LOG=1: the touch buttons' icons (touch_context.cpp)
+ * worked out and logged in headless runs too, for the tests. */
+static int TouchIconsLog(void)
+{
+    static int sOn = -1;
+
+    if (sOn < 0) {
+        sOn = getenv("HOST_TOUCH_ICONS_LOG") != NULL;
+    }
+    return sOn;
+}
+/* The vehicle room running (CATEGORY_TYPE_*), or -1: touch_context.cpp. */
+int gHostCategoryType = -1;
 
 /* The vehicle rooms (the polar bear, the jetpack: ROOM_KIND_CATEGORY) run
  * in ActorCategory::Init, not LevelProgress::PlayRoom (game_frame.cpp):
@@ -49,8 +65,15 @@ s32 __wrap__ZN6Engine5Actor13ActorCategory4InitEi(s32 category)
     s32 result;
 
     gHostPlayingLevel = gLevelState->room.level;
+    /* the descriptors' types: categories 0-2 the polar ride, 3-5 the
+     * jetpack, 6 the hovercraft fight (the jetpack too; actor_anim.h) */
+    gHostCategoryType = category <= 2 ? 0 : category <= 5 ? 1 : 2;
+    if (TouchIconsLog()) {
+        HostLogf("category %d type %d\n", (int)category, gHostCategoryType);
+    }
     result = __real__ZN6Engine5Actor13ActorCategory4InitEi(category);
     gHostPlayingLevel = -1;
+    gHostCategoryType = -1;
     return result;
 }
 
@@ -71,6 +94,11 @@ void __wrap__ZN4Game2Ui3Hud6UpdateEv(Hud *self)
     __real__ZN4Game2Ui3Hud6UpdateEv(self);
 
     gHostHud.frame = HostFrame();
+    if (!gHostStream && TouchIconsLog()) {
+        u8 icons[4];
+
+        HostTouchIcons(icons, 1); /* the tests: it logs a change */
+    }
     /* (the HUD's own copies only follow while a counter is slid in) */
     gHostHud.lives = gLevelState->GetLives() > 0 ? gLevelState->GetLives() : 0;
     gHostHud.infiniteLives = HostInfiniteLives();

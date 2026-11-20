@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- A with the jetpack: fire. A burst, its trail behind. -->
+  <path d="M117.7 55.3 L98.5 63.8 L111.2 80.5 L91.6 72.9 L88.7 93.7 L80.2 74.5 L63.5 87.2 L71.1 67.6 L50.3 64.7 L69.5 56.2 L56.8 39.5 L76.4 47.1 L79.3 26.3 L87.8 45.5 L104.5 32.8 L96.9 52.4 Z" fill="#fff" stroke="#fff" stroke-width="5" stroke-linejoin="round"/>
+  <path d="M48.9 45.1 L4.0 42.0 L47.1 54.9 Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M45.1 60.1 L8.0 72.0 L46.9 71.9 Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M52.5 78.3 L20.0 96.0 L55.5 85.7 Z" fill="#fff" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+</svg>

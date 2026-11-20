@@ -647,6 +647,8 @@ static const char *const sPhoneFilters[] = { "pixels", "smooth" };
 static const char *const sTouchSizes[] = { "small", "medium", "large", "huge" };
 static const char *const sTouchMenus[] = { "levels", "always" };
 static const char *const sHaptics[] = { "off", "light", "strong" };
+static const char *const sTouchIcons[] = { "changing", "fixed" };
+void HostStreamEditLayout(void); /* stream.c */
 static const char *const sTextSizes[] = { "normal", "large" };
 
 static const struct Option sPhoneGeneral[] = {
@@ -676,6 +678,10 @@ static const struct Option sPhoneTouch[] = {
       &gHostSettings.touchInMenus, sTouchMenus, 2, HOST_APPLY_VIDEO },
     { "haptics", "a buzz as you press an on-screen button.", OPT_CHOICE, &gHostSettings.haptics,
       sHaptics, 3, HOST_APPLY_VIDEO },
+    { "icons", "changing: each button shows what it does right now. fixed: always the same.",
+      OPT_CHOICE, &gHostSettings.touchIcons, sTouchIcons, 2, 0 },
+    { "layout", "move and resize the buttons: drag them, pinch, or - and +.", OPT_ACTION, NULL,
+      NULL, 0, 0, NULL, NULL, HostStreamEditLayout },
 };
 
 static const struct Option sPhoneInterface[] = {
@@ -722,8 +728,8 @@ static const struct Category sCategories[] = {
     { "general", "skipping the intro", sPhoneGeneral, COUNT(sPhoneGeneral) },
     { "display", "frame rate, scaling, filter, colours and borders", sPhoneDisplay,
       COUNT(sPhoneDisplay) },
-    { "touch", "the on-screen buttons: size, opacity, menus and haptics", sPhoneTouch,
-      COUNT(sPhoneTouch) },
+    { "touch", "the on-screen buttons: size, opacity, menus, haptics, icons and layout",
+      sPhoneTouch, COUNT(sPhoneTouch) },
     { "interface", "text size, hud and button prompts", sPhoneInterface, COUNT(sPhoneInterface) },
     { "audio", "quality, and master, music and sound fx volume", sPhoneAudio, COUNT(sPhoneAudio) },
     { "gameplay", "auto save, looking around, jumps and lives", sPhoneGameplay,

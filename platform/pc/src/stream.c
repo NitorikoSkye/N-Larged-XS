@@ -21,7 +21,12 @@
  *   a second, the borders; at the start and when they change;
  * - type 5, a toast's text (auto save's "saved");
  * - type 6, a themed border's bar (borders.c; SendBar below), when it
- *   changes.
+ *   changes;
+ * - type 7, the touch buttons' icons: a byte each for A, B, L and R
+ *   (HOST_ICON_*, HOST_ICON_DIM; touch_context.cpp), when they change in
+ *   a level;
+ * - type 8, open the touch buttons' layout editor (Touch's layout; no
+ *   bytes): the app draws it over the settings menu, which stays open.
  * In, on stdin, 8-byte messages: a type byte, a byte unused, then up to
  * three little-endian u16s:
  * - 1, the GBA's keys held (KEYINPUT's bits, set for pressed);
@@ -373,6 +378,14 @@ static void ReadInput(int menu)
 /* --- What goes to the app ---------------------------------------------------- */
 
 #ifdef HOST_ANDROID
+/* Touch's layout: the app's editor (message 8). */
+void HostStreamEditLayout(void)
+{
+    if (gHostStream) {
+        Message(8, "", 0);
+    }
+}
+
 void HostStreamToast(const char *text)
 {
     if (gHostStream) {
@@ -389,6 +402,15 @@ static void SendState(int mode)
         sTouchMode = mode;
         Message(3, &b, 1);
     }
+#ifdef HOST_ANDROID
+    {
+        u8 icons[4];
+
+        if (HostTouchIcons(icons, mode == HOST_TOUCH_PLAY)) {
+            Message(7, icons, sizeof(icons));
+        }
+    }
+#endif
     if (sSettingsDirty) {
         s32 v[8];
 

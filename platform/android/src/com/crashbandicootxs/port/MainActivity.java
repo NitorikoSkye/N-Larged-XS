@@ -325,7 +325,7 @@ public class MainActivity extends Activity {
                 in.readFully(head);
                 int type = (head[0] & 0xFF) | (head[1] & 0xFF) << 8 | (head[2] & 0xFF) << 16 | (head[3] & 0xFF) << 24;
                 int n = (head[4] & 0xFF) | (head[5] & 0xFF) << 8 | (head[6] & 0xFF) << 16 | (head[7] & 0xFF) << 24;
-                if (n < 0 || n > 4 << 20 || type < 1 || type > 6) {
+                if (n < 0 || n > 4 << 20 || type < 1 || type > 8) {
                     throw new IOException("bad message from the game: type " + type + ", " + n + " bytes");
                 }
                 byte[] data = new byte[n];
@@ -364,6 +364,14 @@ public class MainActivity extends Activity {
                     if (n == 16 + h[2] * h[3] * 2) {
                         view.setBar(h[0], h[1], h[2], h[3], data, 16);
                     }
+                } else if (type == 7) {
+                    view.setIcons(data);
+                } else if (type == 8) {
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            view.startEditing();
+                        }
+                    });
                 } else if (type == 5) {
                     final String t = new String(data, "UTF-8");
                     runOnUiThread(new Runnable() {
@@ -587,7 +595,9 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (view != null && core != null) {
+        if (view != null && view.isEditing()) {
+            view.finishEditing(); /* the layout editor: done */
+        } else if (view != null && core != null) {
             sendBack();
         } else {
             super.onBackPressed();

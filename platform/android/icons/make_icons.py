@@ -4,7 +4,10 @@ a cartoon style: brush strokes that swell and taper instead of even lines,
 chunky arrowheads a little off true, wedges for speed and impact.
 
     make_icons.py [DIR]     writes jump.svg, spin.svg, slam.svg, turbo.svg,
-                            pause.svg and counters.svg (white, 128x128)
+                            pause.svg, counters.svg and the icons the
+                            buttons change to (white, 128x128): double.svg,
+                            crouch.svg, slide.svg, stroke.svg, shoot.svg,
+                            roll_left.svg, roll_right.svg and dash.svg
 
 A brush stroke is a curve (cubic Béziers) drawn as a filled outline whose
 width follows a profile along it (start, middle, end), with round ends.
@@ -214,10 +217,103 @@ def counters():
     return svg("SELECT: show the HUD's counters. An eye.", parts)
 
 
+def double():
+    parts = []
+    # a jump's arc, then a second, higher one off its top
+    parts.append(brush([((10, 116), (14, 84), (30, 70), (46, 76))], [(0, 5), (0.6, 10), (1, 8)]))
+    parts.append(brush([((46, 76), (44, 40), (70, 14), (92, 24))], [(0, 8), (0.5, 15), (1, 12)]))
+    parts.append(head((120, 40), 28, 32, tilt=-6))
+    # the kick where the second jump starts
+    for base, tip, w in (((38, 88), (22, 104), 9), ((56, 88), (70, 104), 9)):
+        parts.append(wedge(base, tip, w))
+    return svg("A in the air: the double jump. A second jump off the top of the first.", parts)
+
+
+def crouch():
+    parts = []
+    # pressed down: a fat chevron squashing onto the ground
+    parts.append(line((26, 30), (64, 62), [(0, 9), (1, 16)]))
+    parts.append(line((102, 30), (64, 62), [(0, 9), (1, 16)]))
+    parts.append(head((64, 86), 90, 30, tilt=2))
+    parts.append(brush([((10, 104), (40, 99), (88, 99), (118, 104))], [(0, 4), (0.5, 11), (1, 4)]))
+    # squash marks out to the sides
+    for base, tip, w in (((24, 90), (6, 84), 7), ((104, 90), (122, 84), 7)):
+        parts.append(wedge(base, tip, w))
+    return svg("R on the ground: crouch. Pressed down onto the ground.", parts)
+
+
+def slide():
+    parts = []
+    # low along the ground and forward, the dust kicked up behind
+    parts.append(brush([((28, 82), (52, 80), (78, 80), (98, 78))], [(0, 6), (0.6, 15), (1, 13)]))
+    parts.append(head((124, 76), -3, 30, tilt=2))
+    parts.append(brush([((8, 102), (40, 98), (88, 98), (122, 100))], [(0, 3), (0.5, 9), (1, 3)]))
+    for cx, cy, r in ((22, 70, 9), (10, 56, 6), (30, 50, 5)):
+        parts.append('<circle cx="%d" cy="%d" r="%d" fill="#fff"/>' % (cx, cy, r))
+    for base, tip, w in (((46, 66), (34, 40), 8), ((62, 64), (58, 34), 7)):
+        parts.append(wedge(base, tip, w))
+    return svg("R while running: the slide. Low and forward, dust behind.", parts)
+
+
+def stroke():
+    parts = []
+    # a swimming stroke: a sweep forward through the water, bubbles off it
+    parts.append(brush([((14, 92), (34, 46), (74, 34), (100, 50))], [(0, 6), (0.5, 15), (1, 11)]))
+    parts.append(head((122, 70), 42, 30, tilt=-4))
+    parts.append(brush([((10, 116), (30, 106), (46, 120), (64, 110)), ((64, 110), (80, 100), (96, 116), (116, 106))],
+                       [(0, 3), (0.5, 7), (1, 3)]))
+    for cx, cy, r in ((40, 20, 7), (60, 12, 5), (24, 32, 4)):
+        parts.append(ring(cx, cy, r, r, 4, 2.5))
+    return svg("A underwater: a stroke. A sweep through the water, bubbles off it.", parts)
+
+
+def shoot():
+    parts = []
+    # a shot: a burst, its trail streaming back
+    pts = []
+    for i in range(16):
+        a = math.radians(i * 22.5 - 8)
+        r = 34 if i % 2 == 0 else 15
+        pts.append((84 + r * math.cos(a), 60 + r * math.sin(a)))
+    parts.append('<path d="M' + " L".join("%.1f %.1f" % q for q in pts) + ' Z" fill="#fff" stroke="#fff" '
+                 'stroke-width="5" stroke-linejoin="round"/>')
+    for base, tip, w in (((48, 50), (4, 42), 10), ((46, 66), (8, 72), 12), ((54, 82), (20, 96), 8)):
+        parts.append(wedge(base, tip, w))
+    return svg("A with the jetpack: fire. A burst, its trail behind.", parts)
+
+
+def roll(direction):
+    parts = []
+    # a barrel roll: round once and away
+    k = 1 if direction > 0 else -1
+    cx = 64
+
+    def X(x):
+        return cx + k * (x - cx)
+    parts.append(brush([((X(70), 98), (X(18), 100), (X(14), 30), (X(60), 24)),
+                        ((X(60), 24), (X(92), 20), (X(110), 40), (X(108), 64))], [(0, 6), (0.5, 15), (1, 12)]))
+    parts.append(head((X(100), 102), 90 + k * 18, 32, tilt=-k * 4))
+    name = "R: roll right" if direction > 0 else "L: roll left"
+    return svg("%s with the jetpack. Round once and away." % name, parts)
+
+
+def dash():
+    parts = []
+    # forward, fast: two chevrons, speed streaming off them
+    for x0, w in ((44, 12), (78, 15)):
+        parts.append(line((x0, 28), (x0 + 30, 64), [(0, w * 0.7), (1, w)]))
+        parts.append(line((x0, 100), (x0 + 30, 64), [(0, w * 0.7), (1, w)]))
+    for base, tip, w in (((34, 46), (6, 44), 9), ((30, 64), (2, 64), 11), ((34, 82), (8, 86), 8)):
+        parts.append(wedge(base, tip, w))
+    return svg("B on the polar ride: dash. Forward, fast.", parts)
+
+
 def main():
     out = sys.argv[1] if len(sys.argv) > 1 else os.path.dirname(os.path.abspath(__file__))
     for name, make in (("jump", jump), ("spin", spin), ("slam", slam), ("turbo", turbo), ("pause", pause),
-                       ("counters", counters)):
+                       ("counters", counters), ("double", double), ("crouch", crouch), ("slide", slide),
+                       ("stroke", stroke), ("shoot", shoot), ("roll_left", lambda: roll(-1)),
+                       ("roll_right", lambda: roll(1)), ("dash", dash)):
         with open(os.path.join(out, name + ".svg"), "w") as f:
             f.write(make())
 

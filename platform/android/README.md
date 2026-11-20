@@ -25,7 +25,17 @@ body slam: an arrow curling over and down onto the ground, which it hits
 hard) in the top corners, Select (show the counters) and Start (pause) at the bottom. Hold the turbo
 run's button for a moment to lock it on (**Auto**, handy for time trials):
 it buzzes, turns orange and says AUTO, and stays held in levels (through
-pausing) until you tap it again. Everywhere else (the title screen, the save menu, the warp
+pausing) until you tap it again.
+
+The icons follow what Crash can do right now: R is crouch when standing,
+slide when running and body slam in the air; A becomes the double jump in
+the air while it can still be done; underwater A is a swim stroke and R a
+spin; on the polar ride B is the dash; with the jetpack A fires and L and R
+roll. A button with nothing to do at that moment (no power yet, already
+used, not on this ride) is drawn faint. Touch's **icons: fixed** keeps the
+original four. Touch's **layout** opens an editor: drag any button to move
+it, pinch it or use - and + to resize it, Reset puts everything back, Done
+(or back) keeps it. Everywhere else (the title screen, the save menu, the warp
 room, the pause menu, game over's "continue?") they're hidden and you tap
 what you want, as with the PC port's mouse: a tap on a menu row picks it, a
 tap on a warp room pad walks Crash there and a tap on the pad he's on
@@ -49,7 +59,8 @@ drawn in the game's style, with the phone's own options:
   level's porthole and name on the left and your progress on the right,
   both kept above the touch buttons).
 - **Touch:** the buttons' size (small to huge) and opacity, whether they
-  also show in the menus, and haptics (off, light, strong).
+  also show in the menus, haptics (off, light, strong), icons (changing
+  with what Crash can do, or fixed) and layout (the editor).
 - **Interface:** text size (normal, or large: the menu's rows in the
   game's big font, four to a page), the HUD (in the game, hidden, or in
   the left border), and button prompts (the
