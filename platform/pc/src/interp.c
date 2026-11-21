@@ -223,7 +223,7 @@ static void EntryPos(const struct HdFrame *f, int i, s32 *x, s32 *y)
 {
     const u16 *oam = (const u16 *)f->oam;
 
-    *x = (s32)((oam[4 * i + 1] & 0x1FF) << 23) >> 23;
+    *x = HOST_OBJ_X(oam[4 * i + 1]);
     *y = oam[4 * i] & 0xFF;
     if (*y >= 160) {
         *y -= 256;

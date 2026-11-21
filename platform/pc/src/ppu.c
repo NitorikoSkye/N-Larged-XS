@@ -524,7 +524,7 @@ static void ObjLine(u32 y, u32 dispcnt)
         u32 boxW = width;
         u32 boxH = height;
         u32 objY = attr0 & 0xFF;
-        s32 objX = (s32)((attr1 & 0x1FF) << 23) >> 23;
+        s32 objX = HOST_OBJ_X(attr1);
         u32 priority = (attr2 >> 10) & 3;
         u32 objMode = (attr0 >> 10) & 3;
         u32 flags = objMode == 1 ? OBJ_SEMI : 0;

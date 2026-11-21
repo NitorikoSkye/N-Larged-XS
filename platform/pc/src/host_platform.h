@@ -78,6 +78,18 @@ static inline int HostWideArtColumn(int x)
 }
 #endif
 
+/* An OBJ's X from OAM attribute 1's 9 bits. The GBA reads 256-511 as
+ * -256..-1: past its 240-pixel screen either way. A wider screen
+ * (HOST_WIDE_BG) shows 256 and on, so there what is past the screen's
+ * right edge is negative instead (a sprite that far left is off screen
+ * whatever it is: the game culls at x + w > 0). */
+#ifdef HOST_WIDE_BG
+#define HOST_OBJ_X(attr1) \
+    ((s32)((attr1) & 0x1FF) >= HOST_SCREEN_WIDTH ? (s32)((attr1) & 0x1FF) - 512 : (s32)((attr1) & 0x1FF))
+#else
+#define HOST_OBJ_X(attr1) ((s32)(((attr1) & 0x1FF) << 23) >> 23)
+#endif
+
 #ifndef HOST_SCREEN_WIDTH
 #define HOST_SCREEN_WIDTH  240
 #endif

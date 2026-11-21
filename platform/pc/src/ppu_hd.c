@@ -474,7 +474,7 @@ static void ObjLine(const struct HdView *v, s32 Y, u32 dispcnt, struct ObjPixel 
         u32 boxW = width;
         u32 boxH = height;
         s32 objY = attr0 & 0xFF;
-        s32 objX = (s32)((attr1 & 0x1FF) << 23) >> 23;
+        s32 objX = HOST_OBJ_X(attr1);
         u32 priority = (attr2 >> 10) & 3;
         u32 flags = ((attr0 >> 10) & 3) == 1 ? OBJ_SEMI : 0;
         s32 X0;
