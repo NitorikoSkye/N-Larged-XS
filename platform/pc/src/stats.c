@@ -119,6 +119,9 @@ static void WriteFile(void)
 /* Once a game frame (input.c's key read). */
 void HostStatsFrame(void)
 {
+#ifdef HOST_WIDE_BG
+    gHostVram[HOST_WIDE_PAUSE] = (unsigned char)HostPauseMenuUp(); /* ppu.c */
+#endif
     HostUpdateFrame();
     if (sSession && !HostPauseMenuUp()) {
         sCurrent.frames++;

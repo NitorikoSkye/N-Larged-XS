@@ -49,6 +49,35 @@ extern u32 gHostVBlanks;
 /* The PPU (ppu.c). irq.c's frame loop draws each visible line as the
  * display reaches it (HostPpuLine) and, at line 160, makes the frame the
  * finished picture (HostPpuFrame): gHostScreen, 8-bit XRGB. */
+#ifdef HOST_WIDE_BG
+/* Widescreen (gba/host.h's HOST_WIDE_BG): 240-pixel art centred on the
+ * wider screen starts HOST_ART_X0 in. The pause screen's art (the game's
+ * pause menu, ppu.c; the settings menu's first page, ui.c) is widened
+ * instead: its edge strips stay at the screen's edges, a plain column
+ * just inside each (HOST_ART_FILL_L, HOST_ART_FILL_R) is repeated, and
+ * the rest is where centred art would be, so what the game draws over it
+ * (at DISPLAY_ART_X) lines up. The art column of screen column x. */
+#define HOST_ART_X0     ((HOST_SCREEN_WIDTH - 240) / 2)
+#define HOST_ART_FILL_L 8
+#define HOST_ART_FILL_R 234
+static inline int HostWideArtColumn(int x)
+{
+    if (x < HOST_ART_FILL_L) {
+        return x;
+    }
+    if (x < HOST_ART_FILL_L + HOST_ART_X0) {
+        return HOST_ART_FILL_L;
+    }
+    if (x < HOST_ART_FILL_R + HOST_ART_X0) {
+        return x - HOST_ART_X0;
+    }
+    if (x < HOST_ART_FILL_R + 2 * HOST_ART_X0) {
+        return HOST_ART_FILL_R;
+    }
+    return x - 2 * HOST_ART_X0;
+}
+#endif
+
 #ifndef HOST_SCREEN_WIDTH
 #define HOST_SCREEN_WIDTH  240
 #endif

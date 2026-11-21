@@ -137,6 +137,14 @@ struct HostSettings {
 };
 extern struct HostSettings gHostSettings;
 
+/* Display's borders as drawn: widescreen (HOST_WIDE_BG) has none, the
+ * picture's height leaves only a thin line of them. */
+#ifdef HOST_WIDE_BG
+#define HOST_BORDERS_SHOWN() HOST_BORDERS_BLACK
+#else
+#define HOST_BORDERS_SHOWN() (gHostSettings.borders)
+#endif
+
 /* The update check (update_check.c). */
 void HostUpdateFrame(void);
 int HostUpdateAvailable(void);
@@ -360,7 +368,11 @@ void HostFrontendQuit(void);
 
 /* ui.c: the settings menu, drawn on a 240x160 canvas in the game's own
  * style (its fonts and its pause screen's art). */
-#define HOST_UI_WIDTH  240
+#ifdef HOST_WIDE_BG
+#define HOST_UI_WIDTH HOST_SCREEN_WIDTH /* widescreen: the menu is as wide */
+#else
+#define HOST_UI_WIDTH 240
+#endif
 #define HOST_UI_HEIGHT 160
 
 enum {

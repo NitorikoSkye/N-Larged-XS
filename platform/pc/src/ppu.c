@@ -280,7 +280,10 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
 
 #ifdef HOST_WIDE_BG
         /* not a level layer: 240-pixel art, in the centred window */
-        if (wide == NULL) {
+        if (wide == NULL && gHostVram[HOST_WIDE_PAUSE]) {
+            /* the game's pause menu: its art widened (host_platform.h) */
+            vx = (u32)HostWideArtColumn((int)x);
+        } else if (wide == NULL) {
             if (x < ART_X0 || x >= ART_X0 + BITMAP_W) {
                 out[x] = TRANSPARENT;
                 continue;

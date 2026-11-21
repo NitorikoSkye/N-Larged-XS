@@ -198,6 +198,16 @@ static void TextRight(int large, int right, int y, const char *s, int pal)
     Text(large, right - HostUiTextWidth(large, s), y, s, pal);
 }
 
+/* Widescreen (HOST_WIDE_BG): the pause screen's art widened to the
+ * canvas (HostWideArtColumn), its contents AX further right. */
+#ifdef HOST_WIDE_BG
+#define AX           HOST_ART_X0
+#define ART_COLUMN(x) HostWideArtColumn(x)
+#else
+#define AX           0
+#define ART_COLUMN(x) (x)
+#endif
+
 /* The pause art's pixel (x, y). */
 static inline u32 Art(int x, int y)
 {
@@ -211,7 +221,7 @@ static void DrawPauseScreen(void)
 
     for (y = 0; y < H; y++) {
         for (x = 0; x < W; x++) {
-            sCanvas[y * W + x] = Art(x, y);
+            sCanvas[y * W + x] = Art(ART_COLUMN(x), y);
         }
     }
 }
@@ -463,7 +473,11 @@ static int FpsAvailable(int choice)
 
 static int NotStretched(void)
 {
+#ifdef HOST_WIDE_BG
+    return 0; /* widescreen: no borders (HOST_BORDERS_SHOWN) */
+#else
     return gHostSettings.scaling != HOST_SCALING_STRETCH;
+#endif
 }
 
 static int Never(void)
@@ -1094,7 +1108,7 @@ void HostUiMouse(int event, int x, int y)
     case PAGE_CATEGORIES:
         {
             int i = (y - 0x44) / 10;
-            int over = x < 0x64 && y >= 0x44 && i >= 0 && i < COUNT(sCategories);
+            int over = x < AX + 0x64 && y >= 0x44 && i >= 0 && i < COUNT(sCategories);
 
             if (Large()) {
                 i = RowAt(y, COUNT(sCategories));
@@ -1190,9 +1204,9 @@ void HostUiMouse(int event, int x, int y)
             }
             sBindRow = i;
             if (i < HOST_BIND_COUNT) {
-                if (x >= 108 && x < 170) {
+                if (x >= 2 * AX + 108 && x < 2 * AX + 170) {
                     sBindSlot = 0;
-                } else if (x >= 170) {
+                } else if (x >= 2 * AX + 170) {
                     sBindSlot = 1;
                 } else if (event == HOST_UI_MOUSE_LEFT) {
                     break; /* the action's name: nothing to change there */
@@ -1253,9 +1267,9 @@ static void DrawCategories(void)
     }
     DrawPauseScreen();
     TextCentered(1, W / 2, 14, SETTINGS_TITLE, HOST_UI_PAL_NORMAL);
-    Text(1, 0x20, 0x26, HOST_PORT_VERSION, HOST_UI_PAL_NORMAL);
+    Text(1, AX + 0x20, 0x26, HOST_PORT_VERSION, HOST_UI_PAL_NORMAL);
     /* The monitor's title, as the pause menu's page titles. */
-    TextCentered(0, 194, 0x2D, cat->name, HOST_UI_PAL_NORMAL);
+    TextCentered(0, AX + 194, 0x2D, cat->name, HOST_UI_PAL_NORMAL);
     for (i = 0; i < COUNT(sCategories); i++) {
         int pal;
 
@@ -1264,11 +1278,11 @@ static void DrawCategories(void)
         } else {
             pal = i == sCategory ? HOST_UI_PAL_WHITE : HOST_UI_PAL_NORMAL;
         }
-        TextCentered(0, 0x32, 0x45 + 10 * i, sCategories[i].name, pal);
+        TextCentered(0, AX + 0x32, 0x45 + 10 * i, sCategories[i].name, pal);
     }
     n = Wrap(cat->about, 66, lines, 6);
     for (i = 0; i < n; i++) {
-        TextCentered(0, 194, 108 - n * 5 + 10 * i, lines[i],
+        TextCentered(0, AX + 194, 108 - n * 5 + 10 * i, lines[i],
                      cat->count ? HOST_UI_PAL_NORMAL : HOST_UI_PAL_GREY_LIGHT);
     }
 }
@@ -1426,7 +1440,7 @@ static void DrawBindings(void)
         Text(0, 18, y, sBindNames[i], i == sBindRow ? HOST_UI_PAL_WHITE : HOST_UI_PAL_NORMAL);
         for (s = 0; s < HOST_BIND_SLOTS; s++) {
             char name[48];
-            int x = s == 0 ? 112 : 172;
+            int x = 2 * AX + (s == 0 ? 112 : 172); /* from the right, on a wider panel */
             int pal;
 
             if (i == sBindRow && s == sBindSlot && sCapturing) {

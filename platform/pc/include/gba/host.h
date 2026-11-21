@@ -28,6 +28,9 @@
  * its right (two s16 a layer, from its scroll: BgLayer::CommitScroll): a
  * room narrower than the screen shows nothing past its edges. */
 #define HOST_WIDE_BG_EDGES (HOST_WIDE_BG_MAPS + 4 * HOST_WIDE_BG_MAP)
+/* A byte: the game's pause menu is up, its 240-pixel art widened to the
+ * screen (HostWideArtColumn, host_platform.h) rather than centred. */
+#define HOST_WIDE_PAUSE (HOST_WIDE_BG_EDGES + 0x20)
 #ifdef HOST_WIDE_BG
 #define HOST_VRAM_SIZE (HOST_WIDE_BG_EDGES + 0x100)
 #else

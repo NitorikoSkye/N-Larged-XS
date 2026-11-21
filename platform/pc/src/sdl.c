@@ -1500,7 +1500,7 @@ static void DrawPad(SDL_Rect dst, int scale, int right)
     bar = right ? ww - (dst.x + dst.w) : dst.x;
     unit = bar / 75 > 1 ? bar / 75 : 1;
     {
-        int strip = gHostSettings.borders == HOST_BORDERS_THEMED ? 9 * unit : 0;
+        int strip = HOST_BORDERS_SHOWN() == HOST_BORDERS_THEMED ? 9 * unit : 0;
         int room = bar - strip;
 
         if (room >= (PAD_W + 4) * unit) {
@@ -1576,7 +1576,7 @@ static void PlaceOverlay(SDL_Rect dst, int w, int h, int side, int bottom, int *
     SDL_GetRendererOutputSize(sRenderer, &ww, &wh);
     bar = side == 0 ? dst.x : ww - (dst.x + dst.w);
     /* beside the themed wall's riveted plate, not over it */
-    strip = gHostSettings.borders == HOST_BORDERS_THEMED ? 9 * (bar / 75 > 1 ? bar / 75 : 1) : 0;
+    strip = HOST_BORDERS_SHOWN() == HOST_BORDERS_THEMED ? 9 * (bar / 75 > 1 ? bar / 75 : 1) : 0;
     for (s = *scale; s >= 1; s--) {
         if (bar - strip >= w * s + 2 * s) {
             *scale = s;
@@ -1720,7 +1720,7 @@ static void DrawBorders(SDL_Rect dst)
     if (dst.w >= ww && dst.h >= wh) {
         return; /* no borders */
     }
-    switch (gHostSettings.borders) {
+    switch (HOST_BORDERS_SHOWN()) {
     case HOST_BORDERS_AMBIENT:
         DrawAmbient(ww, wh);
         break;
@@ -1747,7 +1747,7 @@ static void Present(const u32 *src, int w, int h, int ownFrame, double dt, int m
 
     if (src != NULL) {
         UploadPicture(src, w, h, ownFrame, dt);
-        if (gHostSettings.borders == HOST_BORDERS_AMBIENT) {
+        if (HOST_BORDERS_SHOWN() == HOST_BORDERS_AMBIENT) {
             UpdateAmbient(dt);
         }
     }

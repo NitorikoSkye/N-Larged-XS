@@ -264,6 +264,19 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
 #endif
     s32 vofs = (s32)(Io16(f, REG_OFFSET_BG0VOFS + 4 * bg) & 0x1FF) * S + v->bgY[bg];
     u32 ty = (u32)FloorDiv(Y + vofs, S) & heightMask;
+#ifdef HOST_WIDE_BG
+    if (!(cnt & HOST_BGCNT_WIDE_MAP) && f->vram[HOST_WIDE_PAUSE]) {
+        /* the game's pause menu: its art widened (ppu.c), a column each
+         * screen pixel */
+        s32 base = (s32)(Io16(f, REG_OFFSET_BG0HOFS + 4 * bg) & 0x1FF);
+        s32 X;
+
+        for (X = 0; X < outW; X++) {
+            out[X] = TextTexel(f, bg, cnt, (u32)(HostWideArtColumn(X / S) + base) & widthMask, ty);
+        }
+        return;
+    }
+#endif
     s32 col = FloorDiv(hofs, S);
     s32 X = -(hofs - col * S); /* where column `col` starts */
 

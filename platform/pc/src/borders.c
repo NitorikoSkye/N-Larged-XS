@@ -997,7 +997,7 @@ void HostBordersPhone(int left, int right, int screenH, int picW, int top,
     int side;
 
     gHostHudInBorder = 0;
-    if (gHostSettings.borders != HOST_BORDERS_THEMED || screenH <= 0) {
+    if (HOST_BORDERS_SHOWN() != HOST_BORDERS_THEMED || screenH <= 0) {
         return;
     }
     ReadStats(&sStats);
