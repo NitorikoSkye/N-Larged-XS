@@ -198,14 +198,12 @@ static void TextRight(int large, int right, int y, const char *s, int pal)
     Text(large, right - HostUiTextWidth(large, s), y, s, pal);
 }
 
-/* Widescreen (HOST_WIDE_BG): the pause screen's art widened to the
- * canvas (HostWideArtColumn), its contents AX further right. */
+/* Widescreen (HOST_WIDE_BG): the pause screen's art centred on the
+ * canvas, AX in, its edge strips darkened in the bars (HostWideArtColumn). */
 #ifdef HOST_WIDE_BG
-#define AX           HOST_ART_X0
-#define ART_COLUMN(x) HostWideArtColumn(x)
+#define AX HOST_ART_X0
 #else
-#define AX           0
-#define ART_COLUMN(x) (x)
+#define AX 0
 #endif
 
 /* The pause art's pixel (x, y). */
@@ -221,7 +219,14 @@ static void DrawPauseScreen(void)
 
     for (y = 0; y < H; y++) {
         for (x = 0; x < W; x++) {
-            sCanvas[y * W + x] = Art(ART_COLUMN(x), y);
+#ifdef HOST_WIDE_BG
+            int dim;
+            u32 c = Art(HostWideArtColumn(x, &dim), y);
+
+            sCanvas[y * W + x] = dim ? 0xFF000000 | ((c >> 1) & 0x7F7F7F) : c;
+#else
+            sCanvas[y * W + x] = Art(x, y);
+#endif
         }
     }
 }

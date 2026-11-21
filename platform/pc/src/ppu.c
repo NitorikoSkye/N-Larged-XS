@@ -277,12 +277,13 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
         u32 vx = x;
         u32 sx;
         u32 tx;
+        int dim = 0; /* a widened pause screen's bar: the edge strip, darkened */
 
 #ifdef HOST_WIDE_BG
         /* not a level layer: 240-pixel art, in the centred window */
         if (wide == NULL && gHostVram[HOST_WIDE_PAUSE]) {
             /* the game's pause menu: its art widened (host_platform.h) */
-            vx = (u32)HostWideArtColumn((int)x);
+            vx = (u32)HostWideArtColumn((int)x, &dim);
         } else if (wide == NULL) {
             if (x < ART_X0 || x >= ART_X0 + BITMAP_W) {
                 out[x] = TRANSPARENT;
@@ -336,6 +337,9 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
             addr = charBase + tile * 32 + py * 4 + px / 2;
             index = addr < 0x10000 ? (gHostVram[addr] >> ((px & 1) * 4)) & 0xF : 0;
             out[x] = index ? Pltt((entry >> 12) * 16 + index) : TRANSPARENT;
+        }
+        if (dim && out[x] != TRANSPARENT) {
+            out[x] = (out[x] >> 1) & 0x3DEF; /* each 5-bit channel halved */
         }
     }
 }

@@ -272,7 +272,11 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
         s32 X;
 
         for (X = 0; X < outW; X++) {
-            out[X] = TextTexel(f, bg, cnt, (u32)(HostWideArtColumn(X / S) + base) & widthMask, ty);
+            int dim;
+            u32 col = (u32)HostWideArtColumn(X / S, &dim);
+            u16 c = TextTexel(f, bg, cnt, (col + base) & widthMask, ty);
+
+            out[X] = dim && c != TRANSPARENT ? (c >> 1) & 0x3DEF : c;
         }
         return;
     }

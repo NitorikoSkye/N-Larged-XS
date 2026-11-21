@@ -52,29 +52,24 @@ extern u32 gHostVBlanks;
 #ifdef HOST_WIDE_BG
 /* Widescreen (gba/host.h's HOST_WIDE_BG): 240-pixel art centred on the
  * wider screen starts HOST_ART_X0 in. The pause screen's art (the game's
- * pause menu, ppu.c; the settings menu's first page, ui.c) is widened
- * instead: its edge strips stay at the screen's edges, a plain column
- * just inside each (HOST_ART_FILL_L, HOST_ART_FILL_R) is repeated, and
- * the rest is where centred art would be, so what the game draws over it
- * (at DISPLAY_ART_X) lines up. The art column of screen column x. */
-#define HOST_ART_X0     ((HOST_SCREEN_WIDTH - 240) / 2)
-#define HOST_ART_FILL_L 8
-#define HOST_ART_FILL_R 234
-static inline int HostWideArtColumn(int x)
+ * pause menu, ppu.c; the settings menu's first page, ui.c) stays centred,
+ * and the bars beside it are its left edge strip (the riveted 9 columns;
+ * mirrored on the right) repeated and darkened (*dim set), so the screen
+ * is filled without stretching the art. The art column of screen column x. */
+#define HOST_ART_X0    ((HOST_SCREEN_WIDTH - 240) / 2)
+#define HOST_ART_STRIP 9
+static inline int HostWideArtColumn(int x, int *dim)
 {
-    if (x < HOST_ART_FILL_L) {
-        return x;
+    *dim = 1;
+    if (x < HOST_ART_X0) {
+        return (x + HOST_ART_STRIP - HOST_ART_X0 % HOST_ART_STRIP) % HOST_ART_STRIP;
     }
-    if (x < HOST_ART_FILL_L + HOST_ART_X0) {
-        return HOST_ART_FILL_L;
+    if (x >= HOST_ART_X0 + 240) {
+        /* the left strip mirrored: the right one holds the monitor's bezel */
+        return HOST_ART_STRIP - 1 - (x - HOST_ART_X0 - 240) % HOST_ART_STRIP;
     }
-    if (x < HOST_ART_FILL_R + HOST_ART_X0) {
-        return x - HOST_ART_X0;
-    }
-    if (x < HOST_ART_FILL_R + 2 * HOST_ART_X0) {
-        return HOST_ART_FILL_R;
-    }
-    return x - 2 * HOST_ART_X0;
+    *dim = 0;
+    return x - HOST_ART_X0;
 }
 #endif
 
