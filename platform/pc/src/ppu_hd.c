@@ -226,7 +226,7 @@ static int BarHd(const struct HdFrame *f, u32 bgOn, u32 mode, s32 X, s32 S)
             any = 1;
         }
     }
-    return any || x < ART_X0 || x >= ART_X0 + BITMAP_W;
+    return any || (!f->vram[HOST_WIDE_WARP] && (x < ART_X0 || x >= ART_X0 + BITMAP_W));
 }
 
 /* Outside the centred 240-pixel art (ART_X0), at the view's scale. */
@@ -301,7 +301,7 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
         }
     }
 #ifdef HOST_WIDE_BG
-    if (!(cnt & HOST_BGCNT_WIDE_MAP)) {
+    if (!(cnt & HOST_BGCNT_WIDE_MAP) && !f->vram[HOST_WIDE_WARP]) {
         ClipToArt(out, outW, S);
     }
 #endif

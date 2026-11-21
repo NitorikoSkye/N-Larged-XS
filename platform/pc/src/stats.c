@@ -39,6 +39,8 @@ static int sRead;
 
 void HostUpdateFrame(void); /* update_check.c */
 int HostPauseMenuUp(void);  /* mouse_hooks.cpp */
+extern int gHostInWarpRoom; /* level_pick.c */
+extern int gHostInSaveMenu; /* mouse_hooks.cpp */
 
 static int UseFile(void)
 {
@@ -121,6 +123,7 @@ void HostStatsFrame(void)
 {
 #ifdef HOST_WIDE_BG
     gHostVram[HOST_WIDE_PAUSE] = (unsigned char)HostPauseMenuUp(); /* ppu.c */
+    gHostVram[HOST_WIDE_WARP] = (unsigned char)(gHostInWarpRoom || gHostInSaveMenu);
 #endif
     HostUpdateFrame();
     if (sSession && !HostPauseMenuUp()) {

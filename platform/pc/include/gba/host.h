@@ -31,6 +31,10 @@
 /* A byte: the game's pause menu is up, its 240-pixel art widened to the
  * screen (HostWideArtColumn, host_platform.h) rather than centred. */
 #define HOST_WIDE_PAUSE (HOST_WIDE_BG_EDGES + 0x20)
+/* A byte: the warp room is up. Its backgrounds aren't cut to the centred
+ * art: the sky's map repeats, and the platforms' strip (the worlds side by
+ * side, which the page turn scrolls) shows the neighbouring ones. */
+#define HOST_WIDE_WARP (HOST_WIDE_BG_EDGES + 0x21)
 #ifdef HOST_WIDE_BG
 #define HOST_VRAM_SIZE (HOST_WIDE_BG_EDGES + 0x100)
 #else

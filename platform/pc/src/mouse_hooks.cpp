@@ -185,7 +185,9 @@ s32 __wrap__ZN6Engine3Sys8KeyInput6UpdateEv(Engine::Sys::KeyInput *self)
  * digits' own palette indices: their outline and their red to yellow
  * shading, as the record time's), one 16x16 OBJ, its tiles queued like a
  * sprite's. A tap or a click on it opens the settings (WarpRoomKeys). */
-#define COG_X 220
+/* the screen's top right corner (220 on the GBA's 240: a widescreen
+ * build's warp room is as wide as the screen) */
+#define COG_X (DISPLAY_WIDTH - 20)
 #define COG_Y 4
 static u8 sCogTiles[16 * 16 / 2];
 static u32 sCogFrame = 0xFFFFFFFF;
@@ -236,7 +238,7 @@ static void DrawCog(void)
     }
     memset(&oam, 0, sizeof(oam));
     oam.y = DISPLAY_ART_Y + COG_Y;
-    oam.x = DISPLAY_ART_X + COG_X;
+    oam.x = COG_X;
     oam.shape = 0; /* square */
     oam.size = 1;  /* 16x16 */
     oam.tileNum = tile;
@@ -508,7 +510,8 @@ static u16 WarpRoomKeys(int left, int wheel)
         return wheel > 0 ? DPAD_UP : DPAD_DOWN;
     }
     /* the settings cog (DrawCog), top right */
-    if (left && x >= COG_X - 4 && x < COG_X + 20 && y >= 0 && y < COG_Y + 20) {
+    if (left && gHostMouse.x >= COG_X - 4 && gHostMouse.x < COG_X + 20 && y >= 0 &&
+        y < COG_Y + 20) {
         sTarget = -1;
         sEnter = 0;
         HostUiOpen();

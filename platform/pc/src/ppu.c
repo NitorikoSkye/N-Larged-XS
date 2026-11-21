@@ -235,7 +235,7 @@ static int Bar(u32 bgOn, u32 mode, s32 x)
             any = 1;
         }
     }
-    return any || x < ART_X0 || x >= ART_X0 + BITMAP_W;
+    return any || (!gHostVram[HOST_WIDE_WARP] && (x < ART_X0 || x >= ART_X0 + BITMAP_W));
 }
 #endif
 
@@ -284,6 +284,8 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
         if (wide == NULL && gHostVram[HOST_WIDE_PAUSE]) {
             /* the game's pause menu: its art widened (host_platform.h) */
             vx = (u32)HostWideArtColumn((int)x, &dim);
+        } else if (wide == NULL && gHostVram[HOST_WIDE_WARP]) {
+            vx = x - ART_X0; /* the warp room: not cut to the art (gba/host.h) */
         } else if (wide == NULL) {
             if (x < ART_X0 || x >= ART_X0 + BITMAP_W) {
                 out[x] = TRANSPARENT;
