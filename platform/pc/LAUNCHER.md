@@ -16,7 +16,9 @@ installing.
    deleted.
 
 The ROM it needs: **Crash Bandicoot XS (Europe) (En,Fr,De,Es,It,Nl)**, SHA-1
-`bdd061e1b5187c0528928ec0ddb6886b1de16970`. Another ROM (the North American
+`bdd061e1b5187c0528928ec0ddb6886b1de16970` (8,388,608 bytes, CRC-32
+`CCFD654F`), as it is or in a `.zip` (its `.gba`, or its only file;
+stored or deflated). Another ROM (the North American
 *Huge Adventure*, a hacked or trimmed one) is refused, and nothing is
 written.
 
@@ -33,7 +35,11 @@ there the same way.
 ```
 NLargedXSLauncher [options] [-- game options]
   (no options)         open the launcher's window
-  -i, --import ROM     make the game from ROM, without a window
+  -i, --import ROM     make the game from ROM (a .gba, or a .zip with it), without
+                       a window
+  -g, --game ROM       --import ROM, then --launch (makes the game only if it
+                       isn't up to date)
+      --progress       with --import: "progress <0-1> <text>" lines on stdout
   -o, --output PATH    where to write the game (default: next to the launcher)
   -l, --launch         start the game (after --import, with both) and exit
   -c, --check ROM      only check that ROM is the right one
@@ -47,6 +53,21 @@ NLargedXSLauncher [options] [-- game options]
 Exit status: 0 done, 1 failed, 2 not the right ROM, 3 no game to launch.
 For example, `NLargedXSLauncher -i "Crash XS.gba" -l -- --fullscreen` makes
 the game and starts it in the whole screen.
+
+`--game` and `--progress` are for RecompLauncher and other front ends
+(platform/pc/RECOMPLAUNCHER.md): nothing changes without them. With
+`--progress` the Windows launcher doesn't attach to its parent's console,
+so the lines reach the pipe it was started with.
+
+## Linux
+
+The Linux launcher is the same program built for Linux
+(`build_linux.sh`): `NLargedXSLauncher` makes **crash-bandicoot-xs**, the
+Linux game, next to itself. Both need glibc 2.34 or newer (Ubuntu 22.04,
+Debian 12, Fedora 35, SteamOS 3 and later) and SDL2 from the system
+(`libSDL2-2.0.so.0`: on Debian and Ubuntu `libsdl2-2.0-0`, on Fedora
+`SDL2`, on Arch `sdl2`; Steam's systems have it). Its window takes the ROM
+dropped onto it; `--import` works without a window.
 
 ## How it works
 
@@ -92,6 +113,24 @@ finds only zero padding and the alphabet.
 
 Each launcher makes one exact build of the game: build the launcher again
 for every release.
+
+The Linux launcher, on Linux with SDL2's development files:
+
+```
+platform/pc/launcher/build_linux.sh path/to/crashbandicootxs.gba
+```
+
+builds the Linux game (`build/pc/crashbandicootxs_pc`), strips it, makes
+its package (`make_package.py` reads an ELF's sections as it reads a PE's)
+and builds `build/launcher-linux/NLargedXSLauncher`. Then
+
+```
+platform/pc/launcher/release.sh
+```
+
+puts each launcher in the release's archive with `recomplauncher.json`
+beside it (`build/release/N-Larged-XS-vX.Y.Z-Windows-x64.zip` and
+`-Linux-x64.tar.gz`), its setup step's version set to the release's.
 
 One thing in the source tree is not the decompilation's: the Steam pictures
 (`platform/pc/steam-art/`, the game's box art). They are built into the

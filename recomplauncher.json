@@ -1,0 +1,144 @@
+{
+  "$schema": "https://recomplauncher.com/schema/recomplauncher.json",
+  "format": 1,
+  "name": "N. Larged XS",
+  "repo": "NitorikoSkye/N-Larged-XS",
+  "system": {
+    "windows": { "version": "10" },
+    "linux": { "glibc": "2.34" }
+  },
+  "inputs": [
+    {
+      "id": "rom",
+      "label": "Your Crash Bandicoot XS (Europe) ROM, or a .zip with it",
+      "role": "game",
+      "formats": [
+        { "type": "file", "extensions": ["gba", "zip"] }
+      ]
+    }
+  ],
+  "prepare": {
+    "label": "Making the game from your ROM",
+    "program": ["NLargedXSLauncher.exe", "NLargedXSLauncher"],
+    "args": ["--import", "{game}", "--progress"],
+    "done": ["{install}/NLargedXSLauncher.ini"],
+    "timeout": 300,
+    "version": "0.52.3"
+  },
+  "start": {
+    "program": ["Crash Bandicoot XS.exe", "crash-bandicoot-xs"],
+    "args": []
+  },
+  "config": [
+    {
+      "id": "main",
+      "format": "ini",
+      "file": [{ "path": "{install}/settings.ini" }],
+      "ensure": { "portable": "1" }
+    }
+  ],
+  "groups": [
+    { "id": "picture" },
+    { "id": "game" },
+    { "id": "extras", "advanced": true }
+  ],
+  "settings": [
+    {
+      "id": "window",
+      "label": "Window",
+      "group": "picture",
+      "help": "A window, or the whole screen (borderless).",
+      "defaults": { "fullscreen": "0" },
+      "choices": [
+        { "label": "Windowed", "set": { "fullscreen": "0" } },
+        { "label": "Fullscreen", "set": { "fullscreen": "1" } }
+      ]
+    },
+    {
+      "id": "frame_rate",
+      "label": "Frame rate",
+      "group": "picture",
+      "help": "Above 60, extra frames are drawn between the game's own, which still runs at 60.",
+      "defaults": { "frame_rate_index": "0" },
+      "choices": [
+        { "label": "60 fps", "set": { "frame_rate_index": "0" } },
+        { "label": "90 fps", "set": { "frame_rate_index": "1" } },
+        { "label": "120 fps", "set": { "frame_rate_index": "2" } },
+        { "label": "144 fps", "set": { "frame_rate_index": "3" } },
+        { "label": "240 fps", "set": { "frame_rate_index": "4" } }
+      ]
+    },
+    {
+      "id": "filter",
+      "label": "Filter",
+      "group": "picture",
+      "help": "How the GBA's pixels are scaled up. Cartoon smooths the outlines.",
+      "defaults": { "filter": "0" },
+      "choices": [
+        { "label": "Pixels", "set": { "filter": "0" } },
+        { "label": "Smooth", "set": { "filter": "1" } },
+        { "label": "Sharp smooth", "set": { "filter": "2" } },
+        { "label": "Scale2x", "set": { "filter": "3" } },
+        { "label": "Scale3x", "set": { "filter": "4" } },
+        { "label": "Cartoon", "set": { "filter": "5" } },
+        { "label": "Cartoon soft", "set": { "filter": "6" } }
+      ]
+    },
+    {
+      "id": "skip_intro",
+      "label": "Skip intro",
+      "group": "game",
+      "help": "Straight to the title: no logos or intro.",
+      "defaults": { "skip_intro": "0" },
+      "choices": [
+        { "label": "Off", "set": { "skip_intro": "0" } },
+        { "label": "On", "set": { "skip_intro": "1" } }
+      ]
+    },
+    {
+      "id": "auto_save",
+      "label": "Auto save",
+      "group": "game",
+      "help": "After a level with something new: save to the slot in use, or to slot 4.",
+      "defaults": { "auto_save": "1" },
+      "choices": [
+        { "label": "Off", "set": { "auto_save": "0" } },
+        { "label": "Slot in use", "set": { "auto_save": "1" } },
+        { "label": "Slot 4", "set": { "auto_save": "2" } }
+      ]
+    },
+    {
+      "id": "pause_stats",
+      "label": "Play statistics",
+      "group": "game",
+      "help": "A page of play time, deaths and crates on the pause menu's monitor.",
+      "defaults": { "pause_stats": "0" },
+      "choices": [
+        { "label": "Off", "set": { "pause_stats": "0" } },
+        { "label": "On", "set": { "pause_stats": "1" } }
+      ]
+    },
+    {
+      "id": "update_check",
+      "label": "Update check",
+      "group": "extras",
+      "help": "Once a launch, asks GitHub for a newer release and says so on the title screen. Off: never goes online.",
+      "defaults": { "update_check": "0" },
+      "choices": [
+        { "label": "Off", "set": { "update_check": "0" } },
+        { "label": "On", "set": { "update_check": "1" } }
+      ]
+    }
+  ],
+  "saves": ["{install}/crashbandicootxs.sav", "{install}/crashbandicootxs.stats"],
+  "folders": {
+    "saves": [{ "path": "{install}" }],
+    "screenshots": [{ "path": "{install}/screenshots" }]
+  },
+  "actions": [
+    { "id": "screenshots", "label": "Screenshots", "help": "The pictures F12 takes.", "open": "screenshots" }
+  ],
+  "exit_codes": {
+    "0": "ok"
+  }
+}

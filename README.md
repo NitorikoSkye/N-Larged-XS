@@ -1,5 +1,7 @@
 # N. Larged XS
 
+<a href="https://recomplauncher.com"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img alt="Get it on RecompLauncher" src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" height="48"></picture></a>
+
 A native PC and Android port of **Crash Bandicoot XS** (*Crash Bandicoot: The Huge
 Adventure*, Game Boy Advance, 2002), built from the
 [Crash Bandicoot XS decompilation](https://github.com/Almamu/CrashBandicootXS-decomp).
@@ -10,23 +12,29 @@ and Android, with a modern front end on top.
 > contain no part of the ROM. The launcher builds the game from a ROM you
 > supply.
 
-## Getting started (Windows)
+## Getting started (Windows and Linux)
 
-1. Download `NLargedXSLauncher.exe` from the
-   [Releases](../../releases) page and put it in a folder of its own,
-   somewhere you can write to (not Program Files).
+1. Download `N-Larged-XS-vX.Y.Z-Windows-x64.zip` (or, on Linux,
+   `N-Larged-XS-vX.Y.Z-Linux-x64.tar.gz`) from the
+   [Releases](../../releases) page and unpack `NLargedXSLauncher` into a
+   folder of its own, somewhere you can write to (not Program Files).
 2. Open it, choose **Import ROM** and pick your copy of the game (or drop
    the ROM onto the window).
 3. Choose **Launch Game**.
 
-The launcher writes **Crash Bandicoot XS.exe** next to itself. That exe is
-the whole game: you can start it directly from now on and delete the
+The launcher writes **Crash Bandicoot XS.exe** (on Linux
+**crash-bandicoot-xs**) next to itself. That file is the whole game: you can start it directly from now on and delete the
 launcher if you like. Settings and saves live in the same folder.
 
 **The ROM it needs:** *Crash Bandicoot XS (Europe) (En,Fr,De,Es,It,Nl)*,
 SHA-1 `bdd061e1b5187c0528928ec0ddb6886b1de16970`. Any other version
 (including the North American *Huge Adventure*) is refused and nothing is
-written.
+written. A `.zip` with the ROM in it works too.
+
+On Linux the launcher and the game need glibc 2.34 or newer and SDL2 from
+your system (Steam's systems have it). With
+[RecompLauncher](https://recomplauncher.com), pick the release and your
+ROM, and it does the rest (platform/pc/RECOMPLAUNCHER.md).
 
 Windows may show a SmartScreen warning the first time because the launcher
 isn't code-signed; choose **More info → Run anyway**. It also runs under
@@ -73,8 +81,8 @@ works with keyboard, controller or mouse.
   counter, speedrun timer and a pixel-art input display.
 - **Gameplay:** auto save, look up/down (hold Up or Down while standing still to peek), and
   skip intro.
-  Play statistics: each save's play time, deaths and crates broken, on a
-  page of the pause menu.
+  Play statistics (Interface's "pause stats", off by default): each save's
+  play time, deaths and crates broken, on a page of the pause menu.
   Optional changes to how Crash plays, all off by default: slide jump
   grace (as in Crash 2 and 3, a slide off a ledge can still jump for a few
   frames), ledge jump grace (coyote time off any ledge), jump buffer (A
