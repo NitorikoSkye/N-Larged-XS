@@ -185,7 +185,7 @@ s32 __wrap__ZN6Engine3Sys8KeyInput6UpdateEv(Engine::Sys::KeyInput *self)
 #define COG_X 220
 #define COG_Y 4
 static u8 sCogTiles[16 * 16 / 2];
-static u32 sCogFrame;
+static u32 sCogFrame = 0xFFFFFFFF;
 
 /* The large font's own palette (its digits': the warp room's record
  * time), as Font::ResetPalette finds it, the font's left as it was. */
@@ -208,10 +208,13 @@ static void DrawCog(void)
     int x;
     int y;
 
-    if (sCogFrame == HostFrame() || gOamBuffer == NULL || GameOnlyTest()) {
+    /* once a picture: the warp room builds one each VBlank, also while
+     * the pads walk or the page turns, when the keys aren't read (so not
+     * once a HostFrame, which counts the reads) */
+    if (sCogFrame == gHostVBlanks || gOamBuffer == NULL || GameOnlyTest()) {
         return;
     }
-    sCogFrame = HostFrame();
+    sCogFrame = gHostVBlanks;
     if (!sBuilt) {
         for (y = 0; y < 16; y++) {
             for (x = 0; x < 16; x++) {
@@ -246,7 +249,7 @@ static void DrawCog(void)
 #define UPDATE_Y 4
 static const u8 sUpdateText[] = "update available";
 static int sUpdateX = -1; /* drawn this frame at x, art pixels */
-static u32 sUpdateFrame;
+static u32 sUpdateFrame = 0xFFFFFFFF;
 
 static int UpdateNoticeShown(void)
 {
@@ -258,10 +261,10 @@ static void DrawUpdateNotice(void)
 {
     u32 w;
 
-    if (sUpdateFrame == HostFrame()) {
+    if (sUpdateFrame == gHostVBlanks) { /* once a picture, as the cog */
         return;
     }
-    sUpdateFrame = HostFrame();
+    sUpdateFrame = gHostVBlanks;
     w = gSmallFont->MeasureText(sUpdateText);
     sUpdateX = DISPLAY_WIDTH - 4 - (int)w;
     gSmallFont->SetPalette(0xd);

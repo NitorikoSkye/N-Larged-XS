@@ -290,7 +290,10 @@ closes the settings while they're open. Headless runs leave the
 row and the cog out (the regressions and CI's comparisons with mGBA see
 the game's own menus: they match exactly); HOST_PORT_MENUS=1 puts them in,
 to test them (then the pause menu's and the warp room's frames differ by
-the row and the cog, and the cog's tiles stay in unused OBJ VRAM). It is drawn
+the row and the cog, and the cog's tiles stay in unused OBJ VRAM). The cog
+is added once a picture (gHostVBlanks, v0.52.4): the warp room builds a
+picture each VBlank also while the pads walk or the page turns, when the
+keys aren't read, so once a HostFrame (the key reads) left it out then. It is drawn
 by the platform in the game's own style from the game's own pieces
 (tools/ui_assets.py writes the HUD fonts and the pause screen's art as C):
 the categories in the pause screen's left box, a category's options in
