@@ -145,6 +145,17 @@ extern struct HostSettings gHostSettings;
 #define HOST_BORDERS_SHOWN() (gHostSettings.borders)
 #endif
 
+/* The HUD setting's choices: widescreen has no border to put the HUD in,
+ * so "borders" is left out there and a saved "borders" reads as "on"
+ * (config.c, which still writes it back as "borders"). */
+#ifdef HOST_WIDE_BG
+#define HOST_HUD_CHOICES 2
+#define HOST_HUD_HELP "lives, wumpa and crates: in the game, or hidden."
+#else
+#define HOST_HUD_CHOICES 3
+#define HOST_HUD_HELP "lives, wumpa and crates: in the game, hidden, or in the left border."
+#endif
+
 /* The update check (update_check.c). */
 void HostUpdateFrame(void);
 int HostUpdateAvailable(void);

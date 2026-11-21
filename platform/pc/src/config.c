@@ -210,6 +210,13 @@ static void Join(char *out, size_t size, const char *dir, const char *name)
     snprintf(out, size, "%s%s", dir, name);
 }
 
+#ifdef HOST_WIDE_BG
+/* A "borders" HUD read from settings.ini, shown as "on" here (no borders
+ * in widescreen) and written back unchanged while it stays "on", so the
+ * normal build sharing the file keeps it. */
+static int sHudBorders;
+#endif
+
 static int WriteSettings(const char *dir, int portable)
 {
     char path[1100];
@@ -233,6 +240,13 @@ static int WriteSettings(const char *dir, int portable)
         if (sInts[i].value == &gHostSettings.frameRate) {
             continue;
         }
+#ifdef HOST_WIDE_BG
+        if (sInts[i].value == &gHostSettings.hud && sHudBorders &&
+            gHostSettings.hud == HOST_HUD_ON) {
+            fprintf(f, "%s=%d\n", sInts[i].name, HOST_HUD_BORDERS);
+            continue;
+        }
+#endif
         fprintf(f, "%s=%d\n", sInts[i].name, *sInts[i].value);
     }
     /* The Discord application's id (Rich Presence, discord.c): the one
@@ -528,6 +542,12 @@ void HostConfigInit(void)
     if (explicitSave != NULL) {
         gHostOptions.save = explicitSave; /* --save wins */
     }
+#ifdef HOST_WIDE_BG
+    if (gHostSettings.hud == HOST_HUD_BORDERS) {
+        gHostSettings.hud = HOST_HUD_ON;
+        sHudBorders = 1;
+    }
+#endif
     sReady = 1;
 }
 

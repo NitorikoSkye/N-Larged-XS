@@ -567,8 +567,7 @@ static const char *const sHuds[HOST_HUD_COUNT] = { "on", "off", "borders" };
 static const char *const sTimers[HOST_TIMER_COUNT] = { "off", "level", "level and run" };
 
 static const struct Option sInterface[] = {
-    { "hud", "lives, wumpa and crates: in the game, hidden, or in the left border.", OPT_CHOICE,
-      &gHostSettings.hud, sHuds, HOST_HUD_COUNT, 0 },
+    { "hud", HOST_HUD_HELP, OPT_CHOICE, &gHostSettings.hud, sHuds, HOST_HUD_CHOICES, 0 },
     { "show fps", "the frames shown each second, in the window's top left corner.", OPT_CHOICE,
       &gHostSettings.showFps, sOffOn, 2, 0 },
     { "input display", "the buttons held, at the foot of that side's border or the picture.",
@@ -715,8 +714,7 @@ static const struct Option sPhoneTouch[] = {
 static const struct Option sPhoneInterface[] = {
     { "text size", "this menu's text: normal, or large and easier to read.", OPT_CHOICE,
       &gHostSettings.textSize, sTextSizes, 2, 0 },
-    { "hud", "lives, wumpa and crates: in the game, hidden, or in the left border.", OPT_CHOICE,
-      &gHostSettings.hud, sHuds, HOST_HUD_COUNT, 0 },
+    { "hud", HOST_HUD_HELP, OPT_CHOICE, &gHostSettings.hud, sHuds, HOST_HUD_CHOICES, 0 },
     { "prompts", "the game's a, b, l and r buttons drawn as your controller's.", OPT_CHOICE,
       &gHostSettings.prompts, sPrompts, HOST_PROMPTS_NINTENDO + 1, 0 },
     { "pause stats", "the pause menu's monitor also shows play time, deaths and crates.",
