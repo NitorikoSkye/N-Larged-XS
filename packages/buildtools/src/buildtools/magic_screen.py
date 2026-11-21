@@ -281,6 +281,7 @@ CLASSES = [
     ("coincidence", r"platform/pc/src/borders\.c", r"\* 512", "the Discord art assets' size (512x512)"),
     ("coincidence", r"platform/pc/launcher/launcher\.c", r"\b80\b", "the launcher package's header size"),
     ("coincidence", r"platform/pc/xbrz/", r"alphaGrad", "xBRZ's blend weights"),
+    ("coincidence", r"platform/pc/launcher/zip_rom\.c", r"ends\[4\]", "deflate's fixed Huffman code: its symbol ranges (RFC 1951)"),
     (
         "hardware",
         r"platform/pc/launcher/launcher\.c|platform/pc/src/(host_ui\.h|ui\.c|borders\.c)",

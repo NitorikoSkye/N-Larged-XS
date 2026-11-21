@@ -35,8 +35,14 @@
 #endif
 
 #include "host_platform.h"
+#include "zip_rom.h"
 
+/* The game it makes: on Linux, the Linux game (build_linux.sh). */
+#ifdef _WIN32
 #define GAME_FILE "Crash Bandicoot XS.exe"
+#else
+#define GAME_FILE "crash-bandicoot-xs"
+#endif
 #define INI_FILE  "NLargedXSLauncher.ini"
 #define W 240
 #define H 160
@@ -156,6 +162,22 @@ static unsigned char *ReadFile8(const char *path, size_t *size, size_t limit)
     return buf;
 }
 
+/* The ROM, as it is or zipped (zip_rom.c). */
+static unsigned char *ReadRom(const char *path, size_t *size)
+{
+    unsigned char *data = ReadFile8(path, size, 64u << 20);
+
+    if (data != NULL && ZipIsArchive(data, *size)) {
+        size_t romSize;
+        unsigned char *rom = ZipRom(data, *size, &romSize, 64u << 20);
+
+        free(data);
+        *size = romSize;
+        return rom;
+    }
+    return data;
+}
+
 static int ReplaceU8(const char *from, const char *to)
 {
 #ifdef _WIN32
@@ -263,7 +285,7 @@ static void Sha1(const void *data, size_t n, u8 out[20])
 static int CheckRom(const char *path)
 {
     size_t size;
-    unsigned char *rom = ReadFile8(path, &size, 64u << 20);
+    unsigned char *rom = ReadRom(path, &size);
     u8 sha[20];
 
     if (rom == NULL) {
@@ -274,10 +296,23 @@ static int CheckRom(const char *path)
     return memcmp(sha, sPkg.romSha1, 20) == 0;
 }
 
+/* --progress (RecompLauncher's setup step, platform/pc/RECOMPLAUNCHER.md):
+ * "progress <0-1> <text>" lines on stdout as the game is made. Only with
+ * the option: without it nothing is printed that wasn't before. */
+static int sProgress;
+
+static void Progress(double part, const char *text)
+{
+    if (sProgress) {
+        printf("progress %.2f %s\n", part, text);
+        fflush(stdout);
+    }
+}
+
 static int Build(const char *romPath, const char *outPath)
 {
     size_t romSize;
-    unsigned char *rom = ReadFile8(romPath, &romSize, 64u << 20);
+    unsigned char *rom;
     unsigned char *out;
     u8 sha[20];
     u8 key[20];
@@ -287,14 +322,18 @@ static int Build(const char *romPath, const char *outPath)
     FILE *f;
     int ok;
 
+    Progress(0.0, "Reading your ROM");
+    rom = ReadRom(romPath, &romSize);
     if (rom == NULL) {
         return BUILD_NO_ROM;
     }
+    Progress(0.1, "Checking your ROM");
     Sha1(rom, romSize, sha);
     if (memcmp(sha, sPkg.romSha1, 20) != 0) {
         free(rom);
         return BUILD_WRONG_ROM;
     }
+    Progress(0.2, "Making the game");
     memcpy(key, sha, 20);
     out = malloc(sPkg.outSize);
     if (out == NULL) {
@@ -307,6 +346,9 @@ static int Build(const char *romPath, const char *outPath)
         u32 a = Le32(op + 4);
         u32 n = Le32(op + 8);
 
+        if (sProgress && i % 4096 == 0) {
+            Progress(0.2 + 0.6 * i / sPkg.opCount, "Making the game");
+        }
         if (n > sPkg.outSize - pos || (kind == 0 && (a > romSize || n > romSize - a))) {
             pos = 0xFFFFFFFF;
             break;
@@ -346,11 +388,13 @@ static int Build(const char *romPath, const char *outPath)
         free(out);
         return BUILD_BAD;
     }
+    Progress(0.8, "Checking the game");
     Sha1(out, sPkg.outSize, sha);
     if (memcmp(sha, sPkg.outSha1, 20) != 0) {
         free(out);
         return BUILD_BAD;
     }
+    Progress(0.9, "Writing the game");
     /* written whole beside it, then put in place */
     snprintf(tmp, sizeof(tmp), "%s.new", outPath);
     f = OpenU8(tmp, "wb");
@@ -368,6 +412,7 @@ static int Build(const char *romPath, const char *outPath)
 #ifndef _WIN32
     chmod(outPath, 0755);
 #endif
+    Progress(1.0, "The game is ready");
     return BUILD_OK;
 }
 
@@ -1307,7 +1352,7 @@ static int PickRom(char *out, size_t size)
     SDL_VERSION(&wm.version);
     ofn.lStructSize = sizeof(ofn);
     ofn.hwndOwner = SDL_GetWindowWMInfo(sWindow, &wm) ? wm.info.win.window : NULL;
-    ofn.lpstrFilter = L"Game Boy Advance ROM (*.gba)\0*.gba\0All files\0*.*\0";
+    ofn.lpstrFilter = L"Game Boy Advance ROM (*.gba, *.zip)\0*.gba;*.zip\0All files\0*.*\0";
     ofn.lpstrFile = file;
     ofn.nMaxFile = MAX_PATH * 4;
     ofn.lpstrTitle = L"Choose your Crash Bandicoot XS ROM";
@@ -1518,7 +1563,11 @@ static void Usage(void)
            "\n"
            "Usage: NLargedXSLauncher [options] [-- game options]\n"
            "  (no options)         open the launcher's window\n"
-           "  -i, --import ROM     make the game from ROM, without a window\n"
+           "  -i, --import ROM     make the game from ROM (a .gba, or a .zip with it), without\n"
+           "                       a window\n"
+           "  -g, --game ROM       --import ROM, then --launch (makes the game only if it\n"
+           "                       isn't up to date)\n"
+           "      --progress       with --import: \"progress <0-1> <text>\" lines on stdout\n"
            "  -o, --output PATH    where to write the game (default: next to the launcher)\n"
            "  -l, --launch         start the game (after --import, with both) and exit\n"
            "  -c, --check ROM      only check that ROM is the right one\n"
@@ -1599,7 +1648,17 @@ int main(int argc, char **argv)
         return RunWindow();
     }
 #ifdef _WIN32
-    UseParentConsole();
+    {
+        /* --progress is read by whoever started it (a pipe): no console */
+        int progress = 0;
+
+        for (i = 1; i < argc && strcmp(argv[i], "--") != 0; i++) {
+            progress |= strcmp(argv[i], "--progress") == 0;
+        }
+        if (!progress) {
+            UseParentConsole();
+        }
+    }
 #endif
     for (i = 1; i < argc; i++) {
         const char *a = argv[i];
@@ -1611,6 +1670,11 @@ int main(int argc, char **argv)
             break;
         } else if ((strcmp(a, "-i") == 0 || strcmp(a, "--import") == 0) && more) {
             importRom = argv[++i];
+        } else if ((strcmp(a, "-g") == 0 || strcmp(a, "--game") == 0) && more) {
+            importRom = argv[++i];
+            launch = 1;
+        } else if (strcmp(a, "--progress") == 0) {
+            sProgress = 1;
         } else if ((strcmp(a, "-o") == 0 || strcmp(a, "--output") == 0) && more) {
             output = argv[++i];
         } else if ((strcmp(a, "-c") == 0 || strcmp(a, "--check") == 0) && more) {
@@ -1662,6 +1726,7 @@ int main(int argc, char **argv)
     }
     if (importRom != NULL) {
         if (!force && GameState() == 1) {
+            Progress(1.0, "The game is ready");
             printf("the game is already up to date (--force makes it again).\n");
         } else {
             int r = Build(importRom, sGamePath);

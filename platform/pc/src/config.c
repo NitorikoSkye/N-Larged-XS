@@ -297,6 +297,17 @@ static int ReadSettings(const char *dir)
         *eq = '\0';
         value = eq + 1;
         value[strcspn(value, "\r\n")] = '\0';
+        /* "key = value" as well as "key=value" (a file edited by hand, or
+         * by RecompLauncher: platform/pc/RECOMPLAUNCHER.md) */
+        for (i = strlen(line); i > 0 && (line[i - 1] == ' ' || line[i - 1] == '\t'); i--) {
+            line[i - 1] = '\0';
+        }
+        while (*value == ' ' || *value == '\t') {
+            value++;
+        }
+        for (i = strlen(value); i > 0 && (value[i - 1] == ' ' || value[i - 1] == '\t'); i--) {
+            value[i - 1] = '\0';
+        }
         if (strcmp(line, "portable") == 0) {
             portable = atoi(value) != 0;
             continue;

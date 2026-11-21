@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The launcher's package (platform/pc/LAUNCHER.md): the Windows game
-executable as a recipe for rebuilding it from the player's own ROM, so the
+executable (or the Linux one, an ELF: build_linux.sh) as a recipe for rebuilding it from the player's own ROM, so the
 launcher can be published with no ROM data in it.
 
     make_package.py --rom crashbandicootxs.gba --exe CrashBandicootXS.exe \\
@@ -58,8 +58,28 @@ ART = [
 ]
 
 
+def elf_sections(exe):
+    """A 64-bit ELF's sections (the Linux game, build_linux.sh), as sections() gives a PE's: the
+    addresses are nm's as they are (base 0); a section with no file data (.bss) has file size 0."""
+    if exe[4] != 2 or exe[5] != 1:
+        raise SystemExit("make_package.py: not a 64-bit little-endian ELF")
+    shoff = struct.unpack_from("<Q", exe, 0x28)[0]
+    shentsize, shnum, shstrndx = struct.unpack_from("<HHH", exe, 0x3A)
+    heads = [struct.unpack_from("<IIQQQQ", exe, shoff + i * shentsize) for i in range(shnum)]
+    strtab = heads[shstrndx][4]
+    out = []
+    for name_off, kind, flags, addr, offset, size in heads:
+        end = exe.index(b"\0", strtab + name_off)
+        name = exe[strtab + name_off:end].decode("latin-1")
+        out.append((name, addr, size, offset, 0 if kind == 8 else size))  # 8: SHT_NOBITS
+    return out, 0
+
+
 def sections(exe):
-    """The PE's sections: (name, virtual address, virtual size, file offset, file size), and the image base."""
+    """The PE's sections: (name, virtual address, virtual size, file offset, file size), and the image base.
+    An ELF's (the Linux game) with elf_sections."""
+    if exe[:4] == b"\x7fELF":
+        return elf_sections(exe)
     pe = struct.unpack_from("<I", exe, 0x3C)[0]
     if exe[pe:pe + 4] != b"PE\0\0":
         raise SystemExit("make_package.py: not a PE executable")

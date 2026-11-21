@@ -59,7 +59,11 @@ void __wrap__ZN4Game5Level6Camera6UpdateEv(Camera *self)
     __real__ZN4Game5Level6Camera6UpdateEv(self);
 
     if (sEnv < 0) {
-        sEnv = getenv("HOST_LOOK") != NULL && atoi(getenv("HOST_LOOK")) != 0;
+        /* HOST_LOOK=1..9 (not atoi: glibc 2.38's headers make it
+         * __isoc23_strtol, which older Linux systems don't have) */
+        const char *e = getenv("HOST_LOOK");
+
+        sEnv = e != NULL && e[0] >= '1' && e[0] <= '9';
     }
     if (frame - sLastFrame > 2) {
         sHeld = 0;

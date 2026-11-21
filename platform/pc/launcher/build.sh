@@ -28,7 +28,8 @@ ${CROSS}windres -I platform/pc/launcher -D "LAUNCHER_VERSION_STR=\\\"$VERSION\\\
     -D "LAUNCHER_VERSION_NUM=$VERSION_NUM" -o "$OUT/launcher_res.o" platform/pc/launcher/launcher.rc
 ${CROSS}gcc -O2 -Wall -Wno-format-truncation -I platform/pc/include -I engine/include -iquote platform/pc/src \
     -I"$SDL/include/SDL2" -I"$SDL/include" -DPACKAGE_BIN="\"$OUT/package.bin\"" \
-    -o "$OUT/NLargedXSLauncher.exe" platform/pc/launcher/launcher.c platform/pc/launcher/launcher_package.S \
+    -o "$OUT/NLargedXSLauncher.exe" platform/pc/launcher/launcher.c platform/pc/launcher/zip_rom.c \
+    platform/pc/launcher/launcher_package.S \
     platform/pc/src/sha1.c "$OUT/launcher_res.o" \
     -static -static-libgcc -mwindows "$SDL/lib/libSDL2.a" -lkernel32 -luser32 -lgdi32 -lwinmm -limm32 -lole32 \
     -loleaut32 -lversion -luuid -ladvapi32 -lsetupapi -lshell32 -ldinput8 -lcomdlg32
