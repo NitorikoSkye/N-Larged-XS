@@ -101,6 +101,8 @@ u16 HostStreamKeys(void)
 #include "host_interp.h"
 #include "host_ui.h"
 
+void HostUpdateAppAnswer(int major, int minor, int patch); /* update_check.c */
+
 #define GBA_CLOCK      16777216
 #define CYCLES_A_FRAME 280896
 #define OUT_RATE       48000
@@ -337,6 +339,13 @@ static void Handle(const u8 *m, int menu)
         sBarTop = Arg(m, 1);
         BordersReset();
         break;
+#ifdef HOST_ANDROID
+    case 11:
+        /* the update check's answer (update_check.c): the latest
+         * release's numbers, or 0xFFFF for none */
+        HostUpdateAppAnswer(Arg(m, 0), Arg(m, 1), Arg(m, 2));
+        break;
+#endif
     case 7:
         {
             int steps = (s16)Arg(m, 0);
@@ -403,6 +412,18 @@ void HostStreamEditLayout(void)
 {
     if (gHostStream) {
         Message(8, "", 0);
+    }
+}
+
+/* The update check (update_check.c, message 10): 0 asks the app for the
+ * latest release (it answers with message 11), 1 opens the releases
+ * page. */
+void HostStreamUpdate(int op)
+{
+    u8 b = (u8)op;
+
+    if (gHostStream) {
+        Message(10, &b, 1);
     }
 }
 

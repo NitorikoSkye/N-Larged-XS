@@ -52,7 +52,9 @@ room's top corner; while open, the cross at the top middle closes them):
 the PC port's settings menu,
 drawn in the game's style, with the phone's own options:
 
-- **General:** skip intro.
+- **General:** skip intro, and the update check (off by default, never
+  online while off: once a launch, a newer release shows "update
+  available" on the title screen; tap it for the releases page).
 - **Display:** frame rate (60, or 120 on a 120 Hz screen: pictures between
   the game's own, the game at its own speed), scaling (fit, integer,
   stretch), filter (as on PC: pixels, smooth, sharp smooth, scale2x,
@@ -80,6 +82,9 @@ drawn in the game's style, with the phone's own options:
   walking off a ledge can still jump for a moment), relaxed double jump (for
   the whole fall, not just near the top) and infinite lives (the lives count
   becomes an infinity sign).
+
+The pause menu's monitor has a page of play statistics too: the save's
+play time, deaths and crates broken.
 
 ## How it works
 

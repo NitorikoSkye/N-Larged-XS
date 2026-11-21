@@ -94,6 +94,11 @@ static int GameOnlyTest(void)
     return sOn;
 }
 
+int HostGameOnlyTest(void)
+{
+    return GameOnlyTest();
+}
+
 static const struct pause_row sHostPauseRows[4] = {
     { 0x32, PAUSE_ROW_TYPE_RESUME },
     { HOST_TEXT_SETTINGS, PAUSE_ROW_TYPE_RESUME },
@@ -137,6 +142,13 @@ void __wrap__ZN4Game2Ui9PauseMenu4DrawEv(PauseMenu *self)
         self->rowSpacing = 0x14;
     }
     __real__ZN4Game2Ui9PauseMenu4DrawEv(self);
+}
+
+/* The pause menu is up (its Draw ran in the last two frames): play time
+ * isn't counted (stats.c). */
+int HostPauseMenuUp(void)
+{
+    return sPause != NULL && HostFrame() - sPauseFrame <= 2;
 }
 
 static int PauseOnSettings(void)
@@ -227,6 +239,44 @@ static void DrawCog(void)
     gOamBuffer->Add(&oam);
 }
 
+/* The update check's notice (update_check.c), the title screen's top
+ * right corner while its menu is up: "update available" in the menu's
+ * own font and colour (palette 13, an unselected item's). A click or a
+ * tap on it opens the releases page (HostMouseGameKeys). */
+#define UPDATE_Y 4
+static const u8 sUpdateText[] = "update available";
+static int sUpdateX = -1; /* drawn this frame at x, art pixels */
+static u32 sUpdateFrame;
+
+static int UpdateNoticeShown(void)
+{
+    return gHostTitleScreen != NULL && gHostTitleScreen->menuShown && HostUpdateAvailable() &&
+           !GameOnlyTest();
+}
+
+static void DrawUpdateNotice(void)
+{
+    u32 w;
+
+    if (sUpdateFrame == HostFrame()) {
+        return;
+    }
+    sUpdateFrame = HostFrame();
+    w = gSmallFont->MeasureText(sUpdateText);
+    sUpdateX = DISPLAY_WIDTH - 4 - (int)w;
+    gSmallFont->SetPalette(0xd);
+    gSmallFont->SetPos(DISPLAY_ART_X + sUpdateX, DISPLAY_ART_Y + UPDATE_Y);
+    gSmallFont->DrawText(sUpdateText);
+}
+
+static int OnUpdateNotice(void)
+{
+    int x = gHostMouse.x - DISPLAY_ART_X;
+    int y = gHostMouse.y - DISPLAY_ART_Y;
+
+    return UpdateNoticeShown() && sUpdateX >= 0 && x >= sUpdateX - 4 && y >= 0 && y < UPDATE_Y + 14;
+}
+
 /* The continue prompt (game over's "continue?"): its cursor, drawn as
  * ">" (gContinuePromptCursorText) by Font::DrawText beside "yes" or "no",
  * says which is selected (the prompt's instance is out of reach: Run
@@ -256,6 +306,8 @@ void __wrap__ZN6Engine3Gfx9OamBuffer10HideUnusedEv(Engine::Gfx::OamBuffer *self)
 {
     if (gHostInWarpRoom && !gHostInSaveMenu && sLevelSelectInstance != NULL && self == gOamBuffer) {
         DrawCog();
+    } else if (self == gOamBuffer && UpdateNoticeShown()) {
+        DrawUpdateNotice();
     }
     __real__ZN6Engine3Gfx9OamBuffer10HideUnusedEv(self);
 }
@@ -529,6 +581,10 @@ u16 HostMouseGameKeys(void)
 
         Hover(&gLanguageSelect->language, row);
         keys = left && row >= 0 ? A_BUTTON : 0;
+    } else if (gHostTitleScreen != NULL && gHostTitleScreen->menuShown && left &&
+               OnUpdateNotice()) {
+        gAudioContext->PlaySfx(SFX_MENU_SELECT, 0x100);
+        HostUpdateOpenPage();
     } else if (gHostTitleScreen != NULL && gHostTitleScreen->menuShown) {
         int row = Row(DISPLAY_ART_Y + 0x80, 10, 9, 3, DISPLAY_ART_X + 40, DISPLAY_ART_X + 200);
 

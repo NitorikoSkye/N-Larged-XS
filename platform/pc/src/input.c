@@ -35,6 +35,7 @@
 
 #include "gba/gba.h"
 #include "host_platform.h"
+#include "host_ui.h"
 
 struct KeyRun {
     u32 frame;
@@ -256,6 +257,7 @@ u16 HostReadKeys(void)
     u16 keys = 0;
 
     sFrame++;
+    HostStatsFrame(); /* play time, and the update check's start (stats.c) */
     if (gHostOptions.frames != 0 && sFrame > gHostOptions.frames) {
         HostExit(0, "done");
     }

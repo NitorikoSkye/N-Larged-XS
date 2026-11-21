@@ -606,6 +606,41 @@ tools/infinity_glyph.py (src/infinity_glyph.h: palette indices, drawn
 from a lemniscate with the digits' shading). Tested on the waterfall pit: 5 lives become 4 with it off and
 stay 5 with it on. HOST_INFINITE_LIVES=1.
 
+**Play statistics** (v0.52.2; src/stats.c, src/stats_hooks.cpp). Each
+save's play time, deaths and crates broken, on a sixth page of the pause
+menu's monitor ("statistics", in the game's language), after the
+game's five (PauseMenu::Animate's wrapper turns from the fifth to it and
+from it back to the first; DrawPageTitle's draws its title and page,
+which gPauseMenuPageTitles has no entry for). They follow the progress
+as a save does: the game under way has its own, a load takes the
+slot's, a new game (or a link cable load) starts from none, a save (the
+menu's, or an auto save) gives the slot the game's, and a delete clears
+it (autosave_hooks.cpp's view of the save menu). Play time is the game
+frames from leaving the title, not while the pause menu is up; deaths
+are LoseLife's calls (infinite lives and time trials too); crates are
+LevelState::AddBrokenCrate's, and a switch crate's pendingSwitchCrates
+(PressSwitchCrate). The slots' numbers are a text file beside the save
+(crashbandicootxs.stats), so the save stays the GBA's: saves made before
+v0.52.2 start from 0. Headless runs leave the page and the file out
+(HOST_PORT_MENUS=1 puts both in); HOST_STATS_LOG=1 logs each death and
+crate.
+
+**Update check** (v0.52.2; General, off by default; src/update_check.c).
+Nothing goes online while it is off. On, the first frame (at launch, or
+when it is turned on) starts one check a launch: GitHub's API for the
+latest release (repos/NitorikoSkye/N-Larged-XS/releases/latest, its
+tag_name), on a thread, against HOST_PORT_VERSION (major, minor, patch).
+Windows asks with WinHTTP (-lwinhttp); Linux with libcurl opened at run
+time (dlopen, so the game doesn't need it), else the curl command;
+Android's app (message 10's 0 asks, the app answers with message 11, the
+tag's three numbers or 0xFFFF; the INTERNET permission). A newer one puts
+"update available" in the title screen's top right while its menu is up,
+in the menu's small font (palette 13); a click or a tap on it opens the
+releases page (SDL_OpenURL, or message 10's 1: the app's browser). A
+failure shows nothing. Headless runs don't check: HOST_UPDATE_LATEST=vX.Y.Z
+stands in for the answer (with HOST_PORT_MENUS=1 to draw it). Tested on
+Linux against GitHub (v0.52: up to date).
+
 **Discord** (v0.07; Extras, src/discord.c). Rich Presence over Discord's
 local IPC, with no SDK: the named pipe `\\.\pipe\discord-ipc-N` on
 Windows, the `discord-ipc-N` Unix socket elsewhere (the runtime directory,

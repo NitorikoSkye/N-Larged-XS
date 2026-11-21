@@ -333,6 +333,7 @@ int HostInfiniteLives(void)
 
 void __wrap__ZN4Game5Level10LevelState8LoseLifeEv(LevelState *self)
 {
+    HostStatsDeath();
     if (HostInfiniteLives()) {
         /* the death still shows the count (now the infinity sign,
          * hud_hook.cpp), as LoseLife does */

@@ -81,6 +81,7 @@ struct HostSettings {
     int skipIntro; /* boot straight to the title (intro_skip.c) */
     int language;  /* the language select's last pick, for skipped boots */
     int pauseUnfocused;
+    int updateCheck; /* once a launch, a newer release on GitHub (update_check.c) */
     /* Display */
     int fullscreen;
     int windowScale; /* 1-8 */
@@ -134,6 +135,30 @@ struct HostSettings {
     int dpadFloating; /* the d-pad appears where the left thumb lands */
 };
 extern struct HostSettings gHostSettings;
+
+/* The update check (update_check.c). */
+void HostUpdateFrame(void);
+int HostUpdateAvailable(void);
+void HostUpdateOpenPage(void);
+int HostParseVersion(const char *s, int out[3]);
+
+/* Play statistics (stats.c): the game under way's, and each save slot's. */
+struct HostPlayStats {
+    u32 frames; /* play time, in game frames */
+    u32 deaths;
+    u32 crates; /* crates broken */
+};
+void HostStatsFrame(void);
+void HostStatsTitle(void);
+void HostStatsRunStart(void);
+void HostStatsLoaded(int row);
+void HostStatsSaved(int row);
+void HostStatsErased(int row);
+void HostStatsDeath(void);
+void HostStatsCrate(u32 n);
+const struct HostPlayStats *HostStatsCurrent(void);
+void HostStatsTimeText(char *out, int size, u32 frames);
+void HostStatsNumberText(char *out, int size, u32 n);
 
 /* touch_context.cpp: the touch buttons' icons (stream.c's message 7, one
  * byte each for A, B, L and R; GameView.java draws them). */

@@ -13,9 +13,10 @@ SCRIPT lines (by game picture count, from 0):
     N pad 0|1            whether a controller is connected
     N bars L R H W TOP   the screen around the picture (the borders)
     N scroll STEPS
+    N update MAJ MIN PAT the app's update check answer (message 11)
     N shot NAME          write the latest picture as OUTDIR/NAME.png
     N end
-It prints each state, settings and toast message as it comes.
+It prints each state, settings, toast and update message as it comes.
 """
 import os
 import struct
@@ -86,6 +87,8 @@ def main():
             elif kind == "bars":
                 p.stdin.write(msg(9, int(step[1]), int(step[2]), int(step[3])))
                 p.stdin.write(msg(10, int(step[4]), int(step[5])))
+            elif kind == "update":
+                p.stdin.write(msg(11, int(step[1]), int(step[2]), int(step[3])))
             elif kind == "shot":
                 w, h, data_ = last
                 img = Image.frombytes("RGB", (w, h), rgb(data_, w, h))
@@ -124,6 +127,8 @@ def main():
             print(f"{pictures}: settings {struct.unpack('<%di' % (len(body) // 4), body)}")
         elif kind == 5:
             print(f"{pictures}: toast {body.decode()}")
+        elif kind == 10:
+            print(f"{pictures}: update {['check', 'open the releases page'][body[0]] if body[0] < 2 else body[0]}")
         elif kind == 6:
             side, unit, w, h = struct.unpack_from("<4i", body)
             img = Image.frombytes("RGB", (w, h), rgb(body[16:], w, h))

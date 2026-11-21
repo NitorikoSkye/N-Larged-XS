@@ -53,12 +53,14 @@ s32 __wrap__ZN4Game2Ui11TitleScreen3RunEv(TitleScreen *self)
     s32 result;
 
     HostAutosaveSessionStart();
+    HostStatsTitle();
     gHostStatsShown = 0;     /* no game under way: no stats in the border */
     gHostTitleScreen = self; /* for the mouse (mouse_hooks.cpp) */
     result = __real__ZN4Game2Ui11TitleScreen3RunEv(self);
     gHostTitleScreen = NULL;
     /* the title left: a run starts (the speedrun timer, timer.c) */
     HostTimerRunStart();
+    HostStatsRunStart();
     return result;
 }
 
@@ -81,6 +83,7 @@ static u8 SaveMenuRun(u32 state, u32 cursor)
     result = __real__ZN4Game2Ui8SaveMenu3RunEjj(state, cursor);
     if (menu->gameLoaded) {
         HostAutosaveLoaded(menu->state == SAVE_MENU_STATE_LOAD ? menu->cursor : -1);
+        HostStatsLoaded(menu->state == SAVE_MENU_STATE_LOAD ? menu->cursor : -1);
         return result;
     }
     for (row = 0; row < 4; row++) {
@@ -92,6 +95,9 @@ static u8 SaveMenuRun(u32 state, u32 cursor)
         if (!empty && changed &&
             __builtin_memcmp(now, gLevelState->PackSaveData(), sizeof(GameProgress)) == 0) {
             HostAutosaveSaved(row);
+            HostStatsSaved(row);
+        } else if (empty && !emptyBefore[row]) {
+            HostStatsErased(row); /* deleted */
         }
     }
     row = HostAutosaveSlotInUse();

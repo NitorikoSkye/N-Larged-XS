@@ -4,14 +4,16 @@
      this app shows it, plays it and sends it the buttons. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.crashbandicootxs.port"
-    android:versionCode="5201"
-    android:versionName="0.52.1">
+    android:versionCode="5202"
+    android:versionName="0.52.2">
 
     <uses-sdk android:minSdkVersion="21" android:targetSdkVersion="34" />
     <uses-feature android:glEsVersion="0x00020000" android:required="false" />
     <uses-feature android:name="android.hardware.touchscreen" android:required="false" />
     <uses-feature android:name="android.hardware.gamepad" android:required="false" />
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- the update check only (off by default; update_check.c) -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:label="Crash Bandicoot XS"

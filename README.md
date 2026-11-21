@@ -73,6 +73,8 @@ works with keyboard, controller or mouse.
   counter, speedrun timer and a pixel-art input display.
 - **Gameplay:** auto save, look up/down (hold Up or Down while standing still to peek), and
   skip intro.
+  Play statistics: each save's play time, deaths and crates broken, on a
+  page of the pause menu.
   Optional changes to how Crash plays, all off by default: slide jump
   grace (as in Crash 2 and 3, a slide off a ledge can still jump for a few
   frames), ledge jump grace (coyote time off any ledge), jump buffer (A
@@ -84,6 +86,9 @@ works with keyboard, controller or mouse.
 - **Extras:** Discord Rich Presence, and **Add to Steam**, which adds the
   game to Steam as a non-Steam game with full library artwork (see
   [platform/pc/STEAM.md](platform/pc/STEAM.md)).
+- **Update check** (off by default, never online while off): once a
+  launch, a newer release shows "update available" on the title screen;
+  click it for the releases page.
 - **Portable** by default: everything stays in the game's folder.
 
 **Default keyboard controls:** arrows = D-pad, X = A (jump), Z = B

@@ -143,6 +143,7 @@ void HostAutosaveWarpRoom(void)
     }
     HostSaveBackup();
     if (HostAutosaveWrite(row)) {
+        HostStatsSaved(row);
         sBase = now;
         if (Mode() == HOST_AUTOSAVE_IN_USE) {
             sSlot = row;
