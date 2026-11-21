@@ -48,6 +48,15 @@
 
 #define WIDTH  HOST_SCREEN_WIDTH
 #define HEIGHT HOST_SCREEN_HEIGHT
+/* The bitmap modes' frames are the GBA's 240x160, whatever the screen. */
+#define BITMAP_W 240
+#define BITMAP_H 160
+#ifdef HOST_WIDE_BG
+/* Widescreen (gba/host.h's HOST_WIDE_BG): what isn't a level layer is
+ * 240-pixel art (the menus, the cutscenes, the warp room), centred as
+ * screen.h's DISPLAY_ART_X centres it: outside it, the backdrop. */
+#define ART_X0 ((WIDTH - BITMAP_W) / 2)
+#endif
 
 /* DISPCNT's bits the game's io_reg.h doesn't name. */
 #define DISPCNT_FRAME_SELECT 0x0010 /* modes 4 and 5: the second frame */
@@ -199,6 +208,37 @@ static void StartFrame(void)
     }
 }
 
+#ifdef HOST_WIDE_BG
+/* Is screen x past level layer `bg`'s map (gba/host.h's edges)? */
+static int OutsideMap(s32 bg, s32 x)
+{
+    const s16 *edges = (const s16 *)(gHostVram + HOST_WIDE_BG_EDGES) + 2 * bg;
+
+    return x < edges[0] || x >= edges[1];
+}
+
+/* A bar beside the picture at x: past the centred art when no level
+ * layer is up, or past the map of every level layer that is. */
+static int Bar(u32 bgOn, u32 mode, s32 x)
+{
+    int any = 0;
+    int i;
+
+    for (i = 0; i < 4; i++) {
+        /* text BGs only: an affine BG's bit 13 is its wraparound */
+        int text = mode == 0 || (mode == 1 && i < 2);
+
+        if (text && (bgOn & (1 << i)) && (Io16(REG_OFFSET_BG0CNT + 2 * i) & HOST_BGCNT_WIDE_MAP)) {
+            if (!OutsideMap(i, x)) {
+                return 0;
+            }
+            any = 1;
+        }
+    }
+    return any || x < ART_X0 || x >= ART_X0 + BITMAP_W;
+}
+#endif
+
 static void TextBg(s32 bg, u32 y, u32 mosaic)
 {
     u16 cnt = Io16(REG_OFFSET_BG0CNT + 2 * bg);
@@ -210,6 +250,17 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
     u32 vofs = Io16(REG_OFFSET_BG0VOFS + 4 * bg) & 0x1FF;
     u32 widthMask = (size & 1) ? 0x1FF : 0xFF;
     u32 heightMask = (size & 2) ? 0x1FF : 0xFF;
+#ifdef HOST_WIDE_BG
+    /* a level layer's 64x32 map past the GBA's VRAM (gba/host.h) */
+    const u16 *wide = (cnt & HOST_BGCNT_WIDE_MAP)
+                          ? (const u16 *)(gHostVram + HOST_WIDE_BG_MAPS + bg * HOST_WIDE_BG_MAP)
+                          : NULL;
+
+    if (wide != NULL) {
+        widthMask = 0x1FF;
+        heightMask = 0xFF;
+    }
+#endif
     u32 mosaicH = 1;
     u32 ty;
     u32 x;
@@ -223,8 +274,22 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
     }
     ty = (y + vofs) & heightMask;
     for (x = 0; x < WIDTH; x++) {
-        u32 sx = x - x % mosaicH;
-        u32 tx = (sx + hofs) & widthMask;
+        u32 vx = x;
+        u32 sx;
+        u32 tx;
+
+#ifdef HOST_WIDE_BG
+        /* not a level layer: 240-pixel art, in the centred window */
+        if (wide == NULL) {
+            if (x < ART_X0 || x >= ART_X0 + BITMAP_W) {
+                out[x] = TRANSPARENT;
+                continue;
+            }
+            vx = x - ART_X0;
+        }
+#endif
+        sx = vx - vx % mosaicH;
+        tx = (sx + hofs) & widthMask;
         u32 block = 0;
         u32 entry;
         u32 tile;
@@ -239,9 +304,18 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
         if (ty >= 256) {
             block += size == 3 ? 2 : 1;
         }
-        entry =
-            Vram16((screenBase + block * 0x800 + ((ty & 0xFF) >> 3) * 64 + ((tx & 0xFF) >> 3) * 2) &
-                   0xFFFF);
+#ifdef HOST_WIDE_BG
+        if (wide != NULL) {
+            if (OutsideMap(bg, x)) {
+                out[x] = TRANSPARENT;
+                continue;
+            }
+            entry = wide[(ty >> 3) * 64 + (tx >> 3)];
+        } else
+#endif
+            entry = Vram16(
+                (screenBase + block * 0x800 + ((ty & 0xFF) >> 3) * 64 + ((tx & 0xFF) >> 3) * 2) &
+                0xFFFF);
         tile = entry & 0x3FF;
         px = tx & 7;
         py = ty & 7;
@@ -288,10 +362,23 @@ static void AffineBg(s32 bg, u32 y, u32 mode, u32 dispcnt, u32 mosaic)
         py -= back * (s16)Io16(REG_OFFSET_BG2PD + 0x10 * i);
     }
     for (x = 0; x < WIDTH; x++) {
-        u32 sx = x - x % mosaicH;
-        s32 tx = (px + (s32)sx * pa) >> 8;
-        s32 ty = (py + (s32)sx * pc) >> 8;
+        u32 vx = x;
+        u32 sx;
+        s32 tx;
+        s32 ty;
         u16 color = TRANSPARENT;
+
+#ifdef HOST_WIDE_BG
+        /* 240-pixel art, in the centred window: the game's reference
+         * point already places it there (DISPLAY_ART_X) */
+        if (x < ART_X0 || x >= ART_X0 + BITMAP_W) {
+            out[x] = TRANSPARENT;
+            continue;
+        }
+#endif
+        sx = vx - vx % mosaicH;
+        tx = (px + (s32)sx * pa) >> 8;
+        ty = (py + (s32)sx * pc) >> 8;
 
         if (mode <= 2) {
             u32 size = 128 << (cnt >> 14);
@@ -315,14 +402,14 @@ static void AffineBg(s32 bg, u32 y, u32 mode, u32 dispcnt, u32 mosaic)
                 color = Pltt(index);
             }
         } else if (mode == 3) {
-            if (tx >= 0 && ty >= 0 && tx < WIDTH && ty < HEIGHT) {
-                color = Vram16((ty * WIDTH + tx) * 2) & 0x7FFF;
+            if (tx >= 0 && ty >= 0 && tx < BITMAP_W && ty < BITMAP_H) {
+                color = Vram16((ty * BITMAP_W + tx) * 2) & 0x7FFF;
             }
         } else if (mode == 4) {
             u32 base = (dispcnt & DISPCNT_FRAME_SELECT) ? 0xA000 : 0;
 
-            if (tx >= 0 && ty >= 0 && tx < WIDTH && ty < HEIGHT) {
-                u32 index = gHostVram[base + ty * WIDTH + tx];
+            if (tx >= 0 && ty >= 0 && tx < BITMAP_W && ty < BITMAP_H) {
+                u32 index = gHostVram[base + ty * BITMAP_W + tx];
 
                 if (index) {
                     color = Pltt(index);
@@ -729,6 +816,12 @@ void HostPpuLine(u32 y)
                 out = Darken(out, evy);
             }
         }
+#ifdef HOST_WIDE_BG
+        /* the bars beside the centred art: black, not the backdrop */
+        if (top == LAYER_BD && Bar(bgOn, mode, (s32)x)) {
+            out = 0;
+        }
+#endif
         row[x] = out;
     }
 

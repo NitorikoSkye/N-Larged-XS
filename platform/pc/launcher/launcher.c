@@ -37,11 +37,14 @@
 #include "host_platform.h"
 #include "zip_rom.h"
 
-/* The game it makes: on Linux, the Linux game (build_linux.sh). */
+/* The game it makes: on Linux, the Linux game (build_linux.sh). A build
+ * can name another (the widescreen experiment's: build_wide.sh). */
+#ifndef GAME_FILE
 #ifdef _WIN32
 #define GAME_FILE "Crash Bandicoot XS.exe"
 #else
 #define GAME_FILE "crash-bandicoot-xs"
+#endif
 #endif
 #define INI_FILE  "NLargedXSLauncher.ini"
 #define W 240

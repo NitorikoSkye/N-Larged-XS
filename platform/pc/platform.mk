@@ -42,10 +42,23 @@ HOST_PORT_VERSION := $(shell sed -n 's/^\#define HOST_PORT_VERSION "\(.*\)"/\1/p
 # As numbers for the resource's FILEVERSION: v0.06 -> 0,6.
 HOST_PORT_VERSION_NUM := $(shell echo $(patsubst v%,%,$(HOST_PORT_VERSION)) | awk -F. '{ printf "%d,%d", $$1, $$2 }')
 
+# Widescreen (an experiment, docs/platforms.md "Widescreen"): HOST_WIDE=288
+# builds the game for a 288x160 screen (DISPLAY_WIDTH, the window's
+# HOST_SCREEN_WIDTH) with the level layers' maps 64 columns wide
+# (HOST_WIDE_BG, gba/host.h). Use an OBJ_DIR of its own, e.g.
+#   make PLATFORM=pc HOST_WIDE=288 OBJ_DIR=build/wide/crashbandicootxs
+HOST_WIDE ?= 0
+HOST_WIDE_FLAGS :=
+ifneq ($(HOST_WIDE),0)
+HOST_WIDE_FLAGS := -DDISPLAY_WIDTH=$(HOST_WIDE) -DHOST_SCREEN_WIDTH=$(HOST_WIDE) -DHOST_WIDE_BG=1
+endif
+
 ifeq ($(HOST_ANDROID),1)
 HOST_EXE := $(patsubst %/,%,$(dir $(OBJ_DIR)))/libcrashxs_core.so
 else ifeq ($(HOST_WINDOWS),1)
 HOST_EXE := $(patsubst %/,%,$(dir $(OBJ_DIR)))/CrashBandicootXS-$(HOST_PORT_VERSION).exe
+else ifneq ($(HOST_WIDE),0)
+HOST_EXE := build/$(PLATFORM)/crashbandicootxs_$(PLATFORM)_wide$(HOST_WIDE)
 else
 HOST_EXE := build/$(PLATFORM)/crashbandicootxs_$(PLATFORM)
 endif
@@ -109,6 +122,7 @@ HOST_FLAGS := -g -femit-class-debug-always -O1 -funsigned-char -fno-strict-alias
 ifeq ($(HOST_WINDOWS),1)
 HOST_FLAGS += -mno-ms-bitfields
 endif
+HOST_FLAGS += $(HOST_WIDE_FLAGS)
 HOST_CXXFLAGS := $(HOST_FLAGS) -std=gnu++98 -fno-rtti -fno-exceptions
 HOST_CFLAGS := $(HOST_FLAGS) -std=gnu99
 # The Android app's core (stream.c, phone.c): its own settings and menu.
@@ -431,7 +445,7 @@ $(PLATFORM_BUILDDIR)/xbrz/%.o: $(PLATFORM_DIR)/xbrz/%.cpp $(PLATFORM_DIR)/xbrz/x
 
 $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.S
 	@mkdir -p $(dir $@)
-	$(HOST_CC) $(HOST_CPPFLAGS) $(DEPFLAGS) -c -o $@ $<
+	$(HOST_CC) $(HOST_CPPFLAGS) $(HOST_WIDE_FLAGS) $(DEPFLAGS) -c -o $@ $<
 
 # The interpolation's PPU draws up to 240 pictures a second at 4x: optimised.
 $(PLATFORM_BUILDDIR)/src/ppu_hd.o: HOST_CFLAGS += -O2

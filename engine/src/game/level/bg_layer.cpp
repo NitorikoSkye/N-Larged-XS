@@ -48,6 +48,11 @@ BgLayer::BgLayer(s32 bgIndex) : BgLayerBase(bgIndex)
     SetColors256(0);
     SetScreenBase(block);
     SetCharBase(2);
+#ifdef HOST_WIDE_BG
+    /* the layer's 64x32 map past the GBA's VRAM (gba/host.h) */
+    screen = (u16 *)(VRAM + HOST_WIDE_BG_MAPS + bgIndex * HOST_WIDE_BG_MAP);
+    cnt.raw |= HOST_BGCNT_WIDE_MAP;
+#endif
 }
 
 /* Grows the resident row range down to `lo` and up to `hi` one row at a
@@ -133,6 +138,15 @@ void BgLayer::CommitScroll()
     hofs = x;
     vofs = y;
     WriteOffsetRegs();
+#ifdef HOST_WIDE_BG
+    {
+        /* where the map is on the screen (gba/host.h) */
+        s16 *edges = (s16 *)(VRAM + HOST_WIDE_BG_EDGES) + 2 * (cnt.bits.screenBase - 0x1c);
+
+        edges[0] = (s16)-x;
+        edges[1] = (s16)(widthPx - x);
+    }
+#endif
 }
 
 /* Base DrawColumn (slot 7): copies the resident rows of map column `col`
@@ -148,7 +162,7 @@ void BgLayer::DrawColumn(s32 col)
     for (r = rowLo; r <= rowHi; r++) {
         screen[i] = src[srcRow * 64];
         srcRow = (srcRow + 1) & 0x1f;
-        i = (i + 32) % 0x400;
+        i = (i + BG_LAYER_MAP_COLS) % (BG_LAYER_MAP_COLS * 32);
     }
 }
 
@@ -157,7 +171,7 @@ void BgLayer::DrawColumn(s32 col)
 void BgLayer::DrawRow(s32 row)
 {
     /* `dst` is needed: inlined, the code is 3 instructions longer */
-    u16 *dst = &screen[WrapRow(row) * 32];
+    u16 *dst = &screen[WrapRow(row) * BG_LAYER_MAP_COLS];
     s32 srcCol;
     /* `src` is needed: inlined, the code is 11 instructions longer */
     u16 *src = streamer->GetRow(colLo, row, &srcCol);

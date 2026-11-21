@@ -29,6 +29,15 @@
 
 #define WIDTH  HOST_SCREEN_WIDTH
 #define HEIGHT HOST_SCREEN_HEIGHT
+/* The bitmap modes' frames are the GBA's 240x160, whatever the screen. */
+#define BITMAP_W 240
+#define BITMAP_H 160
+#ifdef HOST_WIDE_BG
+/* Widescreen (gba/host.h's HOST_WIDE_BG): what isn't a level layer is
+ * 240-pixel art (the menus, the cutscenes, the warp room), centred as
+ * screen.h's DISPLAY_ART_X centres it: outside it, the backdrop. */
+#define ART_X0 ((WIDTH - BITMAP_W) / 2)
+#endif
 
 #define DISPCNT_FRAME_SELECT 0x0010
 #define DISPCNT_HBLANK_FREE  0x0020
@@ -137,7 +146,7 @@ static inline s32 FloorDiv(s32 a, s32 b)
 }
 
 /* A text BG's texel at (tx, ty) of its map (already wrapped). */
-static inline u16 TextTexel(const struct HdFrame *f, u16 cnt, u32 tx, u32 ty)
+static inline u16 TextTexel(const struct HdFrame *f, s32 bg, u16 cnt, u32 tx, u32 ty)
 {
     u32 charBase = ((cnt >> 2) & 3) * 0x4000;
     u32 screenBase = ((cnt >> 8) & 0x1F) * 0x800;
@@ -150,6 +159,14 @@ static inline u16 TextTexel(const struct HdFrame *f, u16 cnt, u32 tx, u32 ty)
     u32 addr;
     u32 index;
 
+#ifdef HOST_WIDE_BG
+    if (cnt & HOST_BGCNT_WIDE_MAP) {
+        /* a level layer's 64x32 map past the GBA's VRAM (gba/host.h) */
+        entry = *(const u16 *)(f->vram + HOST_WIDE_BG_MAPS + bg * HOST_WIDE_BG_MAP +
+                               ((ty & 0xFF) >> 3) * 128 + ((tx & 0x1FF) >> 3) * 2);
+        goto have_entry;
+    }
+#endif
     if (tx >= 256) {
         block = 1;
     }
@@ -159,6 +176,9 @@ static inline u16 TextTexel(const struct HdFrame *f, u16 cnt, u32 tx, u32 ty)
     entry = *(const u16 *)(f->vram + ((screenBase + block * 0x800 + ((ty & 0xFF) >> 3) * 64 +
                                        ((tx & 0xFF) >> 3) * 2) &
                                       0xFFFF));
+#ifdef HOST_WIDE_BG
+have_entry:
+#endif
     tile = entry & 0x3FF;
     px = tx & 7;
     py = ty & 7;
@@ -178,6 +198,50 @@ static inline u16 TextTexel(const struct HdFrame *f, u16 cnt, u32 tx, u32 ty)
     return index ? Pltt(f, (entry >> 12) * 16 + index) : TRANSPARENT;
 }
 
+#ifdef HOST_WIDE_BG
+/* Is screen x past level layer `bg`'s map (ppu.c's OutsideMap)? */
+static int OutsideMapHd(const struct HdFrame *f, s32 bg, s32 x)
+{
+    const s16 *edges = (const s16 *)(f->vram + HOST_WIDE_BG_EDGES) + 2 * bg;
+
+    return x < edges[0] || x >= edges[1];
+}
+
+/* ppu.c's Bar, at the view's scale. */
+static int BarHd(const struct HdFrame *f, u32 bgOn, u32 mode, s32 X, s32 S)
+{
+    s32 x = X / S;
+    int any = 0;
+    int i;
+
+    for (i = 0; i < 4; i++) {
+        /* text BGs only: an affine BG's bit 13 is its wraparound */
+        int text = mode == 0 || (mode == 1 && i < 2);
+
+        if (text && (bgOn & (1 << i)) &&
+            (Io16(f, REG_OFFSET_BG0CNT + 2 * i) & HOST_BGCNT_WIDE_MAP)) {
+            if (!OutsideMapHd(f, i, x)) {
+                return 0;
+            }
+            any = 1;
+        }
+    }
+    return any || x < ART_X0 || x >= ART_X0 + BITMAP_W;
+}
+
+/* Outside the centred 240-pixel art (ART_X0), at the view's scale. */
+static void ClipToArt(u16 *out, s32 outW, s32 S)
+{
+    s32 x;
+
+    for (x = 0; x < outW; x++) {
+        if (x < ART_X0 * S || x >= (ART_X0 + BITMAP_W) * S) {
+            out[x] = TRANSPARENT;
+        }
+    }
+}
+#endif
+
 static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW)
 {
     const struct HdFrame *f = v->frame;
@@ -185,22 +249,45 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
     u16 cnt = Io16(f, REG_OFFSET_BG0CNT + 2 * bg);
     u32 widthMask = (cnt >> 14) & 1 ? 0x1FF : 0xFF;
     u32 heightMask = (cnt >> 14) & 2 ? 0x1FF : 0xFF;
+#ifdef HOST_WIDE_BG
+    if (cnt & HOST_BGCNT_WIDE_MAP) {
+        widthMask = 0x1FF;
+        heightMask = 0xFF;
+    }
+#endif
     s32 hofs = (s32)(Io16(f, REG_OFFSET_BG0HOFS + 4 * bg) & 0x1FF) * S + v->bgX[bg];
+#ifdef HOST_WIDE_BG
+    /* not a level layer: 240-pixel art, in the centred window (ppu.c) */
+    if (!(cnt & HOST_BGCNT_WIDE_MAP)) {
+        hofs -= ART_X0 * S;
+    }
+#endif
     s32 vofs = (s32)(Io16(f, REG_OFFSET_BG0VOFS + 4 * bg) & 0x1FF) * S + v->bgY[bg];
     u32 ty = (u32)FloorDiv(Y + vofs, S) & heightMask;
     s32 col = FloorDiv(hofs, S);
     s32 X = -(hofs - col * S); /* where column `col` starts */
 
     for (; X < outW; col++, X += S) {
-        u16 c = TextTexel(f, cnt, (u32)col & widthMask, ty);
+        u16 c = TextTexel(f, bg, cnt, (u32)col & widthMask, ty);
         s32 x0 = X < 0 ? 0 : X;
         s32 x1 = X + S > outW ? outW : X + S;
         s32 x;
+
+#ifdef HOST_WIDE_BG
+        if ((cnt & HOST_BGCNT_WIDE_MAP) && OutsideMapHd(f, bg, (X + S / 2) / S)) {
+            c = TRANSPARENT;
+        }
+#endif
 
         for (x = x0; x < x1; x++) {
             out[x] = c;
         }
     }
+#ifdef HOST_WIDE_BG
+    if (!(cnt & HOST_BGCNT_WIDE_MAP)) {
+        ClipToArt(out, outW, S);
+    }
+#endif
 }
 
 /* An affine or bitmap BG: each hi-res pixel takes the GBA pixel's texel
@@ -219,8 +306,11 @@ static void AffineBgLine(const struct HdView *v, s32 bg, s32 Y, u32 mode, u32 di
     s32 ys = FloorDiv(Y + v->bgY[bg], S);
     s32 refX = RefPoint(Io32(f, REG_OFFSET_BG2X + 0x10 * i)) + ys * pb;
     s32 refY = RefPoint(Io32(f, REG_OFFSET_BG2Y + 0x10 * i)) + ys * pd;
-    s32 xs = FloorDiv(v->bgX[bg], S);
-    s32 X = -(v->bgX[bg] - xs * S);
+    /* (widescreen: the game's reference point already centres the art,
+     * DISPLAY_ART_X; ClipToArt below cuts it to the window) */
+    s32 bgX = v->bgX[bg];
+    s32 xs = FloorDiv(bgX, S);
+    s32 X = -(bgX - xs * S);
 
     for (; X < outW; xs++, X += S) {
         s32 tx = (refX + xs * pa) >> 8;
@@ -249,14 +339,14 @@ static void AffineBgLine(const struct HdView *v, s32 bg, s32 Y, u32 mode, u32 di
                 }
             }
         } else if (mode == 3) {
-            if (tx >= 0 && ty >= 0 && tx < WIDTH && ty < HEIGHT) {
-                color = *(const u16 *)(f->vram + (ty * WIDTH + tx) * 2) & 0x7FFF;
+            if (tx >= 0 && ty >= 0 && tx < BITMAP_W && ty < BITMAP_H) {
+                color = *(const u16 *)(f->vram + (ty * BITMAP_W + tx) * 2) & 0x7FFF;
             }
         } else if (mode == 4) {
             u32 base = (dispcnt & DISPCNT_FRAME_SELECT) ? 0xA000 : 0;
 
-            if (tx >= 0 && ty >= 0 && tx < WIDTH && ty < HEIGHT) {
-                u32 index = f->vram[base + ty * WIDTH + tx];
+            if (tx >= 0 && ty >= 0 && tx < BITMAP_W && ty < BITMAP_H) {
+                u32 index = f->vram[base + ty * BITMAP_W + tx];
 
                 if (index) {
                     color = Pltt(f, index);
@@ -273,6 +363,9 @@ static void AffineBgLine(const struct HdView *v, s32 bg, s32 Y, u32 mode, u32 di
             out[x] = color;
         }
     }
+#ifdef HOST_WIDE_BG
+    ClipToArt(out, outW, S);
+#endif
 }
 
 static inline u32 ObjTexel(const struct HdFrame *f, u32 attr0, u32 attr2, u32 width, u32 lx, u32 ly,
@@ -621,6 +714,12 @@ void HostPpuHdLine(const struct HdView *v, s32 Y, u32 *row)
                 out = Darken(out, evy);
             }
         }
+#ifdef HOST_WIDE_BG
+        /* the bars beside the centred art: black, not the backdrop (ppu.c) */
+        if (top == LAYER_BD && BarHd(f, bgOn, mode, X, S)) {
+            out = 0;
+        }
+#endif
         row[X] = out;
     }
 }

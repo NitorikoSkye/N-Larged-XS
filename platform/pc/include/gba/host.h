@@ -14,7 +14,25 @@
 #define HOST_EWRAM_SIZE 0x80000
 #define HOST_IWRAM_SIZE 0x10000
 #define HOST_PLTT_SIZE  0x400
-#define HOST_VRAM_SIZE  0x18000
+/* A widescreen build (platform.mk's HOST_WIDE, HOST_WIDE_BG) has four
+ * 64x32-entry BG maps after the GBA's 96 KB of VRAM, one for each level
+ * layer (BgLayer, bg_layer.hpp): a screen wider than a 32x32 screen block
+ * and a tile, with no room for 512-pixel maps in the 64 KB the levels
+ * fill. A text BG whose BGnCNT has HOST_BGCNT_WIDE_MAP (bit 13, the
+ * affine BGs' wraparound, which text BGs don't have) reads its map from
+ * there (ppu.c, ppu_hd.c). */
+#define HOST_WIDE_BG_MAPS   0x18000
+#define HOST_WIDE_BG_MAP    0x1000 /* bytes a map: 64 x 32 entries */
+#define HOST_BGCNT_WIDE_MAP 0x2000
+/* After the maps, each layer's map on the screen, from its left edge to
+ * its right (two s16 a layer, from its scroll: BgLayer::CommitScroll): a
+ * room narrower than the screen shows nothing past its edges. */
+#define HOST_WIDE_BG_EDGES (HOST_WIDE_BG_MAPS + 4 * HOST_WIDE_BG_MAP)
+#ifdef HOST_WIDE_BG
+#define HOST_VRAM_SIZE (HOST_WIDE_BG_EDGES + 0x100)
+#else
+#define HOST_VRAM_SIZE 0x18000
+#endif
 #define HOST_OAM_SIZE   0x400
 #define HOST_NULL_PAGE_SIZE 0x1000
 

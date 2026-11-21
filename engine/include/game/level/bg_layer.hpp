@@ -123,6 +123,15 @@ LAYOUT_ASSERT(bg_layer_hpp, sizeof(BgLayerBase) == 0x34);
  * their declaration order, as the ROM has them (GetBgLayerScreenIndex ...
  * DestroyBgLayer). Nothing calls those copies. GetScreenIndex is declared
  * after the two wraps it calls, or g++ would call them out of line. */
+/* The map's columns: a BG screen block's 32, or in a pc widescreen build
+ * (HOST_WIDE_BG, gba/host.h) 64, in a map of the host's own past the
+ * GBA's VRAM (HOST_WIDE_BG_MAPS). The ROM's code is the 32 case. */
+#ifdef HOST_WIDE_BG
+#define BG_LAYER_MAP_COLS 64
+#else
+#define BG_LAYER_MAP_COLS BG_SCREEN_BLOCK_TILES
+#endif
+
 class BgLayer : public BgLayerBase
 {
 public:
@@ -206,13 +215,13 @@ public:
 
     s32 WrapColumn(s32 col)
     {
-        return col % 32;
+        return col % BG_LAYER_MAP_COLS;
     }
 
     /* Screen-block entry index of map (col, row) (GetBgLayerScreenIndex). */
     s32 GetScreenIndex(s32 col, s32 row)
     {
-        return WrapRow(row) * 32 + WrapColumn(col);
+        return WrapRow(row) * BG_LAYER_MAP_COLS + WrapColumn(col);
     }
 };
 

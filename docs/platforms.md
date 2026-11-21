@@ -665,13 +665,29 @@ waiting for discord, connected, app id refused. `HOST_DISCORD_LOG=FILE` logs
 what the connection does. Held in the settings menu or paused in the
 background, the status still follows.
 
-**Widescreen** is not in v0.02. A prototype built with
-`DISPLAY_WIDTH=288` runs (the HUD, camera, culling and activation follow
-screen.h), but BgLayer keeps the level map in a 256-pixel-wide BG
-(BG_SCREEN_BLOCK_TILES, "Platform-layer limits" in screen.md), so the
-left 32 pixels show stale columns. It needs BgLayer and the streamer on
-512x256 BGs, and the game built twice into the executable (one per
-width) to switch without a second program.
+**Widescreen** (an experiment, the `widescreen` branch): `make
+PLATFORM=pc HOST_WIDE=288 OBJ_DIR=build/wide/crashbandicootxs` builds the
+game for a 288x160 screen (DISPLAY_WIDTH and the window's
+HOST_SCREEN_WIDTH; the HUD, camera, culling and activation follow
+screen.h). The level layers (BgLayer) keep 64x32-entry maps instead of
+a 32x32 screen block: there is no room for 512-pixel maps in the 64 KB of
+BG VRAM the levels fill, so the four maps are the host's, after the
+GBA's 96 KB (gba/host.h's HOST_WIDE_BG_MAPS; HOST_VRAM_SIZE grows, so
+the interpolation's snapshots carry them), and BGnCNT's bit 13 (an
+affine BG's wraparound; a text BG has none) says so to ppu.c and
+ppu_hd.c. Each layer also writes where its map is on the screen
+(HOST_WIDE_BG_EDGES): a room narrower than the screen (a boss arena)
+shows black past its edges, not map columns it doesn't have. Everything
+else is 240-pixel art: text BGs that aren't level layers are drawn in the
+centred window (DISPLAY_ART_X, as the game already places their sprites
+and the affine/bitmap BGs' reference points), cut to it, and the bars
+beside it are black. The bitmap modes keep the GBA's 240x160 frames.
+`platform/pc/launcher/build_wide.sh ROM SDL2_MINGW_DIR [WIDTH]` makes
+launchers for it ("Crash Bandicoot XS Wide.exe", crash-bandicoot-xs-wide).
+Known: sprites (and the jetpack and polar levels' fixed art) aren't cut
+to the window; `--hd-check` finds 120 pixels in 200 frames of a cutscene
+fade differ at the right bar's first column; the game built twice into
+one executable (to switch at run time) isn't done.
 
 **Mouse** (v0.33; src/ui.c HostUiMouse, src/mouse_hooks.cpp, src/sdl.c).
 The settings menu: moving over a category, a row or a binding highlights

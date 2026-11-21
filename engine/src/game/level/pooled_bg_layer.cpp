@@ -40,7 +40,7 @@ void PooledBgLayer::DrawColumn(s32 col)
     for (r = rowLo; r <= rowHi; r++) {
         screen[idx] = pool->Acquire(src[srcRow * 64]);
         srcRow = (srcRow + 1) & 0x1F;
-        idx = (idx + 32) % 0x400;
+        idx = (idx + BG_LAYER_MAP_COLS) % (BG_LAYER_MAP_COLS * 32);
     }
 }
 
@@ -113,7 +113,7 @@ void PooledBgLayer::ClipRows(s32 lo, s32 hi)
 void PooledBgLayer::DrawRow(s32 row)
 {
     /* `dst` is needed: inlined, the code is 4 instructions longer */
-    u16 *dst = &screen[WrapRow(row) * 32];
+    u16 *dst = &screen[WrapRow(row) * BG_LAYER_MAP_COLS];
     s32 srcCol;
     /* `src` is needed: inlined, the code is 4 instructions longer */
     u16 *src = streamer->GetRow(colLo, row, &srcCol);
