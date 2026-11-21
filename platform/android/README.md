@@ -83,8 +83,8 @@ drawn in the game's style, with the phone's own options:
   the whole fall, not just near the top) and infinite lives (the lives count
   becomes an infinity sign).
 
-The pause menu's monitor has a page of play statistics too: the save's
-play time, deaths and crates broken.
+Interface's "pause stats" (off by default) adds a page of play statistics
+to the pause menu's monitor: the save's play time, deaths and crates broken.
 
 ## How it works
 

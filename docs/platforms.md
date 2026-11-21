@@ -607,8 +607,10 @@ from a lemniscate with the digits' shading). Tested on the waterfall pit: 5 live
 stay 5 with it on. HOST_INFINITE_LIVES=1.
 
 **Play statistics** (v0.52.2; src/stats.c, src/stats_hooks.cpp). Each
-save's play time, deaths and crates broken, on a sixth page of the pause
-menu's monitor ("statistics", in the game's language), after the
+save's play time, deaths and crates broken, with Interface's "pause
+stats" on (v0.52.3; off by default, ini `pause_stats`: the game's own
+five pages otherwise; HOST_PAUSE_STATS=1 in the tests) on a sixth page
+of the pause menu's monitor, the three centred in it ("statistics", in the game's language), after the
 game's five (PauseMenu::Animate's wrapper turns from the fifth to it and
 from it back to the first; DrawPageTitle's draws its title and page,
 which gPauseMenuPageTitles has no entry for). They follow the progress

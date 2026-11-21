@@ -100,6 +100,7 @@ struct HostSettings {
     int inputDisplay;  /* 0 off, 1 bottom left, 2 bottom right */
     int hud;           /* HOST_HUD_* */
     int speedrunTimer; /* HOST_TIMER_* */
+    int pauseStats;    /* the pause menu's statistics page (stats_hooks.cpp) */
     /* Audio, percent */
     int master;
     int music;

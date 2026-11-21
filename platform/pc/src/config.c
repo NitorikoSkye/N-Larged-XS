@@ -149,6 +149,7 @@ static const struct {
     { "colors", &gHostSettings.colors, 0, 1 },
     { "ghosting", &gHostSettings.ghosting, 0, 1 },
     { "show_fps", &gHostSettings.showFps, 0, 1 },
+    { "pause_stats", &gHostSettings.pauseStats, 0, 1 },
     { "input_display", &gHostSettings.inputDisplay, 0, 2 },
     { "hud", &gHostSettings.hud, 0, HOST_HUD_COUNT - 1 },
     { "speedrun_timer", &gHostSettings.speedrunTimer, 0, HOST_TIMER_COUNT - 1 },

@@ -568,6 +568,8 @@ static const struct Option sInterface[] = {
       OPT_CHOICE, &gHostSettings.inputDisplay, sCorners, 3, 0 },
     { "speedrun timer", "top left: the level's time, its split against your best, the run's.",
       OPT_CHOICE, &gHostSettings.speedrunTimer, sTimers, HOST_TIMER_COUNT, 0 },
+    { "pause stats", "the pause menu's monitor also shows play time, deaths and crates.",
+      OPT_CHOICE, &gHostSettings.pauseStats, sOffOn, 2, 0 },
 };
 
 static const char *const sQualities[] = { "original", "high" };
@@ -710,6 +712,8 @@ static const struct Option sPhoneInterface[] = {
       &gHostSettings.hud, sHuds, HOST_HUD_COUNT, 0 },
     { "prompts", "the game's a, b, l and r buttons drawn as your controller's.", OPT_CHOICE,
       &gHostSettings.prompts, sPrompts, HOST_PROMPTS_NINTENDO + 1, 0 },
+    { "pause stats", "the pause menu's monitor also shows play time, deaths and crates.",
+      OPT_CHOICE, &gHostSettings.pauseStats, sOffOn, 2, 0 },
 };
 
 static const struct Option sPhoneAudio[] = {
@@ -751,7 +755,8 @@ static const struct Category sCategories[] = {
       COUNT(sPhoneDisplay) },
     { "touch", "the on-screen buttons: size, d-pad, haptics, vibration, icons, layout", sPhoneTouch,
       COUNT(sPhoneTouch) },
-    { "interface", "text size, hud and button prompts", sPhoneInterface, COUNT(sPhoneInterface) },
+    { "interface", "text size, hud, button prompts and pause stats", sPhoneInterface,
+      COUNT(sPhoneInterface) },
     { "audio", "quality, and master, music and sound fx volume", sPhoneAudio, COUNT(sPhoneAudio) },
     { "gameplay", "auto save, looking around, jumps and lives", sPhoneGameplay,
       COUNT(sPhoneGameplay) },
@@ -764,7 +769,8 @@ static const struct Category sCategories[] = {
       COUNT(sGeneral) },
     { "display", "window, frame rate and scaling", sDisplay, COUNT(sDisplay) },
     { "graphics", "filters and screen effects", sGraphics, COUNT(sGraphics) },
-    { "interface", "hud, fps counter, input display and timer", sInterface, COUNT(sInterface) },
+    { "interface", "hud, fps counter, input display, timer and pause stats", sInterface,
+      COUNT(sInterface) },
     { "audio", "quality, and master, music and sound fx volume", sAudio, COUNT(sAudio) },
     { "controls", "keyboard, controller, rumble and button prompts", sControls, COUNT(sControls) },
     { "gameplay", "auto save, looking up and down, jumps and lives", sGameplay, COUNT(sGameplay) },

@@ -4,7 +4,8 @@
  *
  * The monitor shows the game's five info pages in turn, 3 seconds each
  * (PauseMenu::Animate: crystals, powers, gems, relics, the time trial);
- * a sixth, "statistics", follows the fifth: the play time, deaths and
+ * with Interface's "pause stats" on (off by default), a sixth,
+ * "statistics", follows the fifth: the play time, deaths and
  * crates broken of the game under way, each a label and its number, in
  * the small font, centred under the page title as the game centres its
  * own (DrawPageTitle's x 0xc2). Its title is in the game's language.
@@ -37,6 +38,7 @@ extern "C" {
 
 int HostGameOnlyTest(void); /* mouse_hooks.cpp */
 extern s32 gLanguage;
+char *getenv(const char *name);
 
 /* The game's five pages are 0-4. */
 #define STATS_PAGE 5
@@ -56,6 +58,22 @@ static const char *const sCratesLabel[6] = {
     "crates", "caisses", "kisten", "cajas", "casse", "kisten",
 };
 
+/* Interface's "pause stats" (off by default: the game's own five pages
+ * only); never in the tests' headless runs unless HOST_PORT_MENUS=1 and
+ * HOST_PAUSE_STATS=1. */
+static int StatsPageOn(void)
+{
+    static int sEnv = -1;
+
+    if (HostGameOnlyTest()) {
+        return 0;
+    }
+    if (sEnv < 0) {
+        sEnv = getenv("HOST_PAUSE_STATS") != NULL;
+    }
+    return gHostSettings.pauseStats || sEnv;
+}
+
 static int Language(void)
 {
     return gLanguage >= 0 && gLanguage < 6 ? gLanguage : 0;
@@ -67,7 +85,10 @@ void __wrap__ZN4Game2Ui9PauseMenu7AnimateEv(PauseMenu *self)
 {
     s32 before = self->page;
 
-    if (HostGameOnlyTest()) {
+    if (!StatsPageOn()) {
+        if (before == STATS_PAGE) {
+            self->page = 0; /* turned off while it was up */
+        }
         __real__ZN4Game2Ui9PauseMenu7AnimateEv(self);
         return;
     }
@@ -93,7 +114,7 @@ static void Centred(const char *text, s32 y)
 
 /* The page: three labels from y STATS_TOP, STATS_PITCH apart, each with
  * its number under it (white, as the selected row). */
-#define STATS_TOP   0x48
+#define STATS_TOP   0x4e
 #define STATS_PITCH 0x18
 #define STATS_VALUE 10 /* the number's line under its label */
 
@@ -124,6 +145,9 @@ void __real__ZN4Game2Ui9PauseMenu13DrawPageTitleEv(PauseMenu *self);
 
 void __wrap__ZN4Game2Ui9PauseMenu13DrawPageTitleEv(PauseMenu *self)
 {
+    if (self->page == STATS_PAGE && !StatsPageOn()) {
+        self->page = 0;
+    }
     if (self->page != STATS_PAGE) {
         __real__ZN4Game2Ui9PauseMenu13DrawPageTitleEv(self);
         return;
