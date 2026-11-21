@@ -53,6 +53,14 @@ inline void Starfield::Plot(screen_ux_t x, screen_y_t y, s32 val)
     }
 }
 
+/* A map row's bytes, as a shift: a screen block's 32 entries, or the
+ * widescreen map's 64 (HOST_WIDE_BG). */
+#ifdef HOST_WIDE_BG
+#define STARFIELD_MAP_ROW_SHIFT 7
+#else
+#define STARFIELD_MAP_ROW_SHIFT 6
+#endif
+
 /* BG0 at screen block 31, its whole screen one sequential run of tiles in
  * palette bank 15, a 3-step grey gradient in that bank, and the tile VRAM
  * and the shadow buffer cleared. */
@@ -89,6 +97,19 @@ Starfield::Starfield()
 
     tileVramBase = VRAM;
     mapVramBase = BG_SCREEN_ADDR(31);
+#ifdef HOST_WIDE_BG
+    {
+        /* A pc widescreen build (gba/host.h): the screen is more than a
+         * screen block's 32 tiles wide, so BG0 takes the host's 64-column
+         * map for layer 0, the whole screen its map's width. */
+        s16 *edges = (s16 *)(VRAM + HOST_WIDE_BG_EDGES);
+
+        mapVramBase = VRAM + HOST_WIDE_BG_MAPS;
+        REG_BG0CNT = bg0cnt.raw | HOST_BGCNT_WIDE_MAP;
+        edges[0] = 0;
+        edges[1] = DISPLAY_WIDTH;
+    }
+#endif
 
     Display::ShowBg0();
 
@@ -119,7 +140,7 @@ Starfield::Starfield()
     do {
         /* `nextRow` is needed: inlined, the instructions differ */
         s32 nextRow = row + 1;
-        u16 *rowPtr = (u16 *)((row << 6) + mapVramBase);
+        u16 *rowPtr = (u16 *)((row << STARFIELD_MAP_ROW_SHIFT) + mapVramBase);
         s32 col = DISPLAY_WIDTH_TILES - 1;
 
         do {
