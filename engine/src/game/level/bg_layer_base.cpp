@@ -3,10 +3,15 @@
 extern "C" {
 #include "engine/util/math_util.h"
 #include "globals.h"
+#include "screen.h"
 }
 
 using Game::Level::BgLayerBase;
 using Game::Level::BgStreamer;
+
+#ifdef HOST_WIDE_BG
+extern Game::Level::LevelLayers *gLevelLayersSingleton;
+#endif
 
 /* Built with old_agbcp - see docs/matching/archive/game-loop-old-agbcc.md. */
 
@@ -94,6 +99,39 @@ void BgLayerBase::StepScroll(const s32 *target)
     y += dy;
 }
 
+#ifdef HOST_WIDE_BG
+/* Widescreen (HOST_WIDE_BG): a slow layer whose picture covers the GBA's
+ * view all the way to the level's end, but not the wider one (the
+ * underwater levels' distant ruins: 360 pixels at 12/256), drifts a
+ * little slower instead, so that it reaches its picture's right edge
+ * exactly when the camera reaches the level's. Its x for the camera at
+ * `camX` goes in `scaled`; layers that fit, or that already ran out on
+ * the GBA, keep the game's factor. */
+static void WideFitScroll(const BgLayerBase *layer, s32 camX, s32 *scaled)
+{
+    s32 camMax;
+    s32 room;
+
+    if (gLevelLayersSingleton == NULL || layer->scaleX >= 0x100) {
+        return;
+    }
+    camMax = gLevelLayersSingleton->maxScrollX;
+    room = layer->widthPx - DISPLAY_WIDTH;
+    if (camMax <= 0 || room < 0 || Q8_TO_INT(camMax * layer->scaleX) <= room) {
+        return; /* fits, or no room to fit in */
+    }
+    /* the GBA's view, with its own (longer) camera range */
+    if (Q8_TO_INT((camMax + DISPLAY_WIDTH - DISPLAY_ART_WIDTH) * layer->scaleX) +
+            DISPLAY_ART_WIDTH >
+        layer->widthPx) {
+        return;
+    }
+    LIMIT_MIN(camX, 0);
+    LIMIT_MAX(camX, camMax);
+    scaled[0] = camX * room / camMax;
+}
+#endif
+
 /* Scales the move `delta` by the layer's parallax factors and steps the
  * layer's position toward the result. */
 void BgLayerBase::Scroll(const s32 *delta)
@@ -106,6 +144,9 @@ void BgLayerBase::Scroll(const s32 *delta)
     scaled[0] = dx;
     scaled[1] = dy;
     ScaleScroll(scaled);
+#ifdef HOST_WIDE_BG
+    WideFitScroll(this, dx, scaled);
+#endif
     StepScroll(scaled);
 }
 
@@ -120,6 +161,9 @@ void BgLayerBase::Reset(const s32 *pos)
     x = px;
     y = py;
     ScaleScroll(&x);
+#ifdef HOST_WIDE_BG
+    WideFitScroll(this, px, &x);
+#endif
     streamer->Fill(&x);
 }
 

@@ -687,7 +687,11 @@ launchers for it ("Crash Bandicoot XS Wide.exe", crash-bandicoot-xs-wide).
 Known: sprites (and the jetpack and polar levels' fixed art) aren't cut
 to the window; `--hd-check` finds 120 pixels in 200 frames of a cutscene
 fade differ at the right bar's first column; the game built twice into
-one executable (to switch at run time) isn't done.
+one executable (to switch at run time) isn't done. A slow BG layer whose
+picture lasts the GBA's view to the level's end but not the wider one
+(the underwater levels' distant ruins, 360 pixels at 12/256) drifts a
+little slower there (bg_layer_base.cpp's `WideFitScroll`), so it reaches
+its picture's edge with the camera's; the HUD's "borders" reads as "on".
 
 **Mouse** (v0.33; src/ui.c HostUiMouse, src/mouse_hooks.cpp, src/sdl.c).
 The settings menu: moving over a category, a row or a binding highlights
