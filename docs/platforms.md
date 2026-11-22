@@ -689,7 +689,14 @@ them always, so the interpolation's snapshots carry them), and BGnCNT's
 bit 13 (an affine BG's wraparound; a text BG has none) says so to ppu.c
 and ppu_hd.c. Each layer also writes where its map is on the screen
 (HOST_WIDE_BG_EDGES): a room narrower than the screen (a boss arena)
-shows black past its edges, not map columns it doesn't have. Everything
+shows black past its edges, not map columns it doesn't have. Layer 0's
+tile slot pool (TileSlotPool) has 0x400 slots instead of 0x200, the
+second 0x200 after the maps (HOST_WIDE_BG_TILES, read for a wide 8bpp
+map's tiles 0x200 on), and the VRAM transfer queue room for 0x500: the
+wider view holds up to 37x22 of its entries at once, and in a tile-dense
+place more distinct tiles than 0x200 (v0.52.7 and before: the pool's
+stack ran out, uploads hit the other layers' tiles, then the game
+crashed). Everything
 else is 240-pixel art: text BGs that aren't level layers are drawn in the
 centred window (DISPLAY_ART_X, as the game already places their sprites
 and the affine/bitmap BGs' reference points), cut to it, and the bars

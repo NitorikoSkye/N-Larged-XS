@@ -193,6 +193,13 @@ have_entry:
     if (cnt & BGCNT_256COLOR) {
         addr = charBase + tile * 64 + py * 8 + px;
         index = addr < 0x10000 ? f->vram[addr] : 0;
+#ifdef HOST_WIDE_BG
+        if (WIDE_MAP(cnt) && tile >= HOST_WIDE_BG_TILE_FIRST) {
+            /* layer 0's slots past the GBA's VRAM (ppu.c) */
+            index =
+                f->vram[HOST_WIDE_BG_TILES + (tile - HOST_WIDE_BG_TILE_FIRST) * 64 + py * 8 + px];
+        }
+#endif
         return index ? Pltt(f, index) : TRANSPARENT;
     }
     addr = charBase + tile * 32 + py * 4 + px / 2;

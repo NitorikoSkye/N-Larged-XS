@@ -227,7 +227,19 @@ public:
 
 LAYOUT_ASSERT(bg_layer_hpp, sizeof(BgLayer) == 0x5C);
 
-#define TILE_SLOT_NONE 0x200
+#ifdef HOST_WIDE_BG
+/* Widescreen on the pc (HOST_WIDE, gba/host.h) shows more of layer 0 at
+ * once (37x21 entries, the GBA's 31x21) than its 0x200 slots can hold in
+ * a tile-dense place: 0x400 there, the second 0x200 past the GBA's VRAM
+ * (HOST_WIDE_BG_TILES; ppu.c reads them for the wide map's tiles 0x200 on).
+ * The GBA's width keeps 0x200. */
+#define TILE_SLOT_COUNT_MAX 0x400
+#define TILE_SLOT_COUNT     (HOST_WIDE ? 0x400 : 0x200)
+#define TILE_SLOT_NONE      TILE_SLOT_COUNT
+#else
+#define TILE_SLOT_COUNT_MAX 0x200
+#define TILE_SLOT_NONE      0x200
+#endif
 
 /* Layer 0's VRAM tile-slot pool (PooledBgLayer::pool, 0x480C bytes;
  * engine/src/game/level/tile_slot_pool.cpp): up to 0x2000 source tiles mapped onto
@@ -237,12 +249,12 @@ LAYOUT_ASSERT(bg_layer_hpp, sizeof(BgLayer) == 0x5C);
 class TileSlotPool
 {
 public:
-    uintptr_t vramBase;      // 0x0000
-    uintptr_t srcBase;       // 0x0004
-    u16 refCount[0x200];     // 0x0008
-    u16 slotForTile[0x2000]; // 0x0408 - TILE_SLOT_NONE when not resident
-    u16 freeSlots[0x200];    // 0x4408
-    s32 freeTop;             // 0x4808
+    uintptr_t vramBase;                 // 0x0000
+    uintptr_t srcBase;                  // 0x0004
+    u16 refCount[TILE_SLOT_COUNT_MAX];  // 0x0008
+    u16 slotForTile[0x2000];            // 0x0408 - TILE_SLOT_NONE when not resident
+    u16 freeSlots[TILE_SLOT_COUNT_MAX]; // 0x4408
+    s32 freeTop;                        // 0x4808
 
     void Reset();                                // ResetTileSlotPool
     u16 Acquire(u16 tile);                       // AcquireTileSlot

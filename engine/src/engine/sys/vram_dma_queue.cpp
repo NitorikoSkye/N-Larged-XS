@@ -26,8 +26,15 @@ struct dma_queue {
     s32 count;
 };
 
-/* Allocated capacity of `queue.entries`. */
+/* Allocated capacity of `queue.entries`. Widescreen on the pc (HOST_WIDE,
+ * gba/host.h) has room for more: refilling layer 0 can upload up to its
+ * 0x400 tile slots in a frame (bg_layer.hpp's TILE_SLOT_COUNT), the GBA's
+ * width at most 0x200. */
+#ifdef HOST_WIDE_BG
+#define DMA_QUEUE_MAX_ENTRIES (HOST_WIDE ? 0x500 : 0x300)
+#else
 #define DMA_QUEUE_MAX_ENTRIES 0x300
+#endif
 
 /* Runs the queued VRAM transfers, then waits for the last one. */
 void VramDmaQueue::Flush()

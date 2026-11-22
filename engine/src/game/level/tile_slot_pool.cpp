@@ -66,9 +66,16 @@ void TileSlotPool::Reset()
 {
     s32 i;
 
+#ifdef HOST_WIDE_BG
+    /* the slots this width uses (bg_layer.hpp's TILE_SLOT_COUNT) */
+    freeTop = TILE_SLOT_NONE;
+    for (i = 0; i < TILE_SLOT_COUNT; i++)
+        PushFreeSlot(i);
+#else
     freeTop = TILE_SLOT_NONE;
     for (i = 0; i < (s32)ARRAY_COUNT(refCount); i++)
         PushFreeSlot(i);
+#endif
     for (i = 0; i < (s32)ARRAY_COUNT(slotForTile); i++)
         slotForTile[i] = TILE_SLOT_NONE;
     for (i = 0; i < (s32)ARRAY_COUNT(refCount); i++)
@@ -111,6 +118,14 @@ void TileSlotPool::Release(u32 tile)
 
 void TileSlotPool::Upload(s32 tileId, s32 slot)
 {
+#ifdef HOST_WIDE_BG
+    if (slot >= 0x200) {
+        /* widescreen's second 0x200 slots, past the GBA's VRAM (bg_layer.hpp) */
+        VramDmaQueue::Add((void *)(srcBase + tileId * 64),
+                          (void *)(VRAM + HOST_WIDE_BG_TILES + (slot - 0x200) * 64), 0x40, 0x10);
+        return;
+    }
+#endif
     VramDmaQueue::Add((void *)(srcBase + tileId * 64), (void *)(vramBase + slot * 64), 0x40, 0x10);
 }
 

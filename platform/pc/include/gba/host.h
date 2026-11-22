@@ -39,7 +39,12 @@
  * would show beside the picture. */
 #define HOST_WIDE_WARP      (HOST_WIDE_BG_EDGES + 0x21)
 #define HOST_WIDE_WARP_ROOM 2
-#define HOST_VRAM_SIZE (HOST_WIDE_BG_EDGES + 0x100)
+/* Layer 0's tile slots 0x200-0x3FF in widescreen (TileSlotPool,
+ * bg_layer.hpp: the wider screen shows more of its tiles at once), 64 bytes
+ * each: a wide-map 8bpp BG's tiles 0x200 on are read from here (ppu.c). */
+#define HOST_WIDE_BG_TILES      (HOST_WIDE_BG_EDGES + 0x100)
+#define HOST_WIDE_BG_TILE_FIRST 0x200
+#define HOST_VRAM_SIZE          (HOST_WIDE_BG_TILES + 0x200 * 64)
 /* the GBA's own; a checkpoint (input.c) hashes it, and at the GBA's
  * width only it, as a 240-pixel build always has */
 #define HOST_VRAM_GBA_SIZE 0x18000

@@ -340,6 +340,13 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
         if (is8bpp) {
             addr = charBase + tile * 64 + py * 8 + px;
             index = addr < 0x10000 ? gHostVram[addr] : 0;
+#ifdef HOST_WIDE_BG
+            if (wide != NULL && tile >= HOST_WIDE_BG_TILE_FIRST) {
+                /* layer 0's slots past the GBA's VRAM (gba/host.h) */
+                index = gHostVram[HOST_WIDE_BG_TILES + (tile - HOST_WIDE_BG_TILE_FIRST) * 64 +
+                                  py * 8 + px];
+            }
+#endif
             out[x] = index ? Pltt(index) : TRANSPARENT;
         } else {
             addr = charBase + tile * 32 + py * 4 + px / 2;
