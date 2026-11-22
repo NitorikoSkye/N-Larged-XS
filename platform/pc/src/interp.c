@@ -553,7 +553,7 @@ static u64 sCheckPixels;
 void HostHdCheckFrame(void)
 {
     static struct Kept still;
-    static u32 out[HOST_SCREEN_WIDTH * 2 * HOST_SCREEN_HEIGHT * 2];
+    static u32 out[HOST_SCREEN_WIDTH_MAX * 2 * HOST_SCREEN_HEIGHT * 2];
     struct HdView v;
     s32 scale;
 
@@ -586,7 +586,7 @@ void HostHdCheckFrame(void)
         sCheckFrames++;
     }
     if (getenv("HOST_HD_BENCH") != NULL && HostFrame() == gHostInterpDumpAt && HostInterpReady()) {
-        static u32 big[HOST_SCREEN_WIDTH * 4 * HOST_SCREEN_HEIGHT * 4];
+        static u32 big[HOST_SCREEN_WIDTH_MAX * 4 * HOST_SCREEN_HEIGHT * 4];
         clock_t t0 = clock();
         int k;
 
@@ -604,7 +604,7 @@ void HostHdCheckFrame(void)
             getenv("HOST_INTERP_COUNT") != NULL ? (u32)atoi(getenv("HOST_INTERP_COUNT")) : 3;
 
         if (frame >= gHostInterpDumpAt && frame < gHostInterpDumpAt + count && HostInterpReady()) {
-            static u32 big[HOST_SCREEN_WIDTH * 4 * HOST_SCREEN_HEIGHT * 4];
+            static u32 big[HOST_SCREEN_WIDTH_MAX * 4 * HOST_SCREEN_HEIGHT * 4];
             int k;
 
             for (k = 0; k < 4; k++) {

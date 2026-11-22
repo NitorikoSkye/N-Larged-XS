@@ -1,8 +1,8 @@
 #!/bin/sh
 # Builds the Linux launcher, NLargedXSLauncher (platform/pc/LAUNCHER.md,
-# "Linux"): the Linux game (an x86-64 ELF, SDL2 from the system) and the
-# widescreen one (HOST_WIDE=288), their packages made from your ROM
-# (make_package.py), then the launcher with both packages built in. Run from the repository's root, on Linux with SDL2's
+# "Linux"): the Linux game (an x86-64 ELF, SDL2 from the system), its
+# package made from your ROM (make_package.py), then the launcher with the
+# package built in. Run from the repository's root, on Linux with SDL2's
 # development files (libsdl2-dev):
 #
 #   platform/pc/launcher/build_linux.sh ROM
@@ -23,14 +23,9 @@ GAME=build/pc/crashbandicootxs_pc
 strip -o "$OUT/game.elf" "$GAME"
 python3 platform/pc/tools/make_package.py --rom "$ROM" --exe "$OUT/game.elf" --symbols "$GAME" \
     --nm nm --version "$VERSION" -o "$OUT/package.bin"
-make -j"$JOBS" PLATFORM=pc HOST_SDL=1 HOST_WIDE=288 OBJ_DIR=build/wide/crashbandicootxs
-WIDE=build/pc/crashbandicootxs_pc_wide288
-strip -o "$OUT/game-wide.elf" "$WIDE"
-python3 platform/pc/tools/make_package.py --rom "$ROM" --exe "$OUT/game-wide.elf" --symbols "$WIDE" \
-    --nm nm --version "$VERSION" -o "$OUT/package-wide.bin"
 gcc -O2 -Wall -Wno-format-truncation -I platform/pc/include -I engine/include -iquote platform/pc/src \
     $(pkg-config --cflags sdl2) -DPACKAGE_BIN="\"$OUT/package.bin\"" \
-    -DPACKAGE_WIDE_BIN="\"$OUT/package-wide.bin\"" -o "$OUT/NLargedXSLauncher" platform/pc/launcher/launcher.c platform/pc/launcher/zip_rom.c \
+    -o "$OUT/NLargedXSLauncher" platform/pc/launcher/launcher.c platform/pc/launcher/zip_rom.c \
     platform/pc/launcher/launcher_package.S platform/pc/src/sha1.c $(pkg-config --libs sdl2)
 strip "$OUT/NLargedXSLauncher"
 echo "$OUT/NLargedXSLauncher ($VERSION)"

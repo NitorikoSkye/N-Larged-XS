@@ -33,10 +33,12 @@
 #define BITMAP_W 240
 #define BITMAP_H 160
 #ifdef HOST_WIDE_BG
-/* Widescreen (gba/host.h's HOST_WIDE_BG): what isn't a level layer is
+/* Widescreen (gba/host.h's HOST_WIDE): what isn't a level layer is
  * 240-pixel art (the menus, the cutscenes, the warp room), centred as
  * screen.h's DISPLAY_ART_X centres it: outside it, the backdrop. */
 #define ART_X0 ((WIDTH - BITMAP_W) / 2)
+/* a level layer's BGnCNT in widescreen: its map is the wide one */
+#define WIDE_MAP(cnt) (HOST_WIDE && ((cnt) & HOST_BGCNT_WIDE_MAP))
 #endif
 
 #define DISPCNT_FRAME_SELECT 0x0010
@@ -160,7 +162,7 @@ static inline u16 TextTexel(const struct HdFrame *f, s32 bg, u16 cnt, u32 tx, u3
     u32 index;
 
 #ifdef HOST_WIDE_BG
-    if (cnt & HOST_BGCNT_WIDE_MAP) {
+    if WIDE_MAP (cnt) {
         /* a level layer's 64x32 map past the GBA's VRAM (gba/host.h) */
         entry = *(const u16 *)(f->vram + HOST_WIDE_BG_MAPS + bg * HOST_WIDE_BG_MAP +
                                ((ty & 0xFF) >> 3) * 128 + ((tx & 0x1FF) >> 3) * 2);
@@ -250,7 +252,7 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
     u32 widthMask = (cnt >> 14) & 1 ? 0x1FF : 0xFF;
     u32 heightMask = (cnt >> 14) & 2 ? 0x1FF : 0xFF;
 #ifdef HOST_WIDE_BG
-    if (cnt & HOST_BGCNT_WIDE_MAP) {
+    if WIDE_MAP (cnt) {
         widthMask = 0x1FF;
         heightMask = 0xFF;
     }
@@ -258,14 +260,14 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
     s32 hofs = (s32)(Io16(f, REG_OFFSET_BG0HOFS + 4 * bg) & 0x1FF) * S + v->bgX[bg];
 #ifdef HOST_WIDE_BG
     /* not a level layer: 240-pixel art, in the centred window (ppu.c) */
-    if (!(cnt & HOST_BGCNT_WIDE_MAP)) {
+    if (!WIDE_MAP(cnt)) {
         hofs -= ART_X0 * S;
     }
 #endif
     s32 vofs = (s32)(Io16(f, REG_OFFSET_BG0VOFS + 4 * bg) & 0x1FF) * S + v->bgY[bg];
     u32 ty = (u32)FloorDiv(Y + vofs, S) & heightMask;
 #ifdef HOST_WIDE_BG
-    if (!(cnt & HOST_BGCNT_WIDE_MAP) && f->vram[HOST_WIDE_PAUSE]) {
+    if (HOST_WIDE && !WIDE_MAP(cnt) && f->vram[HOST_WIDE_PAUSE]) {
         /* the game's pause menu: its art widened (ppu.c), a column each
          * screen pixel */
         s32 base = (s32)(Io16(f, REG_OFFSET_BG0HOFS + 4 * bg) & 0x1FF);
@@ -291,7 +293,7 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
         s32 x;
 
 #ifdef HOST_WIDE_BG
-        if ((cnt & HOST_BGCNT_WIDE_MAP) && OutsideMapHd(f, bg, (X + S / 2) / S)) {
+        if (WIDE_MAP(cnt) && OutsideMapHd(f, bg, (X + S / 2) / S)) {
             c = TRANSPARENT;
         }
 #endif
@@ -301,7 +303,7 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
         }
     }
 #ifdef HOST_WIDE_BG
-    if (!(cnt & HOST_BGCNT_WIDE_MAP) && !f->vram[HOST_WIDE_WARP]) {
+    if (HOST_WIDE && !WIDE_MAP(cnt) && !f->vram[HOST_WIDE_WARP]) {
         ClipToArt(out, outW, S);
     }
 #endif
@@ -381,7 +383,9 @@ static void AffineBgLine(const struct HdView *v, s32 bg, s32 Y, u32 mode, u32 di
         }
     }
 #ifdef HOST_WIDE_BG
-    ClipToArt(out, outW, S);
+    if (HOST_WIDE) {
+        ClipToArt(out, outW, S);
+    }
 #endif
 }
 
@@ -733,7 +737,7 @@ void HostPpuHdLine(const struct HdView *v, s32 Y, u32 *row)
         }
 #ifdef HOST_WIDE_BG
         /* the bars beside the centred art: black, not the backdrop (ppu.c) */
-        if (top == LAYER_BD && BarHd(f, bgOn, mode, X, S)) {
+        if (HOST_WIDE && top == LAYER_BD && BarHd(f, bgOn, mode, X, S)) {
             out = 0;
         }
 #endif

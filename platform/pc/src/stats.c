@@ -122,8 +122,10 @@ static void WriteFile(void)
 void HostStatsFrame(void)
 {
 #ifdef HOST_WIDE_BG
-    gHostVram[HOST_WIDE_PAUSE] = (unsigned char)HostPauseMenuUp(); /* ppu.c */
-    gHostVram[HOST_WIDE_WARP] = (unsigned char)(gHostInWarpRoom || gHostInSaveMenu);
+    if (HOST_WIDE) {
+        gHostVram[HOST_WIDE_PAUSE] = (unsigned char)HostPauseMenuUp(); /* ppu.c */
+        gHostVram[HOST_WIDE_WARP] = (unsigned char)(gHostInWarpRoom || gHostInSaveMenu);
+    }
 #endif
     HostUpdateFrame();
     if (sSession && !HostPauseMenuUp()) {

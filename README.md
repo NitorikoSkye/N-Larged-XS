@@ -25,9 +25,8 @@ and Android, with a modern front end on top.
 The launcher writes **Crash Bandicoot XS.exe** (on Linux
 **crash-bandicoot-xs**) next to itself. That file is the whole game: you can start it directly from now on and delete the
 launcher if you like. Settings and saves live in the same folder.
-It also writes a widescreen build beside it (**Crash Bandicoot XS
-Wide.exe**, **crash-bandicoot-xs-wide**): turn on **widescreen** in the
-port settings' Display page and the game restarts in it.
+For widescreen (288x160), turn on **widescreen** in the port settings'
+Display page: the game restarts wide.
 
 **The ROM it needs:** *Crash Bandicoot XS (Europe) (En,Fr,De,Es,It,Nl)*,
 SHA-1 `bdd061e1b5187c0528928ec0ddb6886b1de16970`. Any other version

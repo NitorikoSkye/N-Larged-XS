@@ -33,8 +33,8 @@ extern const unsigned short gUiFontPalette[16];
 extern const unsigned char gUiPauseArt[160][240];
 extern const unsigned short gUiPausePalette[256];
 
-/* The menu's own layout is 240 wide; a widescreen build (HOST_WIDE_BG)
- * puts it in the middle of its wider canvas (HostUiDraw). */
+/* The menu's own layout is 240 wide; widescreen (HOST_WIDE) puts it in
+ * the middle of its wider canvas (HostUiDraw). */
 #define W 240
 #define H HOST_UI_HEIGHT
 
@@ -466,11 +466,14 @@ static int FpsAvailable(int choice)
 
 static int NotStretched(void)
 {
-#ifdef HOST_WIDE_BG
-    return 0; /* widescreen: no borders (HOST_BORDERS_SHOWN) */
-#else
-    return gHostSettings.scaling != HOST_SCALING_STRETCH;
-#endif
+    /* widescreen: no borders (HOST_BORDERS_SHOWN) */
+    return !HOST_WIDE && gHostSettings.scaling != HOST_SCALING_STRETCH;
+}
+
+/* widescreen has no border for the HUD (HOST_BORDERS_SHOWN) */
+static int HudAvailable(int choice)
+{
+    return !(HOST_WIDE && choice == HOST_HUD_BORDERS);
 }
 
 static int Never(void)
@@ -583,7 +586,8 @@ static const char *const sHuds[HOST_HUD_COUNT] = { "on", "off", "borders" };
 static const char *const sTimers[HOST_TIMER_COUNT] = { "off", "level", "level and run" };
 
 static const struct Option sInterface[] = {
-    { "hud", HOST_HUD_HELP, OPT_CHOICE, &gHostSettings.hud, sHuds, HOST_HUD_CHOICES, 0 },
+    { "hud", HOST_HUD_HELP, OPT_CHOICE, &gHostSettings.hud, sHuds, HOST_HUD_COUNT, 0,
+      HudAvailable },
     { "show fps", "the frames shown each second, in the window's top left corner.", OPT_CHOICE,
       &gHostSettings.showFps, sOffOn, 2, 0 },
     { "input display", "the buttons held, at the foot of that side's border or the picture.",
@@ -730,7 +734,8 @@ static const struct Option sPhoneTouch[] = {
 static const struct Option sPhoneInterface[] = {
     { "text size", "this menu's text: normal, or large and easier to read.", OPT_CHOICE,
       &gHostSettings.textSize, sTextSizes, 2, 0 },
-    { "hud", HOST_HUD_HELP, OPT_CHOICE, &gHostSettings.hud, sHuds, HOST_HUD_CHOICES, 0 },
+    { "hud", HOST_HUD_HELP, OPT_CHOICE, &gHostSettings.hud, sHuds, HOST_HUD_COUNT, 0,
+      HudAvailable },
     { "prompts", "the game's a, b, l and r buttons drawn as your controller's.", OPT_CHOICE,
       &gHostSettings.prompts, sPrompts, HOST_PROMPTS_NINTENDO + 1, 0 },
     { "pause stats", "the pause menu's monitor also shows play time, deaths and crates.",
@@ -1097,9 +1102,7 @@ void HostUiMouse(int event, int x, int y)
     if (!sOpen || sCapturing) {
         return;
     }
-#ifdef HOST_WIDE_BG
     x -= HOST_ART_X0; /* the page is in the middle of the canvas (HostUiDraw) */
-#endif
     Layout();
     if (sConfirm) {
         /* "A yes     B no": its halves, and the right button for no */
@@ -1518,11 +1521,14 @@ static void DrawPage(u32 *canvas);
  * game's pause menu has (HostWideArtColumn). */
 void HostUiDraw(u32 *canvas)
 {
-#ifdef HOST_WIDE_BG
     static u32 page[W * H];
     int x;
     int y;
 
+    if (!HOST_WIDE) {
+        DrawPage(canvas);
+        return;
+    }
     DrawPage(page);
     for (y = 0; y < H; y++) {
         for (x = 0; x < HOST_UI_WIDTH; x++) {
@@ -1535,9 +1541,6 @@ void HostUiDraw(u32 *canvas)
             canvas[y * HOST_UI_WIDTH + x] = dim ? 0xFF000000 | bar : page[y * W + ax];
         }
     }
-#else
-    DrawPage(canvas);
-#endif
 }
 
 static void DrawPage(u32 *canvas)
@@ -1570,7 +1573,7 @@ static void DrawPage(u32 *canvas)
 
 void HostUiPreview(const char *dir)
 {
-    static u32 canvas[HOST_UI_WIDTH * H];
+    static u32 canvas[HOST_UI_WIDTH_MAX * H];
     char path[512];
     int c;
     int n = 0;

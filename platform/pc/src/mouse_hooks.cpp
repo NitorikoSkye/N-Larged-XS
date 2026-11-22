@@ -135,7 +135,9 @@ void __wrap__ZN4Game2Ui9PauseMenu4DrawEv(PauseMenu *self)
     sPause = self;
     sPauseFrame = HostFrame();
 #ifdef HOST_WIDE_BG
-    gHostVram[HOST_WIDE_PAUSE] = 1; /* its art widened (ppu.c) */
+    if (HOST_WIDE) {
+        gHostVram[HOST_WIDE_PAUSE] = 1; /* its art widened (ppu.c) */
+    }
 #endif
     if (self->rows == gPauseMenuRows && !GameOnlyTest()) {
         /* the game's four (five in a time trial) less the two volumes,

@@ -56,7 +56,7 @@ inline void Starfield::Plot(screen_ux_t x, screen_y_t y, s32 val)
 /* A map row's bytes, as a shift: a screen block's 32 entries, or the
  * widescreen map's 64 (HOST_WIDE_BG). */
 #ifdef HOST_WIDE_BG
-#define STARFIELD_MAP_ROW_SHIFT 7
+#define STARFIELD_MAP_ROW_SHIFT (HOST_WIDE ? 7 : 6)
 #else
 #define STARFIELD_MAP_ROW_SHIFT 6
 #endif
@@ -98,8 +98,8 @@ Starfield::Starfield()
     tileVramBase = VRAM;
     mapVramBase = BG_SCREEN_ADDR(31);
 #ifdef HOST_WIDE_BG
-    {
-        /* A pc widescreen build (gba/host.h): the screen is more than a
+    if (HOST_WIDE) {
+        /* Widescreen on the pc (gba/host.h): the screen is more than a
          * screen block's 32 tiles wide, so BG0 takes the host's 64-column
          * map for layer 0, the whole screen its map's width. */
         s16 *edges = (s16 *)(VRAM + HOST_WIDE_BG_EDGES);

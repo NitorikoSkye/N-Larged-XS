@@ -212,9 +212,9 @@ static void Join(char *out, size_t size, const char *dir, const char *name)
 }
 
 #ifdef HOST_WIDE_BG
-/* A "borders" HUD read from settings.ini, shown as "on" here (no borders
- * in widescreen) and written back unchanged while it stays "on", so the
- * normal build sharing the file keeps it. */
+/* A "borders" HUD read from settings.ini in widescreen, shown as "on"
+ * (widescreen has no borders) and written back unchanged while it stays
+ * "on", so it's there again with widescreen off. */
 static int sHudBorders;
 #endif
 
@@ -492,6 +492,83 @@ const char *HostConfigDataDir(void)
     return sDataDir;
 }
 
+/* settings.ini's portable= and widescreen= in `dir`: 0 when it has none. */
+static int PeekFile(const char *dir, int *portable, int *wide)
+{
+    char path[1100];
+    char line[512];
+    FILE *f;
+
+    Join(path, sizeof(path), dir, SETTINGS_FILE);
+    f = fopen(path, "r");
+    if (f == NULL) {
+        return 0;
+    }
+    *portable = 0;
+    *wide = 0;
+    while (fgets(line, sizeof(line), f) != NULL) {
+        char *p = line;
+        int *to = NULL;
+
+        while (*p == ' ' || *p == '\t') {
+            p++;
+        }
+        if (strncmp(p, "portable", 8) == 0) {
+            to = portable;
+            p += 8;
+        } else if (strncmp(p, "widescreen", 10) == 0) {
+            to = wide;
+            p += 10;
+        } else {
+            continue;
+        }
+        while (*p == ' ' || *p == '\t') {
+            p++;
+        }
+        if (*p++ != '=') {
+            continue;
+        }
+        while (*p == ' ' || *p == '\t') {
+            p++;
+        }
+        *to = *p >= '1' && *p <= '9';
+    }
+    fclose(f);
+    return 1;
+}
+
+/* The widescreen setting, before the game's C++ data is set up (its
+ * positions read the screen's width: wide_switch.c), from the
+ * settings.ini HostConfigInit is about to pick: the game's folder's when
+ * it says portable=1, else application data's (none: off). */
+int HostConfigPeekWidescreen(void)
+{
+    char *base = SDL_GetBasePath();
+    char dir[1100];
+    int portable = 0;
+    int wide = 0;
+    int found;
+
+    snprintf(dir, sizeof(dir), "%s", base ? base : "./");
+    SDL_free(base);
+    found = PeekFile(dir, &portable, &wide);
+    if (!found || !portable) {
+        char *pref = SDL_GetPrefPath("", "CrashBandicootXS");
+
+        wide = 0;
+        if (pref != NULL) {
+            snprintf(dir, sizeof(dir), "%s", pref);
+            SDL_free(pref);
+            if (!PeekFile(dir, &portable, &wide)) {
+                wide = 0;
+            }
+            /* SDL_GetPrefPath made the folder: HostConfigInit decides
+             * whether it stays (a first run that goes portable removes it) */
+        }
+    }
+    return wide;
+}
+
 void HostConfigInit(void)
 {
     char *base = SDL_GetBasePath();
@@ -544,7 +621,7 @@ void HostConfigInit(void)
         gHostOptions.save = explicitSave; /* --save wins */
     }
 #ifdef HOST_WIDE_BG
-    if (gHostSettings.hud == HOST_HUD_BORDERS) {
+    if (gHostSettings.widescreen && gHostSettings.hud == HOST_HUD_BORDERS) {
         gHostSettings.hud = HOST_HUD_ON;
         sHudBorders = 1;
     }

@@ -112,7 +112,7 @@ static void WideFitScroll(const BgLayerBase *layer, s32 camX, s32 *scaled)
     s32 camMax;
     s32 room;
 
-    if (gLevelLayersSingleton == NULL || layer->scaleX >= 0x100) {
+    if (!HOST_WIDE || gLevelLayersSingleton == NULL || layer->scaleX >= 0x100) {
         return;
     }
     camMax = gLevelLayersSingleton->maxScrollX;

@@ -31,6 +31,7 @@ struct HostOptions {
     s32 language;          /* --language L: in language L (gLanguage; -1: as it is) */
     s32 extraRoom;         /* --room bonus|gem-path: HOST_EXTRA_ROOM_* (0: no) */
     int windowMode;        /* --windowed 1, --fullscreen 2 (Steam's launch options): this launch */
+    int wide; /* --widescreen 1, --no-widescreen 2: this launch, whatever the setting */
 };
 
 /* --room bonus and --room gem-path (level_pick.c): the level's room list's
@@ -52,8 +53,14 @@ extern u32 gHostVBlanks;
 /* The PPU (ppu.c). irq.c's frame loop draws each visible line as the
  * display reaches it (HostPpuLine) and, at line 160, makes the frame the
  * finished picture (HostPpuFrame): gHostScreen, 8-bit XRGB. */
+/* The screen: DISPLAY_WIDTH (240, or 288 with the widescreen setting)
+ * by 160; buffers have room for the widest, rows HOST_SCREEN_WIDTH apart. */
+#define HOST_SCREEN_WIDTH     DISPLAY_WIDTH
+#define HOST_SCREEN_WIDTH_MAX 288
+#define HOST_SCREEN_HEIGHT    160
+
 #ifdef HOST_WIDE_BG
-/* Widescreen (gba/host.h's HOST_WIDE_BG): 240-pixel art centred on the
+/* Widescreen (gba/host.h's HOST_WIDE): 240-pixel art centred on the
  * wider screen starts HOST_ART_X0 in. The pause screen's art (the game's
  * pause menu, ppu.c; the settings menu's first page, ui.c) stays centred,
  * and the bars beside it are its left edge strip (the riveted 9 columns;
@@ -81,19 +88,12 @@ static inline int HostWideArtColumn(int x, int *dim)
  * (HOST_WIDE_BG) shows 256 and on, so there what is past the screen's
  * right edge is negative instead (a sprite that far left is off screen
  * whatever it is: the game culls at x + w > 0). */
-#ifdef HOST_WIDE_BG
-#define HOST_OBJ_X(attr1) \
-    ((s32)((attr1) & 0x1FF) >= HOST_SCREEN_WIDTH ? (s32)((attr1) & 0x1FF) - 512 : (s32)((attr1) & 0x1FF))
-#else
-#define HOST_OBJ_X(attr1) ((s32)(((attr1) & 0x1FF) << 23) >> 23)
-#endif
+#define HOST_OBJ_X(attr1)                                                                         \
+    (HOST_WIDE ? ((s32)((attr1) & 0x1FF) >= HOST_SCREEN_WIDTH ? (s32)((attr1) & 0x1FF) - 512    \
+                                                              : (s32)((attr1) & 0x1FF))        \
+               : ((s32)(((attr1) & 0x1FF) << 23) >> 23))
 
-#ifndef HOST_SCREEN_WIDTH
-#define HOST_SCREEN_WIDTH  240
-#endif
-#define HOST_SCREEN_HEIGHT 160
-
-extern u32 gHostScreen[HOST_SCREEN_WIDTH * HOST_SCREEN_HEIGHT];
+extern u32 gHostScreen[HOST_SCREEN_WIDTH_MAX * HOST_SCREEN_HEIGHT];
 
 void HostPpuLine(u32 y);
 void HostPpuFrame(void);
@@ -138,7 +138,7 @@ void HostFrontendInit(void);
  * and the Windows executable is CrashBandicootXS-<version>.exe
  * (platform.mk reads the version from here). */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.52.5"
+#define HOST_PORT_VERSION "v0.52.6"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);

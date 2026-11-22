@@ -4,6 +4,17 @@
 /* The GBA's defines, with the memory map on the host's arrays
  * (platform/pc/src/memory.c), as integers like the GBA's
  * (docs/platforms.md, "64-bit hosts"). */
+/* The screen's width: the GBA's 240, or 288 with the widescreen setting
+ * (gHostDisplayWidth, ppu.c; docs/platforms.md "Widescreen"). The
+ * game's code reads it where the GBA's has the constant. */
+#ifndef __ASSEMBLER__
+#ifdef __cplusplus
+extern "C" int gHostDisplayWidth;
+#else
+extern int gHostDisplayWidth;
+#endif
+#endif
+#define DISPLAY_WIDTH gHostDisplayWidth
 #include "../../../gba/include/gba/defines.h"
 #include "./host.h"
 

@@ -227,7 +227,7 @@ static int sGhostH;
 static u32 *sLut; /* the GBA screen's colours, 64 levels a channel */
 static u32 *sHd;  /* the interpolated picture */
 static size_t sHdSize;
-static u32 sMenuCanvas[HOST_UI_WIDTH * HOST_UI_HEIGHT];
+static u32 sMenuCanvas[HOST_UI_WIDTH_MAX * HOST_UI_HEIGHT];
 
 /* The FPS counter: pictures shown in the last half second. */
 static Uint64 sFpsStart;
@@ -785,8 +785,8 @@ void HostFrontendInit(void)
         Fail("SDL_Init");
     }
     HostConfigInit();
-    /* the build the widescreen setting asks for (wide_switch.c) */
-    HostWideHandover();
+    /* the screen's width, from the widescreen setting (wide_switch.c) */
+    HostWideStart();
     /* --fullscreen / --windowed: this launch only (not saved unless the
      * settings change something and are written) */
     if (gHostOptions.windowMode != 0) {
@@ -958,7 +958,7 @@ static void UploadPicture(const u32 *src, int w, int h, int ownFrame, double dt)
         /* An in-between picture often rounds to the last one at 1x: that
          * one's scaling is still there. */
         {
-            static u32 last[SW * SH];
+            static u32 last[HOST_SCREEN_WIDTH_MAX * SH];
             static int lastFactor;
 
             if (f != lastFactor || memcmp(last, p, n * 4) != 0) {

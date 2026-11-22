@@ -8,7 +8,7 @@
 #include "gba/host.h"
 
 #define HOST_HD_MAX_SCALE 4
-#define HOST_HD_MAX_WIDTH (HOST_SCREEN_WIDTH * HOST_HD_MAX_SCALE)
+#define HOST_HD_MAX_WIDTH (HOST_SCREEN_WIDTH_MAX * HOST_HD_MAX_SCALE)
 
 /* A frame's display state, as the PPU drew it. */
 struct HdFrame {

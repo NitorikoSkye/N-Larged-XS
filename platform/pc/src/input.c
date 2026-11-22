@@ -180,12 +180,12 @@ static void PrintHash(const u8 *digest)
 
 static void Checkpoint(void)
 {
-    static const struct {
+    const struct {
         const unsigned char *data;
         u32 size;
     } regions[] = {
         { gHostPltt, HOST_PLTT_SIZE },
-        { gHostVram, HOST_VRAM_SIZE },
+        { gHostVram, HOST_VRAM_HASHED },
         { gHostOam, HOST_OAM_SIZE },
     };
     struct HostSha1 sha;
@@ -193,7 +193,7 @@ static void Checkpoint(void)
     u8 picture[20];
     u8 screen[20];
     u16 oam[HOST_OAM_SIZE / 2];
-    static u8 rgb[HOST_SCREEN_WIDTH * HOST_SCREEN_HEIGHT * 3];
+    static u8 rgb[HOST_SCREEN_WIDTH_MAX * HOST_SCREEN_HEIGHT * 3];
     u32 i;
 
     HostSha1Init(&sha);
@@ -204,12 +204,12 @@ static void Checkpoint(void)
     PictureOam(oam);
     HostSha1Init(&sha);
     HostSha1Update(&sha, gHostPltt, HOST_PLTT_SIZE);
-    HostSha1Update(&sha, gHostVram, HOST_VRAM_SIZE);
+    HostSha1Update(&sha, gHostVram, HOST_VRAM_HASHED);
     HostSha1Update(&sha, oam, HOST_OAM_SIZE);
     HostSha1Final(&sha, picture);
     ScreenRgb(rgb);
     HostSha1Init(&sha);
-    HostSha1Update(&sha, rgb, sizeof(rgb));
+    HostSha1Update(&sha, rgb, (size_t)HOST_SCREEN_WIDTH * HOST_SCREEN_HEIGHT * 3);
     HostSha1Final(&sha, screen);
     if (!gHostOptions.quiet) {
         printf("checkpoint %u ", sFrame);

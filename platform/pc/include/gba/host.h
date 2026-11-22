@@ -14,7 +14,8 @@
 #define HOST_EWRAM_SIZE 0x80000
 #define HOST_IWRAM_SIZE 0x10000
 #define HOST_PLTT_SIZE  0x400
-/* A widescreen build (platform.mk's HOST_WIDE, HOST_WIDE_BG) has four
+/* Widescreen (HOST_WIDE, the screen wider than the GBA's: the setting;
+ * HOST_WIDE_BG says the build can) has four
  * 64x32-entry BG maps after the GBA's 96 KB of VRAM, one for each level
  * layer (BgLayer, bg_layer.hpp): a screen wider than a 32x32 screen block
  * and a tile, with no room for 512-pixel maps in the 64 KB the levels
@@ -35,11 +36,15 @@
  * art: the sky's map repeats, and the platforms' strip (the worlds side by
  * side, which the page turn scrolls) shows the neighbouring ones. */
 #define HOST_WIDE_WARP (HOST_WIDE_BG_EDGES + 0x21)
-#ifdef HOST_WIDE_BG
 #define HOST_VRAM_SIZE (HOST_WIDE_BG_EDGES + 0x100)
-#else
-#define HOST_VRAM_SIZE 0x18000
-#endif
+/* the GBA's own; a checkpoint (input.c) hashes it, and at the GBA's
+ * width only it, as a 240-pixel build always has */
+#define HOST_VRAM_GBA_SIZE 0x18000
+#define HOST_VRAM_HASHED   (HOST_WIDE ? HOST_VRAM_SIZE : HOST_VRAM_GBA_SIZE)
+/* The GBA's screen width, and whether the screen is wider (the
+ * widescreen setting: DISPLAY_WIDTH, gba/defines.h). */
+#define HOST_GBA_WIDTH 240
+#define HOST_WIDE      (DISPLAY_WIDTH != HOST_GBA_WIDTH)
 #define HOST_OAM_SIZE   0x400
 #define HOST_NULL_PAGE_SIZE 0x1000
 

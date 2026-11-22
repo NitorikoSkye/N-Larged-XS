@@ -138,30 +138,20 @@ struct HostSettings {
 };
 extern struct HostSettings gHostSettings;
 
-/* Display's borders as drawn: widescreen (HOST_WIDE_BG) has none, the
+/* Display's borders as drawn: widescreen (HOST_WIDE) has none, the
  * picture's height leaves only a thin line of them. */
-#ifdef HOST_WIDE_BG
-#define HOST_BORDERS_SHOWN() HOST_BORDERS_BLACK
-#else
-#define HOST_BORDERS_SHOWN() (gHostSettings.borders)
-#endif
+#define HOST_BORDERS_SHOWN() (HOST_WIDE ? HOST_BORDERS_BLACK : gHostSettings.borders)
 
-/* The HUD setting's choices: widescreen has no border to put the HUD in,
- * so "borders" is left out there and a saved "borders" reads as "on"
+/* The HUD setting: widescreen has no border to put the HUD in, so there
+ * "borders" can't be picked (ui.c) and a saved "borders" reads as "on"
  * (config.c, which still writes it back as "borders"). */
-#ifdef HOST_WIDE_BG
-#define HOST_HUD_CHOICES 2
-#define HOST_HUD_HELP "lives, wumpa and crates: in the game, or hidden."
-#else
-#define HOST_HUD_CHOICES 3
 #define HOST_HUD_HELP "lives, wumpa and crates: in the game, hidden, or in the left border."
-#endif
 
-/* Widescreen as a setting (wide_switch.c): the other build beside this
- * one; at start, the build the setting asks for; the menu's switch, made
- * as the game ends (main.c's HostExit). */
+/* Widescreen as a setting (wide_switch.c): the screen's width from it at
+ * start; the menu's switch restarts the game, as HostExit (main.c) ends
+ * this run. */
 int HostWideAvailable(void);
-void HostWideHandover(void);
+void HostWideStart(void);
 void HostWideSwitch(void);
 void HostWideRelaunch(void);
 
@@ -367,6 +357,7 @@ void HostConfigDefaultPad(struct HostSettings *s);
  * user's application data folder), reads settings.ini, points the save at
  * it. */
 void HostConfigInit(void);
+int HostConfigPeekWidescreen(void); /* before main: wide_switch.c */
 void HostConfigSave(void);
 const char *HostConfigDataDir(void);
 /* Moves the files to the other folder; 0 and a reason if it can't. */
@@ -388,11 +379,8 @@ void HostFrontendQuit(void);
 
 /* ui.c: the settings menu, drawn on a 240x160 canvas in the game's own
  * style (its fonts and its pause screen's art). */
-#ifdef HOST_WIDE_BG
-#define HOST_UI_WIDTH HOST_SCREEN_WIDTH /* widescreen: the menu is as wide */
-#else
-#define HOST_UI_WIDTH 240
-#endif
+#define HOST_UI_WIDTH     HOST_SCREEN_WIDTH /* widescreen: the menu is as wide */
+#define HOST_UI_WIDTH_MAX HOST_SCREEN_WIDTH_MAX
 #define HOST_UI_HEIGHT 160
 
 enum {

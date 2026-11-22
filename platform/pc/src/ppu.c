@@ -52,7 +52,7 @@
 #define BITMAP_W 240
 #define BITMAP_H 160
 #ifdef HOST_WIDE_BG
-/* Widescreen (gba/host.h's HOST_WIDE_BG): what isn't a level layer is
+/* Widescreen (gba/host.h's HOST_WIDE): what isn't a level layer is
  * 240-pixel art (the menus, the cutscenes, the warp room), centred as
  * screen.h's DISPLAY_ART_X centres it: outside it, the backdrop. */
 #define ART_X0 ((WIDTH - BITMAP_W) / 2)
@@ -63,8 +63,11 @@
 #define DISPCNT_HBLANK_FREE  0x0020 /* OBJs aren't drawn in H-blank */
 
 /* The picture the display finished last, and the one being drawn. */
-u32 gHostScreen[HOST_SCREEN_WIDTH * HOST_SCREEN_HEIGHT];
-static u32 sDraw[HOST_SCREEN_WIDTH * HOST_SCREEN_HEIGHT];
+u32 gHostScreen[HOST_SCREEN_WIDTH_MAX * HOST_SCREEN_HEIGHT];
+/* the screen's width (gba/defines.h's DISPLAY_WIDTH): 240, or 288 with the
+ * widescreen setting, set before the game starts (sdl.c, main.c) */
+int gHostDisplayWidth = HOST_GBA_WIDTH;
+static u32 sDraw[HOST_SCREEN_WIDTH_MAX * HOST_SCREEN_HEIGHT];
 
 /* The affine BGs' (BG2, BG3) internal reference points, and the register
  * values they were last loaded from. */
@@ -102,9 +105,9 @@ struct ObjPixel {
     u8 flags;
 };
 
-static u16 sBgLine[4][WIDTH];
-static struct ObjPixel sObjLine[WIDTH];
-static u8 sObjWindow[WIDTH];
+static u16 sBgLine[4][HOST_SCREEN_WIDTH_MAX];
+static struct ObjPixel sObjLine[HOST_SCREEN_WIDTH_MAX];
+static u8 sObjWindow[HOST_SCREEN_WIDTH_MAX];
 
 /* The OBJ sizes by shape and size; shape 3 is prohibited (nothing). */
 static const u8 sObjSize[4][4][2] = {
@@ -252,7 +255,7 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
     u32 heightMask = (size & 2) ? 0x1FF : 0xFF;
 #ifdef HOST_WIDE_BG
     /* a level layer's 64x32 map past the GBA's VRAM (gba/host.h) */
-    const u16 *wide = (cnt & HOST_BGCNT_WIDE_MAP)
+    const u16 *wide = HOST_WIDE && (cnt & HOST_BGCNT_WIDE_MAP)
                           ? (const u16 *)(gHostVram + HOST_WIDE_BG_MAPS + bg * HOST_WIDE_BG_MAP)
                           : NULL;
 
@@ -281,7 +284,9 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
 
 #ifdef HOST_WIDE_BG
         /* not a level layer: 240-pixel art, in the centred window */
-        if (wide == NULL && gHostVram[HOST_WIDE_PAUSE]) {
+        if (!HOST_WIDE) {
+            vx = x;
+        } else if (wide == NULL && gHostVram[HOST_WIDE_PAUSE]) {
             /* the game's pause menu: its art widened (host_platform.h) */
             vx = (u32)HostWideArtColumn((int)x, &dim);
         } else if (wide == NULL && gHostVram[HOST_WIDE_WARP]) {
@@ -380,7 +385,7 @@ static void AffineBg(s32 bg, u32 y, u32 mode, u32 dispcnt, u32 mosaic)
 #ifdef HOST_WIDE_BG
         /* 240-pixel art, in the centred window: the game's reference
          * point already places it there (DISPLAY_ART_X) */
-        if (x < ART_X0 || x >= ART_X0 + BITMAP_W) {
+        if (HOST_WIDE && (x < ART_X0 || x >= ART_X0 + BITMAP_W)) {
             out[x] = TRANSPARENT;
             continue;
         }
@@ -827,7 +832,7 @@ void HostPpuLine(u32 y)
         }
 #ifdef HOST_WIDE_BG
         /* the bars beside the centred art: black, not the backdrop */
-        if (top == LAYER_BD && Bar(bgOn, mode, (s32)x)) {
+        if (HOST_WIDE && top == LAYER_BD && Bar(bgOn, mode, (s32)x)) {
             out = 0;
         }
 #endif

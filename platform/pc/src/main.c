@@ -66,6 +66,8 @@ static void Usage(const char *argv0)
         "  --headless            no window, no frame pacing (always, built without SDL)\n"
         "  --fullscreen, --windowed  this launch in the whole screen or a window, whatever the\n"
         "                        settings say (for Steam's launch options)\n"
+        "  --widescreen, --no-widescreen  this launch 288 or 240 pixels wide, whatever the\n"
+        "                        settings say\n"
         "  --scale N             the window's size, N times the GBA's (3)\n"
         "  --save FILE           keep the EEPROM in FILE (read at start, written as it changes)\n"
         "  --wav FILE            write the audio output to FILE (8-bit, at the first song's mix rate)\n"
@@ -151,6 +153,13 @@ int main(int argc, char **argv)
         }
         if (strcmp(arg, "--fullscreen") == 0 || strcmp(arg, "--windowed") == 0) {
             gHostOptions.windowMode = arg[2] == 'f' ? 2 : 1;
+            continue;
+        }
+        if (strcmp(arg, "--widescreen") == 0 || strcmp(arg, "--no-widescreen") == 0) {
+            /* the screen's width for this launch: set before main, as the
+             * game's C++ data reads it (wide_switch.c's EarlyWidth); headless
+             * runs read no settings, so this is their only way */
+            gHostOptions.wide = arg[2] == 'w' ? 1 : 2;
             continue;
         }
         if (strcmp(arg, "--stream") == 0) {

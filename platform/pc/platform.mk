@@ -42,23 +42,16 @@ HOST_PORT_VERSION := $(shell sed -n 's/^\#define HOST_PORT_VERSION "\(.*\)"/\1/p
 # As numbers for the resource's FILEVERSION: v0.06 -> 0,6.
 HOST_PORT_VERSION_NUM := $(shell echo $(patsubst v%,%,$(HOST_PORT_VERSION)) | awk -F. '{ printf "%d,%d", $$1, $$2 }')
 
-# Widescreen (an experiment, docs/platforms.md "Widescreen"): HOST_WIDE=288
-# builds the game for a 288x160 screen (DISPLAY_WIDTH, the window's
-# HOST_SCREEN_WIDTH) with the level layers' maps 64 columns wide
-# (HOST_WIDE_BG, gba/host.h). Use an OBJ_DIR of its own, e.g.
-#   make PLATFORM=pc HOST_WIDE=288 OBJ_DIR=build/wide/crashbandicootxs
-HOST_WIDE ?= 0
-HOST_WIDE_FLAGS :=
-ifneq ($(HOST_WIDE),0)
-HOST_WIDE_FLAGS := -DDISPLAY_WIDTH=$(HOST_WIDE) -DHOST_SCREEN_WIDTH=$(HOST_WIDE) -DHOST_WIDE_BG=1
-endif
+# Widescreen (docs/platforms.md "Widescreen"): the port can draw a
+# 288x160 screen, the level layers' maps 64 columns wide (HOST_WIDE_BG,
+# gba/host.h); the screen's width is the setting's, at run time
+# (DISPLAY_WIDTH is gHostDisplayWidth, gba/defines.h).
+HOST_WIDE_FLAGS := -DHOST_WIDE_BG=1
 
 ifeq ($(HOST_ANDROID),1)
 HOST_EXE := $(patsubst %/,%,$(dir $(OBJ_DIR)))/libcrashxs_core.so
 else ifeq ($(HOST_WINDOWS),1)
 HOST_EXE := $(patsubst %/,%,$(dir $(OBJ_DIR)))/CrashBandicootXS-$(HOST_PORT_VERSION).exe
-else ifneq ($(HOST_WIDE),0)
-HOST_EXE := build/$(PLATFORM)/crashbandicootxs_$(PLATFORM)_wide$(HOST_WIDE)
 else
 HOST_EXE := build/$(PLATFORM)/crashbandicootxs_$(PLATFORM)
 endif

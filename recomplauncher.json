@@ -23,7 +23,7 @@
     "args": ["--import", "{game}", "--progress"],
     "done": ["{install}/NLargedXSLauncher.ini"],
     "timeout": 300,
-    "version": "0.52.5"
+    "version": "0.52.6"
   },
   "start": {
     "program": ["Crash Bandicoot XS.exe", "crash-bandicoot-xs"],
@@ -58,7 +58,7 @@
       "id": "widescreen",
       "label": "Widescreen",
       "group": "picture",
-      "help": "A wider 288x160 picture that shows more of each level. The game starts its widescreen build.",
+      "help": "A wider 288x160 picture that shows more of each level.",
       "defaults": { "widescreen": "0" },
       "choices": [
         { "label": "Off", "set": { "widescreen": "0" } },

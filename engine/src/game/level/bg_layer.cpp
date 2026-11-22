@@ -49,9 +49,11 @@ BgLayer::BgLayer(s32 bgIndex) : BgLayerBase(bgIndex)
     SetScreenBase(block);
     SetCharBase(2);
 #ifdef HOST_WIDE_BG
-    /* the layer's 64x32 map past the GBA's VRAM (gba/host.h) */
-    screen = (u16 *)(VRAM + HOST_WIDE_BG_MAPS + bgIndex * HOST_WIDE_BG_MAP);
-    cnt.raw |= HOST_BGCNT_WIDE_MAP;
+    if (HOST_WIDE) {
+        /* the layer's 64x32 map past the GBA's VRAM (gba/host.h) */
+        screen = (u16 *)(VRAM + HOST_WIDE_BG_MAPS + bgIndex * HOST_WIDE_BG_MAP);
+        cnt.raw |= HOST_BGCNT_WIDE_MAP;
+    }
 #endif
 }
 
@@ -139,7 +141,7 @@ void BgLayer::CommitScroll()
     vofs = y;
     WriteOffsetRegs();
 #ifdef HOST_WIDE_BG
-    {
+    if (HOST_WIDE) {
         /* where the map is on the screen (gba/host.h) */
         s16 *edges = (s16 *)(VRAM + HOST_WIDE_BG_EDGES) + 2 * (cnt.bits.screenBase - 0x1c);
 

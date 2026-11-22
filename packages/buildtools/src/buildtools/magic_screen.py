@@ -292,6 +292,12 @@ CLASSES = [
     ("hardware", r"platform/pc/src/interp\.c", r"\*y (>=|-=)", "OAM's 8-bit Y, wrapping at 256 below the screen"),
     (
         "hardware",
+        r"platform/pc/include/gba/host\.h",
+        r"HOST_GBA_WIDTH\s+240",
+        "the GBA's screen width, which the widescreen setting widens (gHostDisplayWidth)",
+    ),
+    (
+        "hardware",
         r"platform/pc/src/mouse_hooks\.cpp",
         r".",
         "a place on the game's 240x160 screen: its menus' rows, the save menu's slots, the warp room's arrows",

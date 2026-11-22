@@ -674,7 +674,7 @@ static void XbrzLines(void *ctx, int first, int end)
  * (ghosting keeps half a picture each 60th, as on PC). */
 static void SendGame(const u32 *src, int w, int h, double dt)
 {
-    static u32 scaled[HOST_SCREEN_WIDTH * 3 * HOST_SCREEN_HEIGHT * 3];
+    static u32 scaled[HOST_SCREEN_WIDTH_MAX * 3 * HOST_SCREEN_HEIGHT * 3];
     static u32 *ghost;
     static int ghostW;
     static int ghostH;
@@ -733,7 +733,7 @@ static void SendGame(const u32 *src, int w, int h, double dt)
 
 static void SendBetween(double alpha)
 {
-    static u32 hd[HOST_SCREEN_WIDTH * HD_SCALE * HOST_SCREEN_HEIGHT * HD_SCALE];
+    static u32 hd[HOST_SCREEN_WIDTH_MAX * HD_SCALE * HOST_SCREEN_HEIGHT * HD_SCALE];
     /* with a scaler: the in-between picture at 1x, for it to scale */
     int scale = UpscaleFactor() > 1 ? 1 : HD_SCALE;
 
@@ -750,7 +750,7 @@ void HostPromptsPhone(int style); /* prompts.c */
 /* The settings menu: the game waits while it is open. */
 static void Menu(void)
 {
-    static u32 canvas[HOST_UI_WIDTH * HOST_UI_HEIGHT];
+    static u32 canvas[HOST_UI_WIDTH_MAX * HOST_UI_HEIGHT];
 
     while (HostUiIsOpen()) {
         HostUiDraw(canvas);

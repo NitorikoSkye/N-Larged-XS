@@ -37,24 +37,25 @@
 #include "host_platform.h"
 #include "zip_rom.h"
 
-/* The games it makes: on Linux, the Linux games (build_linux.sh). The
- * widescreen one is the game built 288 pixels wide, which the game's
- * "widescreen" setting starts (src/wide_switch.c, whose names these are). */
+/* The game it makes: on Linux, the Linux game (build_linux.sh). */
 #ifdef _WIN32
-#define GAME_FILE      "Crash Bandicoot XS.exe"
-#define GAME_WIDE_FILE "Crash Bandicoot XS Wide.exe"
+#define GAME_FILE "Crash Bandicoot XS.exe"
 #else
-#define GAME_FILE      "crash-bandicoot-xs"
-#define GAME_WIDE_FILE "crash-bandicoot-xs-wide"
+#define GAME_FILE "crash-bandicoot-xs"
 #endif
 #define INI_FILE  "NLargedXSLauncher.ini"
+/* v0.52.5 also made a widescreen game beside it; the game is one file
+ * again (widescreen is its setting), so a new one takes the old away */
+#ifdef _WIN32
+#define OLD_WIDE_FILE "Crash Bandicoot XS Wide.exe"
+#else
+#define OLD_WIDE_FILE "crash-bandicoot-xs-wide"
+#endif
 #define W 240
 #define H 160
 
 extern const unsigned char gLauncherPackage[];
 extern const unsigned char gLauncherPackageEnd[];
-extern const unsigned char gLauncherWidePackage[];
-extern const unsigned char gLauncherWidePackageEnd[];
 
 /* --- The package ----------------------------------------------------------- */
 
@@ -72,40 +73,31 @@ struct Package {
 };
 
 static struct Package sPkg;
-static struct Package sWidePkg; /* base NULL: this launcher has none */
 
 static u32 Le32(const unsigned char *p)
 {
     return (u32)p[0] | (u32)p[1] << 8 | (u32)p[2] << 16 | (u32)p[3] << 24;
 }
 
-static int ReadOne(struct Package *pkg, const unsigned char *p, const unsigned char *end)
-{
-    if (end - p < 80 || memcmp(p, "NLXSPKG1", 8) != 0 || Le32(p + 8) != 1) {
-        return 0;
-    }
-    pkg->base = p;
-    memcpy(pkg->romSha1, p + 12, 20);
-    memcpy(pkg->outSha1, p + 32, 20);
-    pkg->outSize = Le32(p + 52);
-    memcpy(pkg->version, p + 56, 16);
-    pkg->version[16] = '\0';
-    pkg->artCount = Le32(p + 72);
-    pkg->opCount = Le32(p + 76);
-    pkg->art = p + 80;
-    pkg->ops = pkg->art + 36 * pkg->artCount;
-    pkg->payload = pkg->ops + 12 * pkg->opCount;
-    return 1;
-}
-
 static int ReadPackage(void)
 {
-    if (!ReadOne(&sPkg, gLauncherPackage, gLauncherPackageEnd)) {
+    const unsigned char *p = gLauncherPackage;
+
+    if (gLauncherPackageEnd - p < 80 || memcmp(p, "NLXSPKG1", 8) != 0 || Le32(p + 8) != 1) {
         return 0;
     }
-    /* the widescreen game's, when built in: whole, or the launcher's damaged */
-    return gLauncherWidePackageEnd - gLauncherWidePackage == 0 ||
-           ReadOne(&sWidePkg, gLauncherWidePackage, gLauncherWidePackageEnd);
+    sPkg.base = p;
+    memcpy(sPkg.romSha1, p + 12, 20);
+    memcpy(sPkg.outSha1, p + 32, 20);
+    sPkg.outSize = Le32(p + 52);
+    memcpy(sPkg.version, p + 56, 16);
+    sPkg.version[16] = '\0';
+    sPkg.artCount = Le32(p + 72);
+    sPkg.opCount = Le32(p + 76);
+    sPkg.art = p + 80;
+    sPkg.ops = sPkg.art + 36 * sPkg.artCount;
+    sPkg.payload = sPkg.ops + 12 * sPkg.opCount;
+    return 1;
 }
 
 /* --- Files, by UTF-8 paths --------------------------------------------------- */
@@ -235,7 +227,6 @@ static int Exists(const char *path)
 
 static char sDir[1024];      /* the launcher's folder, with its separator */
 static char sGamePath[1100]; /* the game's executable */
-static char sWidePath[1100]; /* the widescreen game's, beside it */
 static char sIniPath[1100];  /* the ROM last imported */
 
 static void FindPaths(void)
@@ -245,7 +236,6 @@ static void FindPaths(void)
     snprintf(sDir, sizeof(sDir), "%s", base != NULL ? base : "./");
     SDL_free(base);
     snprintf(sGamePath, sizeof(sGamePath), "%s%s", sDir, GAME_FILE);
-    snprintf(sWidePath, sizeof(sWidePath), "%s%s", sDir, GAME_WIDE_FILE);
     snprintf(sIniPath, sizeof(sIniPath), "%s%s", sDir, INI_FILE);
 }
 
@@ -317,18 +307,16 @@ static int CheckRom(const char *path)
  * "progress <0-1> <text>" lines on stdout as the game is made. Only with
  * the option: without it nothing is printed that wasn't before. */
 static int sProgress;
-static double sProgressLo = 0.0; /* BuildAll: this game's share of the whole */
-static double sProgressHi = 1.0;
 
 static void Progress(double part, const char *text)
 {
     if (sProgress) {
-        printf("progress %.2f %s\n", sProgressLo + part * (sProgressHi - sProgressLo), text);
+        printf("progress %.2f %s\n", part, text);
         fflush(stdout);
     }
 }
 
-static int Build(const struct Package *pkg, const char *romPath, const char *outPath)
+static int Build(const char *romPath, const char *outPath)
 {
     size_t romSize;
     unsigned char *rom;
@@ -340,7 +328,6 @@ static int Build(const struct Package *pkg, const char *romPath, const char *out
     char tmp[1200];
     FILE *f;
     int ok;
-    const char *making = pkg == &sWidePkg ? "Making the widescreen game" : "Making the game";
 
     Progress(0.0, "Reading your ROM");
     rom = ReadRom(romPath, &romSize);
@@ -349,34 +336,34 @@ static int Build(const struct Package *pkg, const char *romPath, const char *out
     }
     Progress(0.1, "Checking your ROM");
     Sha1(rom, romSize, sha);
-    if (memcmp(sha, pkg->romSha1, 20) != 0) {
+    if (memcmp(sha, sPkg.romSha1, 20) != 0) {
         free(rom);
         return BUILD_WRONG_ROM;
     }
-    Progress(0.2, making);
+    Progress(0.2, "Making the game");
     memcpy(key, sha, 20);
-    out = malloc(pkg->outSize);
+    out = malloc(sPkg.outSize);
     if (out == NULL) {
         free(rom);
         return BUILD_BAD;
     }
-    for (i = 0; i < pkg->opCount; i++) {
-        const unsigned char *op = pkg->ops + 12 * i;
+    for (i = 0; i < sPkg.opCount; i++) {
+        const unsigned char *op = sPkg.ops + 12 * i;
         u32 kind = Le32(op);
         u32 a = Le32(op + 4);
         u32 n = Le32(op + 8);
 
         if (sProgress && i % 4096 == 0) {
-            Progress(0.2 + 0.6 * i / pkg->opCount, making);
+            Progress(0.2 + 0.6 * i / sPkg.opCount, "Making the game");
         }
-        if (n > pkg->outSize - pos || (kind == 0 && (a > romSize || n > romSize - a))) {
+        if (n > sPkg.outSize - pos || (kind == 0 && (a > romSize || n > romSize - a))) {
             pos = 0xFFFFFFFF;
             break;
         }
         if (kind == 0) {
             memcpy(out + pos, rom + a, n);
         } else {
-            memcpy(out + pos, pkg->payload + a, n);
+            memcpy(out + pos, sPkg.payload + a, n);
             if (kind == 2) {
                 /* the key stream: SHA-1(ROM's SHA-1, block), 20 bytes a block */
                 u32 k;
@@ -404,13 +391,13 @@ static int Build(const struct Package *pkg, const char *romPath, const char *out
         pos += n;
     }
     free(rom);
-    if (pos != pkg->outSize) {
+    if (pos != sPkg.outSize) {
         free(out);
         return BUILD_BAD;
     }
     Progress(0.8, "Checking the game");
-    Sha1(out, pkg->outSize, sha);
-    if (memcmp(sha, pkg->outSha1, 20) != 0) {
+    Sha1(out, sPkg.outSize, sha);
+    if (memcmp(sha, sPkg.outSha1, 20) != 0) {
         free(out);
         return BUILD_BAD;
     }
@@ -422,7 +409,7 @@ static int Build(const struct Package *pkg, const char *romPath, const char *out
         free(out);
         return BUILD_NO_WRITE;
     }
-    ok = fwrite(out, 1, pkg->outSize, f) == pkg->outSize;
+    ok = fwrite(out, 1, sPkg.outSize, f) == sPkg.outSize;
     ok = fclose(f) == 0 && ok;
     free(out);
     if (!ok || !ReplaceU8(tmp, outPath)) {
@@ -432,35 +419,31 @@ static int Build(const struct Package *pkg, const char *romPath, const char *out
 #ifndef _WIN32
     chmod(outPath, 0755);
 #endif
+    {
+        const char *slash = strrchr(outPath, '/');
+        char old[1200];
+#ifdef _WIN32
+        const char *back = strrchr(outPath, '\\');
+
+        if (back != NULL && (slash == NULL || back > slash)) {
+            slash = back;
+        }
+#endif
+        snprintf(old, sizeof(old), "%.*s%s", slash != NULL ? (int)(slash - outPath + 1) : 0,
+                 outPath, OLD_WIDE_FILE);
+        if (Exists(old)) {
+            RemoveU8(old);
+        }
+    }
+    Progress(1.0, "The game is ready");
     return BUILD_OK;
 }
 
-/* Makes the games from the ROM: the usual one at `outPath`, then the
- * widescreen one beside it (`widePath`), when the launcher has it. */
-static int BuildAll(const char *romPath, const char *outPath, const char *widePath)
-{
-    int r;
-
-    sProgressHi = sWidePkg.base != NULL ? 0.5 : 1.0;
-    r = Build(&sPkg, romPath, outPath);
-    if (r == BUILD_OK && sWidePkg.base != NULL) {
-        sProgressLo = 0.5;
-        sProgressHi = 1.0;
-        r = Build(&sWidePkg, romPath, widePath);
-    }
-    sProgressLo = 0.0;
-    sProgressHi = 1.0;
-    if (r == BUILD_OK) {
-        Progress(1.0, "The game is ready");
-    }
-    return r;
-}
-
 /* The game next to the launcher: 0 none, 1 this package's, 2 another version. */
-static int OneState(const struct Package *pkg, const char *path)
+static int GameState(void)
 {
     size_t size;
-    unsigned char *exe = ReadFile8(path, &size, 256u << 20);
+    unsigned char *exe = ReadFile8(sGamePath, &size, 256u << 20);
     u8 sha[20];
 
     if (exe == NULL) {
@@ -468,18 +451,7 @@ static int OneState(const struct Package *pkg, const char *path)
     }
     Sha1(exe, size, sha);
     free(exe);
-    return memcmp(sha, pkg->outSha1, 20) == 0 ? 1 : 2;
-}
-
-/* (the widescreen game too: up to date only if both are) */
-static int GameState(void)
-{
-    int g = OneState(&sPkg, sGamePath);
-
-    if (g == 1 && sWidePkg.base != NULL && OneState(&sWidePkg, sWidePath) != 1) {
-        g = 2;
-    }
-    return g;
+    return memcmp(sha, sPkg.outSha1, 20) == 0 ? 1 : 2;
 }
 
 static int Launch(const char *exe, int argc, char **argv)
@@ -1382,7 +1354,7 @@ static void Import(const char *path)
     snprintf(sStatus, sizeof(sStatus), "%s", "making the game...");
     sStatusGood = 0;
     Present();
-    result = BuildAll(path, sGamePath, sWidePath);
+    result = Build(path, sGamePath);
     if (result == BUILD_OK) {
         RememberRom(path);
         Refresh();
@@ -1610,8 +1582,7 @@ static int RunWindow(void)
 
 static void Usage(void)
 {
-    printf("N. Larged XS launcher %s: makes \"%s\" from your own Crash Bandicoot XS ROM\n"
-           "(and \"%s\", the game 288 pixels wide, which its widescreen setting starts).\n"
+    printf("N. Larged XS launcher %s: makes \"%s\" from your own Crash Bandicoot XS ROM.\n"
            "\n"
            "Usage: NLargedXSLauncher [options] [-- game options]\n"
            "  (no options)         open the launcher's window\n"
@@ -1620,8 +1591,7 @@ static void Usage(void)
            "  -g, --game ROM       --import ROM, then --launch (makes the game only if it\n"
            "                       isn't up to date)\n"
            "      --progress       with --import: \"progress <0-1> <text>\" lines on stdout\n"
-           "  -o, --output PATH    where to write the game (default: next to the launcher; the\n"
-           "                       widescreen game goes beside it)\n"
+           "  -o, --output PATH    where to write the game (default: next to the launcher)\n"
            "  -l, --launch         start the game (after --import, with both) and exit\n"
            "  -c, --check ROM      only check that ROM is the right one\n"
            "  -s, --status         say whether the game is here and up to date\n"
@@ -1631,7 +1601,7 @@ static void Usage(void)
            "  -- ARGS              with --launch: hand ARGS to the game (e.g. -- --fullscreen)\n"
            "\n"
            "The ROM: Crash Bandicoot XS (Europe) (En,Fr,De,Es,It,Nl), SHA-1 ",
-           sPkg.version, GAME_FILE, GAME_WIDE_FILE);
+           sPkg.version, GAME_FILE);
     {
         char hex[41];
 
@@ -1744,11 +1714,6 @@ int main(int argc, char **argv)
             HexSha(sPkg.outSha1, hex);
             printf("N. Larged XS launcher %s (makes %s, %u bytes, SHA-1 %s)\n", sPkg.version,
                    GAME_FILE, (unsigned)sPkg.outSize, hex);
-            if (sWidePkg.base != NULL) {
-                HexSha(sWidePkg.outSha1, hex);
-                printf("  and %s, %u bytes, SHA-1 %s\n", GAME_WIDE_FILE, (unsigned)sWidePkg.outSize,
-                       hex);
-            }
             return 0;
         } else if (strcmp(a, "-h") == 0 || strcmp(a, "--help") == 0 || strcmp(a, "/?") == 0) {
             Usage();
@@ -1759,18 +1724,7 @@ int main(int argc, char **argv)
         }
     }
     if (output != NULL) {
-        /* the widescreen game beside it, under its usual name */
-        const char *slash = strrchr(output, '/');
-#ifdef _WIN32
-        const char *back = strrchr(output, '\\');
-
-        if (back != NULL && (slash == NULL || back > slash)) {
-            slash = back;
-        }
-#endif
         snprintf(sGamePath, sizeof(sGamePath), "%s", output);
-        snprintf(sWidePath, sizeof(sWidePath), "%.*s%s",
-                 slash != NULL ? (int)(slash - output + 1) : 0, output, GAME_WIDE_FILE);
     }
     if (checkRom != NULL) {
         int r = CheckRom(checkRom);
@@ -1798,7 +1752,7 @@ int main(int argc, char **argv)
             Progress(1.0, "The game is ready");
             printf("the game is already up to date (--force makes it again).\n");
         } else {
-            int r = BuildAll(importRom, sGamePath, sWidePath);
+            int r = Build(importRom, sGamePath);
 
             printf("%s\n", BuildMessage(r));
             if (r != BUILD_OK) {

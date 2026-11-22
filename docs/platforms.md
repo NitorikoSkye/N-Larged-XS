@@ -665,38 +665,44 @@ waiting for discord, connected, app id refused. `HOST_DISCORD_LOG=FILE` logs
 what the connection does. Held in the settings menu or paused in the
 background, the status still follows.
 
-**Widescreen** (v0.52.5, a setting on PC): `make
-PLATFORM=pc HOST_WIDE=288 OBJ_DIR=build/wide/crashbandicootxs` builds the
-game for a 288x160 screen (DISPLAY_WIDTH and the window's
-HOST_SCREEN_WIDTH; the HUD, camera, culling and activation follow
-screen.h). The level layers (BgLayer) keep 64x32-entry maps instead of
+**Widescreen** (v0.52.6, a setting on PC; not on Android): the screen is
+240x160, the GBA's, or 288x160. Its width is gHostDisplayWidth
+(gba/defines.h makes DISPLAY_WIDTH it, so the game's code reads the
+setting where the GBA's has 240: the HUD, camera, culling and activation
+follow screen.h), set once, before the game's C++ data is (some of its
+tables are positions from DISPLAY_ART_X, worked out as the program
+starts): src/wide_switch.c's EarlyWidth, a priority-101 constructor, takes
+--widescreen / --no-widescreen from the command line, else the setting
+(config.c's HostConfigPeekWidescreen; headless runs read no settings). The
+Display page's "widescreen" saves it and restarts the game, the same
+executable with the same arguments less those two (Linux: execv;
+Windows: started and waited for, its exit code passed on): a running
+game's screens and layers were laid out for the old width. At 240 every
+widescreen path is off (HOST_WIDE, gba/host.h), and a checkpoint hashes
+the GBA's 96 KB of VRAM only: the regressions are the 240-pixel build's,
+frame for frame; at 288 they match the v0.52.5 widescreen build's. In
+widescreen the level layers (BgLayer) keep 64x32-entry maps instead of
 a 32x32 screen block: there is no room for 512-pixel maps in the 64 KB of
 BG VRAM the levels fill, so the four maps are the host's, after the
-GBA's 96 KB (gba/host.h's HOST_WIDE_BG_MAPS; HOST_VRAM_SIZE grows, so
-the interpolation's snapshots carry them), and BGnCNT's bit 13 (an
-affine BG's wraparound; a text BG has none) says so to ppu.c and
-ppu_hd.c. Each layer also writes where its map is on the screen
+GBA's 96 KB (gba/host.h's HOST_WIDE_BG_MAPS; HOST_VRAM_SIZE has room for
+them always, so the interpolation's snapshots carry them), and BGnCNT's
+bit 13 (an affine BG's wraparound; a text BG has none) says so to ppu.c
+and ppu_hd.c. Each layer also writes where its map is on the screen
 (HOST_WIDE_BG_EDGES): a room narrower than the screen (a boss arena)
 shows black past its edges, not map columns it doesn't have. Everything
 else is 240-pixel art: text BGs that aren't level layers are drawn in the
 centred window (DISPLAY_ART_X, as the game already places their sprites
 and the affine/bitmap BGs' reference points), cut to it, and the bars
-beside it are black. The bitmap modes keep the GBA's 240x160 frames.
-The launchers (build.sh, build_linux.sh) build it too and make it beside
-the usual game ("Crash Bandicoot XS Wide.exe", crash-bandicoot-xs-wide).
-The Display page's "widescreen" setting picks one (src/wide_switch.c): at
-start, the build the setting doesn't ask for hands over to the other with
-the same arguments (Linux: execv, the same process; Windows: started and
-waited for, its exit code passed on), and changing it saves the settings,
-quits and does the same as HostExit ends. Without the other build beside
-it (a build by hand) the row is grey. Not on Android. Known: sprites (and
-the jetpack and polar levels' fixed art, the Dingodile fight's sky) aren't
+beside it are black; the pause screens fill them with their art's edge
+strip, darkened (HostWideArtColumn); the warp room and save menu aren't
+cut. The bitmap modes keep the GBA's 240x160 frames. Borders are black,
+the HUD's "borders" reads as "on", and a slow BG layer whose picture
+lasts the GBA's view to the level's end but not the wider one (the
+underwater levels' distant ruins, 360 pixels at 12/256) drifts a little
+slower (bg_layer_base.cpp's WideFitScroll). Known: sprites (and the
+jetpack and polar levels' fixed art, the Dingodile fight's sky) aren't
 cut to the window; `--hd-check` finds 120 pixels in 200 frames of a
-cutscene fade differ at the right bar's first column. A slow BG layer whose
-picture lasts the GBA's view to the level's end but not the wider one
-(the underwater levels' distant ruins, 360 pixels at 12/256) drifts a
-little slower there (bg_layer_base.cpp's `WideFitScroll`), so it reaches
-its picture's edge with the camera's; the HUD's "borders" reads as "on".
+cutscene fade differ at the right bar's first column.
 
 **Mouse** (v0.33; src/ui.c HostUiMouse, src/mouse_hooks.cpp, src/sdl.c).
 The settings menu: moving over a category, a row or a binding highlights
