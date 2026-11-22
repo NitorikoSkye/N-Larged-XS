@@ -118,8 +118,10 @@ static void WriteFile(void)
     fclose(f);
 }
 
-/* Once a game frame (input.c's key read). */
-void HostStatsFrame(void)
+/* Each VBlank (irq.c), for the next picture: widescreen's pause and warp
+ * room bytes (gba/host.h, read by ppu.c). Not once a game frame: the warp
+ * room's first page draws for a while without reading the keys. */
+void HostWideFlags(void)
 {
 #ifdef HOST_WIDE_BG
     if (HOST_WIDE) {
@@ -129,6 +131,11 @@ void HostStatsFrame(void)
                                                                       : 0);
     }
 #endif
+}
+
+/* Once a game frame (input.c's key read). */
+void HostStatsFrame(void)
+{
     HostUpdateFrame();
     if (sSession && !HostPauseMenuUp()) {
         sCurrent.frames++;

@@ -29,6 +29,7 @@
 #include "engine/sys/irq.h"
 #include "host_interp.h"
 #include "host_platform.h"
+#include "host_ui.h"
 
 #define LINES_PER_FRAME 228
 #define VBLANK_LINE     160
@@ -105,6 +106,7 @@ static void NextScanline(void)
         /* The picture is finished: shown (the window), and the time a
          * frame takes waited for, before the game's VBlank handler. */
         HostPpuFrame();
+        HostWideFlags(); /* stats.c: for the next picture */
         if (gHostHdCheck || gHostInterpDumpDir != NULL) {
             HostHdCheckFrame();
         }

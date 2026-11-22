@@ -168,6 +168,7 @@ struct HostPlayStats {
     u32 crates; /* crates broken */
 };
 void HostStatsFrame(void);
+void HostWideFlags(void); /* each VBlank: widescreen's pause and warp room bytes */
 void HostStatsTitle(void);
 void HostStatsRunStart(void);
 void HostStatsLoaded(int row);
