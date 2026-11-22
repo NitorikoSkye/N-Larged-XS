@@ -303,7 +303,8 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
         }
     }
 #ifdef HOST_WIDE_BG
-    if (HOST_WIDE && !WIDE_MAP(cnt) && !f->vram[HOST_WIDE_WARP]) {
+    if (HOST_WIDE && !WIDE_MAP(cnt) &&
+        (!f->vram[HOST_WIDE_WARP] || (f->vram[HOST_WIDE_WARP] == HOST_WIDE_WARP_ROOM && bg == 1))) {
         ClipToArt(out, outW, S);
     }
 #endif

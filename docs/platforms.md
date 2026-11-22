@@ -694,8 +694,9 @@ else is 240-pixel art: text BGs that aren't level layers are drawn in the
 centred window (DISPLAY_ART_X, as the game already places their sprites
 and the affine/bitmap BGs' reference points), cut to it, and the bars
 beside it are black; the pause screens fill them with their art's edge
-strip, darkened (HostWideArtColumn); the warp room and save menu aren't
-cut. The bitmap modes keep the GBA's 240x160 frames. Borders are black,
+strip, darkened (HostWideArtColumn); the save menu and the warp room's
+sky aren't cut (the warp room's platforms, BG1, are: past them are the
+neighbouring worlds'). The bitmap modes keep the GBA's 240x160 frames. Borders are black,
 the HUD's "borders" reads as "on", and a slow BG layer whose picture
 lasts the GBA's view to the level's end but not the wider one (the
 underwater levels' distant ruins, 360 pixels at 12/256) drifts a little

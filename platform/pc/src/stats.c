@@ -124,7 +124,9 @@ void HostStatsFrame(void)
 #ifdef HOST_WIDE_BG
     if (HOST_WIDE) {
         gHostVram[HOST_WIDE_PAUSE] = (unsigned char)HostPauseMenuUp(); /* ppu.c */
-        gHostVram[HOST_WIDE_WARP] = (unsigned char)(gHostInWarpRoom || gHostInSaveMenu);
+        gHostVram[HOST_WIDE_WARP] = (unsigned char)(gHostInWarpRoom   ? HOST_WIDE_WARP_ROOM
+                                                    : gHostInSaveMenu ? 1
+                                                                      : 0);
     }
 #endif
     HostUpdateFrame();

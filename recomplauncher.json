@@ -23,7 +23,7 @@
     "args": ["--import", "{game}", "--progress"],
     "done": ["{install}/NLargedXSLauncher.ini"],
     "timeout": 300,
-    "version": "0.52.6"
+    "version": "0.52.7"
   },
   "start": {
     "program": ["Crash Bandicoot XS.exe", "crash-bandicoot-xs"],

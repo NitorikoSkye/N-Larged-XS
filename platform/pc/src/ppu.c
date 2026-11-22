@@ -289,8 +289,9 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
         } else if (wide == NULL && gHostVram[HOST_WIDE_PAUSE]) {
             /* the game's pause menu: its art widened (host_platform.h) */
             vx = (u32)HostWideArtColumn((int)x, &dim);
-        } else if (wide == NULL && gHostVram[HOST_WIDE_WARP]) {
-            vx = x - ART_X0; /* the warp room: not cut to the art (gba/host.h) */
+        } else if (wide == NULL && gHostVram[HOST_WIDE_WARP] &&
+                   !(gHostVram[HOST_WIDE_WARP] == HOST_WIDE_WARP_ROOM && bg == 1)) {
+            vx = x - ART_X0; /* the warp room's sky: not cut to the art (gba/host.h) */
         } else if (wide == NULL) {
             if (x < ART_X0 || x >= ART_X0 + BITMAP_W) {
                 out[x] = TRANSPARENT;

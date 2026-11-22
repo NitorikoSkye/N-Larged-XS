@@ -32,10 +32,13 @@
 /* A byte: the game's pause menu is up, its 240-pixel art widened to the
  * screen (HostWideArtColumn, host_platform.h) rather than centred. */
 #define HOST_WIDE_PAUSE (HOST_WIDE_BG_EDGES + 0x20)
-/* A byte: the warp room is up. Its backgrounds aren't cut to the centred
- * art: the sky's map repeats, and the platforms' strip (the worlds side by
- * side, which the page turn scrolls) shows the neighbouring ones. */
-#define HOST_WIDE_WARP (HOST_WIDE_BG_EDGES + 0x21)
+/* A byte: the save menu (1) or the warp room (2, HOST_WIDE_WARP_ROOM) is
+ * up. Their backgrounds aren't cut to the centred art: the sky's map
+ * repeats. The warp room's platforms' strip (BG1: the worlds side by side,
+ * which the page turn scrolls) is, or the neighbouring worlds' platforms
+ * would show beside the picture. */
+#define HOST_WIDE_WARP      (HOST_WIDE_BG_EDGES + 0x21)
+#define HOST_WIDE_WARP_ROOM 2
 #define HOST_VRAM_SIZE (HOST_WIDE_BG_EDGES + 0x100)
 /* the GBA's own; a checkpoint (input.c) hashes it, and at the GBA's
  * width only it, as a 240-pixel build always has */
