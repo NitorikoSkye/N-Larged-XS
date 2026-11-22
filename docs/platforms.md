@@ -707,10 +707,15 @@ neighbouring worlds'). The bitmap modes keep the GBA's 240x160 frames. Borders a
 the HUD's "borders" reads as "on", and a slow BG layer whose picture
 lasts the GBA's view to the level's end but not the wider one (the
 underwater levels' distant ruins, 360 pixels at 12/256) drifts a little
-slower (bg_layer_base.cpp's WideFitScroll). Known: sprites (and the
-jetpack and polar levels' fixed art, the Dingodile fight's sky) aren't
-cut to the window; `--hd-check` finds 120 pixels in 200 frames of a
-cutscene fade differ at the right bar's first column.
+slower (bg_layer_base.cpp's WideFitScroll). The vehicle stages (the
+polar ride, the jetpack, the hovercraft fight: ActorCategory::Init) draw
+BG0 and BG1 from 304-pixel art that ActorBg scrolls across for the
+screen's width (actor_bg.cpp's maxX: 64 pixels of it at 240, 16 at 288),
+so there they fill the screen (HOST_WIDE_ACTOR, set from hud_hook.cpp's
+gHostCategoryType). Known: sprites aren't cut to the window; `--hd-check`
+finds 120 pixels in 200 frames of a cutscene fade differ at the right
+bar's first column, and a few frames of a sprite at the top edge in
+Rocket Racket.
 
 **Mouse** (v0.33; src/ui.c HostUiMouse, src/mouse_hooks.cpp, src/sdl.c).
 The settings menu: moving over a category, a row or a binding highlights

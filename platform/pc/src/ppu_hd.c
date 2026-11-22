@@ -266,8 +266,11 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
 #endif
     s32 hofs = (s32)(Io16(f, REG_OFFSET_BG0HOFS + 4 * bg) & 0x1FF) * S + v->bgX[bg];
 #ifdef HOST_WIDE_BG
+    /* a vehicle stage's sky and clouds fill the screen (ppu.c) */
+    int full = HOST_WIDE && !WIDE_MAP(cnt) && f->vram[HOST_WIDE_ACTOR] && bg <= 1;
+
     /* not a level layer: 240-pixel art, in the centred window (ppu.c) */
-    if (!WIDE_MAP(cnt)) {
+    if (!WIDE_MAP(cnt) && !full) {
         hofs -= ART_X0 * S;
     }
 #endif
@@ -310,7 +313,7 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
         }
     }
 #ifdef HOST_WIDE_BG
-    if (HOST_WIDE && !WIDE_MAP(cnt) &&
+    if (HOST_WIDE && !WIDE_MAP(cnt) && !full &&
         (!f->vram[HOST_WIDE_WARP] || (f->vram[HOST_WIDE_WARP] == HOST_WIDE_WARP_ROOM && bg == 1))) {
         ClipToArt(out, outW, S);
     }

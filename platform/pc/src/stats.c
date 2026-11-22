@@ -37,10 +37,11 @@ static struct HostPlayStats sCurrent;
 static int sSession; /* a game under way: the title left */
 static int sRead;
 
-void HostUpdateFrame(void); /* update_check.c */
-int HostPauseMenuUp(void);  /* mouse_hooks.cpp */
-extern int gHostInWarpRoom; /* level_pick.c */
-extern int gHostInSaveMenu; /* mouse_hooks.cpp */
+void HostUpdateFrame(void);   /* update_check.c */
+int HostPauseMenuUp(void);    /* mouse_hooks.cpp */
+extern int gHostInWarpRoom;   /* level_pick.c */
+extern int gHostInSaveMenu;   /* mouse_hooks.cpp */
+extern int gHostCategoryType; /* hud_hook.cpp: the vehicle stage running, or -1 */
 
 static int UseFile(void)
 {
@@ -129,6 +130,7 @@ void HostWideFlags(void)
         gHostVram[HOST_WIDE_WARP] = (unsigned char)(gHostInWarpRoom   ? HOST_WIDE_WARP_ROOM
                                                     : gHostInSaveMenu ? 1
                                                                       : 0);
+        gHostVram[HOST_WIDE_ACTOR] = (unsigned char)(gHostCategoryType >= 0); /* hud_hook.cpp */
     }
 #endif
 }
