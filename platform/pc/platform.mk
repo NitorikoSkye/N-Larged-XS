@@ -451,7 +451,7 @@ $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.S
 $(PLATFORM_BUILDDIR)/src/ppu_hd.o: HOST_CFLAGS += -O2
 
 # sdl.o is rebuilt when HOST_SDL changes (the flags file).
-HOST_SDL_OBJS := $(addprefix $(PLATFORM_BUILDDIR)/src/,sdl.o config.o borders.o discord.o timer.o rumble.o update_check.o)
+HOST_SDL_OBJS := $(addprefix $(PLATFORM_BUILDDIR)/src/,sdl.o config.o borders.o discord.o timer.o rumble.o update_check.o wide_switch.o)
 $(HOST_SDL_OBJS): HOST_CFLAGS += $(HOST_SDL_CFLAGS)
 $(HOST_SDL_OBJS): $(PLATFORM_BUILDDIR)/sdl_flags
 $(PLATFORM_BUILDDIR)/sdl_flags: FORCE

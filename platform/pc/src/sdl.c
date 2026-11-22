@@ -785,6 +785,8 @@ void HostFrontendInit(void)
         Fail("SDL_Init");
     }
     HostConfigInit();
+    /* the build the widescreen setting asks for (wide_switch.c) */
+    HostWideHandover();
     /* --fullscreen / --windowed: this launch only (not saved unless the
      * settings change something and are written) */
     if (gHostOptions.windowMode != 0) {

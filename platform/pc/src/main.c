@@ -51,6 +51,7 @@ void HostExit(int status, const char *how)
     }
     printf("end %s at frame %u (VBlank %u)\n", how, HostFrame(), gHostVBlanks);
     fflush(stdout);
+    HostWideRelaunch(); /* the menu's widescreen switch: doesn't come back if it starts */
     exit(status);
 }
 
@@ -108,8 +109,13 @@ static u32 Number(const char *argv0, const char *text)
     return (u32)v;
 }
 
+int gHostArgc;
+char **gHostArgv;
+
 int main(int argc, char **argv)
 {
+    gHostArgc = argc;
+    gHostArgv = argv;
     /* HOST_AUDIO_HQ=1: high-quality audio's mix also headless (audio.c's
      * HOST_HQ_DUMP writes it) */
     {

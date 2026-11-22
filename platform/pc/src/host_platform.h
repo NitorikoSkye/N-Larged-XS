@@ -42,6 +42,9 @@ enum {
 };
 
 extern struct HostOptions gHostOptions;
+/* main()'s arguments (wide_switch.c hands them to the other build) */
+extern int gHostArgc;
+extern char **gHostArgv;
 
 /* The VBlanks so far (irq.c). */
 extern u32 gHostVBlanks;
@@ -135,7 +138,7 @@ void HostFrontendInit(void);
  * and the Windows executable is CrashBandicootXS-<version>.exe
  * (platform.mk reads the version from here). */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.52.4"
+#define HOST_PORT_VERSION "v0.52.5"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);

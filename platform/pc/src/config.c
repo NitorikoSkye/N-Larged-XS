@@ -136,6 +136,7 @@ static const struct {
     { "pause_unfocused", &gHostSettings.pauseUnfocused, 0, 1 },
     { "skip_intro", &gHostSettings.skipIntro, 0, 1 },
     { "update_check", &gHostSettings.updateCheck, 0, 1 },
+    { "widescreen", &gHostSettings.widescreen, 0, 1 },
     { "language", &gHostSettings.language, 0, 5 },
     { "fullscreen", &gHostSettings.fullscreen, 0, 1 },
     { "window_scale", &gHostSettings.windowScale, 1, 8 },

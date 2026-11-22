@@ -15,6 +15,11 @@ installing.
    yourself from now on: it is the whole game, and the launcher can be
    deleted.
 
+It also makes **Crash Bandicoot XS Wide.exe**, the game built for a wider
+288x160 screen. Keep it beside the other one: the game's **widescreen**
+setting (Display) restarts the game in it, and starting
+`Crash Bandicoot XS.exe` with the setting on starts it too.
+
 The ROM it needs: **Crash Bandicoot XS (Europe) (En,Fr,De,Es,It,Nl)**, SHA-1
 `bdd061e1b5187c0528928ec0ddb6886b1de16970` (8,388,608 bytes, CRC-32
 `CCFD654F`), as it is or in a `.zip` (its `.gba`, or its only file;
@@ -63,7 +68,8 @@ so the lines reach the pipe it was started with.
 
 The Linux launcher is the same program built for Linux
 (`build_linux.sh`): `NLargedXSLauncher` makes **crash-bandicoot-xs**, the
-Linux game, next to itself. Both need glibc 2.34 or newer (Ubuntu 22.04,
+Linux game, and **crash-bandicoot-xs-wide**, its widescreen build, next to
+itself. Both need glibc 2.34 or newer (Ubuntu 22.04,
 Debian 12, Fedora 35, SteamOS 3 and later) and SDL2 from the system
 (`libSDL2-2.0.so.0`: on Debian and Ubuntu `libsdl2-2.0-0`, on Fedora
 `SDL2`, on Arch `sdl2`; Steam's systems have it). Its window takes the ROM

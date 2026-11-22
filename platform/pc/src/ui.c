@@ -491,6 +491,20 @@ static void TogglePortable(void)
     }
 }
 
+static void SwitchWide(void)
+{
+    HostConfigSave();
+    HostWideSwitch();
+}
+
+static void AskWide(void)
+{
+    sConfirm = 1;
+    sConfirmText =
+        gHostSettings.widescreen ? "restart, widescreen off?" : "restart, widescreen on?";
+    sConfirmYes = SwitchWide;
+}
+
 static void Quit(void)
 {
     HostFrontendQuit();
@@ -547,6 +561,8 @@ static const struct Option sDisplay[] = {
       &gHostSettings.scaling, sScalings, HOST_SCALING_COUNT, HOST_APPLY_VIDEO },
     { "borders", "around the picture: black, its colours blurred, or the world's art.", OPT_CHOICE,
       &gHostSettings.borders, sBorders, HOST_BORDERS_COUNT, HOST_APPLY_VIDEO, NULL, NotStretched },
+    { "widescreen", "a wider 288x160 picture. restarts the game: unsaved progress is lost.",
+      OPT_ACTION, &gHostSettings.widescreen, sOffOn, 2, 0, NULL, HostWideAvailable, AskWide },
 };
 
 static const struct Option sGraphics[] = {

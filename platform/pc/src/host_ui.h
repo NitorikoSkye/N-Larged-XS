@@ -82,6 +82,7 @@ struct HostSettings {
     int language;  /* the language select's last pick, for skipped boots */
     int pauseUnfocused;
     int updateCheck; /* once a launch, a newer release on GitHub (update_check.c) */
+    int widescreen;  /* the 288x160 build (wide_switch.c) */
     /* Display */
     int fullscreen;
     int windowScale; /* 1-8 */
@@ -155,6 +156,14 @@ extern struct HostSettings gHostSettings;
 #define HOST_HUD_CHOICES 3
 #define HOST_HUD_HELP "lives, wumpa and crates: in the game, hidden, or in the left border."
 #endif
+
+/* Widescreen as a setting (wide_switch.c): the other build beside this
+ * one; at start, the build the setting asks for; the menu's switch, made
+ * as the game ends (main.c's HostExit). */
+int HostWideAvailable(void);
+void HostWideHandover(void);
+void HostWideSwitch(void);
+void HostWideRelaunch(void);
 
 /* The update check (update_check.c). */
 void HostUpdateFrame(void);

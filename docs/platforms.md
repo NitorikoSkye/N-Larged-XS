@@ -665,7 +665,7 @@ waiting for discord, connected, app id refused. `HOST_DISCORD_LOG=FILE` logs
 what the connection does. Held in the settings menu or paused in the
 background, the status still follows.
 
-**Widescreen** (an experiment, the `widescreen` branch): `make
+**Widescreen** (v0.52.5, a setting on PC): `make
 PLATFORM=pc HOST_WIDE=288 OBJ_DIR=build/wide/crashbandicootxs` builds the
 game for a 288x160 screen (DISPLAY_WIDTH and the window's
 HOST_SCREEN_WIDTH; the HUD, camera, culling and activation follow
@@ -682,12 +682,17 @@ else is 240-pixel art: text BGs that aren't level layers are drawn in the
 centred window (DISPLAY_ART_X, as the game already places their sprites
 and the affine/bitmap BGs' reference points), cut to it, and the bars
 beside it are black. The bitmap modes keep the GBA's 240x160 frames.
-`platform/pc/launcher/build_wide.sh ROM SDL2_MINGW_DIR [WIDTH]` makes
-launchers for it ("Crash Bandicoot XS Wide.exe", crash-bandicoot-xs-wide).
-Known: sprites (and the jetpack and polar levels' fixed art) aren't cut
-to the window; `--hd-check` finds 120 pixels in 200 frames of a cutscene
-fade differ at the right bar's first column; the game built twice into
-one executable (to switch at run time) isn't done. A slow BG layer whose
+The launchers (build.sh, build_linux.sh) build it too and make it beside
+the usual game ("Crash Bandicoot XS Wide.exe", crash-bandicoot-xs-wide).
+The Display page's "widescreen" setting picks one (src/wide_switch.c): at
+start, the build the setting doesn't ask for hands over to the other with
+the same arguments (Linux: execv, the same process; Windows: started and
+waited for, its exit code passed on), and changing it saves the settings,
+quits and does the same as HostExit ends. Without the other build beside
+it (a build by hand) the row is grey. Not on Android. Known: sprites (and
+the jetpack and polar levels' fixed art, the Dingodile fight's sky) aren't
+cut to the window; `--hd-check` finds 120 pixels in 200 frames of a
+cutscene fade differ at the right bar's first column. A slow BG layer whose
 picture lasts the GBA's view to the level's end but not the wider one
 (the underwater levels' distant ruins, 360 pixels at 12/256) drifts a
 little slower there (bg_layer_base.cpp's `WideFitScroll`), so it reaches

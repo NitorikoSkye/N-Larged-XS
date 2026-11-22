@@ -19,12 +19,15 @@ N. Larged XS. Its schema: https://recomplauncher.com/schema/recomplauncher.json.
   (release.sh sets it): each release's game has to be made again.
 - **Start** (`start`): the game it made, `Crash Bandicoot XS.exe` on
   Windows or `crash-bandicoot-xs` on Linux. It needs no arguments and no
-  ROM: it is the whole game.
+  ROM: it is the whole game. With `widescreen=1` it starts its widescreen
+  build (`Crash Bandicoot XS Wide.exe`, `crash-bandicoot-xs-wide`, made
+  beside it): on Linux in its place, on Windows waited for, so the game
+  RecompLauncher started runs until the player quits.
 - **Settings** (`config`, `settings`): `settings.ini` beside the game.
   `ensure` writes `portable=1` there when it's missing, so the game keeps
   its settings and saves in its own folder (where RecompLauncher looks)
   rather than in the user's application data. The settings shown: the
-  window, frame rate and filter; skip intro, auto save and the pause
+  window, widescreen, frame rate and filter; skip intro, auto save and the pause
   menu's statistics; and (advanced) the update check. Each choice writes
   the same `key=value` the game's own menu does; the game reads `key =
   value` too.
