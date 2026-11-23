@@ -76,6 +76,15 @@ void LevelLayers::LoadRoom(const struct level_room *args)
     layer0->Load(args->desc->layer0);
     tiles->SetSource(args->desc->collision);
     maxScrollX = CAMERA_MAX_X(layer0->widthPx);
+#ifdef HOST_WIDE_BG
+    /* Widescreen on the pc (gba/host.h): a room narrower than the screen
+     * (Neo Cortex's, 280 pixels) would put the camera left of the map,
+     * and the streamer would read before its chunk grid. The camera stays
+     * at 0; past the room's right edge is black (BgLayer's edges). */
+    if (HOST_WIDE && maxScrollX < 0) {
+        maxScrollX = 0;
+    }
+#endif
     maxScrollY = CAMERA_MAX_Y(layer0->heightPx);
     Display::ShowBg0();
 

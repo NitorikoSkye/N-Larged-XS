@@ -689,7 +689,10 @@ them always, so the interpolation's snapshots carry them), and BGnCNT's
 bit 13 (an affine BG's wraparound; a text BG has none) says so to ppu.c
 and ppu_hd.c. Each layer also writes where its map is on the screen
 (HOST_WIDE_BG_EDGES): a room narrower than the screen (a boss arena)
-shows black past its edges, not map columns it doesn't have. Layer 0's
+shows black past its edges, not map columns it doesn't have, and a room
+narrower than the screen (Neo Cortex's, 280 pixels) keeps the camera at
+0 (LevelLayers::LoadRoom), so the streamer never reads left of its map.
+Layer 0's
 tile slot pool (TileSlotPool) has 0x400 slots instead of 0x200, the
 second 0x200 after the maps (HOST_WIDE_BG_TILES, read for a wide 8bpp
 map's tiles 0x200 on), and the VRAM transfer queue room for 0x500: the
