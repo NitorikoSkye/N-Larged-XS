@@ -714,7 +714,10 @@ menu) go on into them as one wider frame, their art in the middle
 untouched: the riveted bars, the rails behind the title and the bottom
 bar run to the screen's edges, and between them is the plain blue plate,
 a rivet near its bottom corner (host_platform.h's HostWideArtSource,
-which says where in the 240-pixel art each bar pixel comes from); the
+which says where in the 240-pixel art each bar pixel comes from: never
+the art's outermost columns, a dark line where the GBA's screen ended,
+which in the bars and rails, the art's own edge included, would be a
+seam); the
 game-over "continue?" screen (Uka Uka) mirrors its art into them
 (HOST_WIDE_MIRROR, set while ContinuePrompt::Run runs:
 mouse_hooks.cpp); the save menu and the warp room's

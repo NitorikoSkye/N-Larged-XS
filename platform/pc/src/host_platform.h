@@ -72,18 +72,23 @@ extern u32 gHostVBlanks;
 #define HOST_ART_X0 ((HOST_SCREEN_WIDTH - 240) / 2)
 static inline int HostWideArtSource(int x, int y, int *ax, int *ay)
 {
-    int right = x >= HOST_ART_X0 + 240;
-    int k = right ? x - (HOST_ART_X0 + 239) : HOST_ART_X0 - x; /* 1.. out from the edge */
+    int right = x >= HOST_ART_X0 + 120;
+    int k =
+        right ? x - (HOST_ART_X0 + 239) : HOST_ART_X0 - x; /* 0 at the art's edge column, 1.. out */
+    int band = y < 64 || y >= 151;                         /* the bars and the rails */
 
     *ay = y;
-    if (x >= HOST_ART_X0 && !right) {
+    if (k < 0 || (k == 0 && !band)) {
         *ax = x - HOST_ART_X0;
         return 0;
     }
+    /* The art's outermost columns (0 and 239) are a dark line, where the
+     * GBA's screen ended: in the bars and the rails it would be a seam,
+     * so they go on from the columns inside it. */
     if (y >= 9 && y < 55) {
-        *ax = right ? (239 + k) % 14 : (14 - k % 14) % 14; /* the rails */
-    } else if (y < 9 || (y >= 55 && y < 64) || y >= 151) {
-        *ax = right ? 240 - k : k - 1; /* the bars, mirrored */
+        *ax = right ? (238 + k) % 14 + 1 : 14 - k % 14; /* the rails, 14 pixels a repeat */
+    } else if (band) {
+        *ax = right ? 238 - k : k + 1; /* the bars, mirrored */
     } else if (k >= 20 && y >= 143 && y <= 148) {
         *ax = right ? 237 - (k - 20) : 2 + (k - 20); /* the corner rivet */
     } else {
@@ -149,7 +154,7 @@ void HostFrontendInit(void);
  * and the Windows executable is CrashBandicootXS-<version>.exe
  * (platform.mk reads the version from here). */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.52.13"
+#define HOST_PORT_VERSION "v0.52.14"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);
