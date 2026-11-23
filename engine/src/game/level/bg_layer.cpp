@@ -142,11 +142,20 @@ void BgLayer::CommitScroll()
     WriteOffsetRegs();
 #ifdef HOST_WIDE_BG
     if (HOST_WIDE) {
-        /* where the map is on the screen (gba/host.h) */
+        /* where the map is on the screen (gba/host.h): layer 0 (8bpp,
+         * PooledBgLayer) its art's width; the others the columns drawn,
+         * which run past their art where the camera does (the streamer
+         * goes on: Just Hangin's machinery at the exit), shown as the
+         * GBA's screen block shows them */
         s16 *edges = (s16 *)(VRAM + HOST_WIDE_BG_EDGES) + 2 * (cnt.bits.screenBase - 0x1c);
 
-        edges[0] = (s16)-x;
-        edges[1] = (s16)(widthPx - x);
+        if (cnt.bits.colors256) {
+            edges[0] = (s16)-x;
+            edges[1] = (s16)(widthPx - x);
+        } else {
+            edges[0] = (s16)(colLo * 8 - x);
+            edges[1] = (s16)((colHi + 1) * 8 - x);
+        }
     }
 #endif
 }

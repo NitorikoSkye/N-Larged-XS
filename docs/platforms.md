@@ -688,8 +688,12 @@ GBA's 96 KB (gba/host.h's HOST_WIDE_BG_MAPS; HOST_VRAM_SIZE has room for
 them always, so the interpolation's snapshots carry them), and BGnCNT's
 bit 13 (an affine BG's wraparound; a text BG has none) says so to ppu.c
 and ppu_hd.c. Each layer also writes where its map is on the screen
-(HOST_WIDE_BG_EDGES): a room narrower than the screen (a boss arena)
-shows black past its edges, not map columns it doesn't have, and a room
+(HOST_WIDE_BG_EDGES): layer 0 its art's width, so a room narrower than
+the screen (a boss arena) shows black past its edges, not map columns it
+doesn't have; the 4bpp layers the columns the game drew, which run past
+their art where the camera does (the streamer goes on, and the GBA's
+screen block shows those columns: Just Hangin's machinery at the exit),
+so they show there as on the GBA, and a room
 narrower than the screen (Neo Cortex's, 280 pixels) keeps the camera at
 0 (LevelLayers::LoadRoom), so the streamer never reads left of its map.
 Layer 0's
