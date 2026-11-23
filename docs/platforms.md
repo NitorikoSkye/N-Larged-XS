@@ -689,8 +689,10 @@ them always, so the interpolation's snapshots carry them), and BGnCNT's
 bit 13 (an affine BG's wraparound; a text BG has none) says so to ppu.c
 and ppu_hd.c. Each layer also writes where its map is on the screen
 (HOST_WIDE_BG_EDGES): layer 0 its art's width, so a room narrower than
-the screen (a boss arena) shows black past its edges, not map columns it
-doesn't have; the 4bpp layers the columns the game drew, which run past
+the screen (Neo Cortex's and N. Gin's, 280 pixels) is drawn centred, its
+sprites with it, and the gaps either side are its BGs' edge columns
+mirrored, without the sprites (ppu.c's NarrowRoom and BgOnly; ppu_hd.c's
+the same at its scale), not map columns it doesn't have; the 4bpp layers the columns the game drew, which run past
 their art where the camera does (the streamer goes on, and the GBA's
 screen block shows those columns: Just Hangin's machinery at the exit),
 so they show there as on the GBA, and a room
@@ -707,8 +709,15 @@ crashed). Everything
 else is 240-pixel art: text BGs that aren't level layers are drawn in the
 centred window (DISPLAY_ART_X, as the game already places their sprites
 and the affine/bitmap BGs' reference points), cut to it, and the bars
-beside it are black; the pause screens fill them with their art's edge
-strip, darkened (HostWideArtColumn); the save menu and the warp room's
+beside it are black; the pause screens (the game's and the settings
+menu) go on into them as one wider frame, their art in the middle
+untouched: the riveted bars, the rails behind the title and the bottom
+bar run to the screen's edges, and between them is the plain blue plate,
+a rivet near its bottom corner (host_platform.h's HostWideArtSource,
+which says where in the 240-pixel art each bar pixel comes from); the
+game-over "continue?" screen (Uka Uka) mirrors its art into them
+(HOST_WIDE_MIRROR, set while ContinuePrompt::Run runs:
+mouse_hooks.cpp); the save menu and the warp room's
 sky aren't cut (the warp room's platforms, BG1, are: past them are the
 neighbouring worlds'). The bitmap modes keep the GBA's 240x160 frames. Borders are black,
 the HUD's "borders" reads as "on", and a slow BG layer whose picture

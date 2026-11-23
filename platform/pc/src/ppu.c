@@ -242,6 +242,51 @@ static int Bar(u32 bgOn, u32 mode, s32 x)
 }
 #endif
 
+#ifdef HOST_WIDE_BG
+/* A pixel of the BGs alone at x (no OBJ), with the brightness effect: a
+ * narrow room's mirrored gaps (WideFinish) don't double a sprite. */
+static u32 BgOnly(u32 x, u32 bgOn, const u32 *bgPrio, u32 backdrop, u32 bldcnt, u32 effect, u32 evy)
+{
+    u32 top = LAYER_BD;
+    u32 out = backdrop;
+    u32 p;
+    u32 i;
+
+    for (p = 0; p < 4 && top == LAYER_BD; p++) {
+        for (i = 0; i < 4; i++) {
+            if ((bgOn & (1 << i)) && bgPrio[i] == p && sBgLine[i][x] != TRANSPARENT) {
+                top = i;
+                out = Rgb8(sBgLine[i][x]);
+                break;
+            }
+        }
+    }
+    if (bldcnt & (1 << top)) {
+        out = effect == 2 ? Brighten(out, evy) : effect == 3 ? Darken(out, evy) : out;
+    }
+    return out;
+}
+
+/* The room's width when layer 0's map (an 8bpp level layer) is narrower
+ * than the screen and starts at its left edge (Neo Cortex's: the camera
+ * held at 0, LevelLayers::LoadRoom); else 0. */
+static s32 NarrowRoom(u32 bgOn, u32 mode)
+{
+    u32 i;
+
+    for (i = 0; i < 4; i++) {
+        u16 cnt = Io16(REG_OFFSET_BG0CNT + 2 * i);
+        const s16 *edges = (const s16 *)(gHostVram + HOST_WIDE_BG_EDGES) + 2 * i;
+
+        if ((mode == 0 || (mode == 1 && i < 2)) && (bgOn & (1 << i)) &&
+            (cnt & HOST_BGCNT_WIDE_MAP) && (cnt & BGCNT_256COLOR)) {
+            return edges[0] == 0 && edges[1] > 0 && edges[1] < (s32)WIDTH ? edges[1] : 0;
+        }
+    }
+    return 0;
+}
+#endif
+
 static void TextBg(s32 bg, u32 y, u32 mosaic)
 {
     u16 cnt = Io16(REG_OFFSET_BG0CNT + 2 * bg);
@@ -280,7 +325,7 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
         u32 vx = x;
         u32 sx;
         u32 tx;
-        int dim = 0; /* a widened pause screen's bar: the edge strip, darkened */
+        u32 tyPix = ty; /* a widened pause screen's bar: its art row */
 
 #ifdef HOST_WIDE_BG
         /* not a level layer: 240-pixel art, in the centred window */
@@ -288,7 +333,12 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
             vx = x;
         } else if (wide == NULL && gHostVram[HOST_WIDE_PAUSE]) {
             /* the game's pause menu: its art widened (host_platform.h) */
-            vx = (u32)HostWideArtColumn((int)x, &dim);
+            int ax;
+            int ay;
+
+            HostWideArtSource((int)x, (int)y, &ax, &ay);
+            vx = (u32)ax;
+            tyPix = (ty + (u32)(ay - (int)y)) & heightMask;
         } else if (wide == NULL && gHostVram[HOST_WIDE_ACTOR] && bg <= 1) {
             vx = x; /* a vehicle stage's sky and clouds: the whole screen (gba/host.h) */
         } else if (wide == NULL && gHostVram[HOST_WIDE_WARP] &&
@@ -315,7 +365,7 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
         if (tx >= 256) {
             block = 1;
         }
-        if (ty >= 256) {
+        if (tyPix >= 256) {
             block += size == 3 ? 2 : 1;
         }
 #ifdef HOST_WIDE_BG
@@ -324,15 +374,15 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
                 out[x] = TRANSPARENT;
                 continue;
             }
-            entry = wide[(ty >> 3) * 64 + (tx >> 3)];
+            entry = wide[(tyPix >> 3) * 64 + (tx >> 3)];
         } else
 #endif
             entry = Vram16(
-                (screenBase + block * 0x800 + ((ty & 0xFF) >> 3) * 64 + ((tx & 0xFF) >> 3) * 2) &
+                (screenBase + block * 0x800 + ((tyPix & 0xFF) >> 3) * 64 + ((tx & 0xFF) >> 3) * 2) &
                 0xFFFF);
         tile = entry & 0x3FF;
         px = tx & 7;
-        py = ty & 7;
+        py = tyPix & 7;
         if (entry & 0x400) {
             px = 7 - px;
         }
@@ -354,9 +404,6 @@ static void TextBg(s32 bg, u32 y, u32 mosaic)
             addr = charBase + tile * 32 + py * 4 + px / 2;
             index = addr < 0x10000 ? (gHostVram[addr] >> ((px & 1) * 4)) & 0xF : 0;
             out[x] = index ? Pltt((entry >> 12) * 16 + index) : TRANSPARENT;
-        }
-        if (dim && out[x] != TRANSPARENT) {
-            out[x] = (out[x] >> 1) & 0x3DEF; /* each 5-bit channel halved */
         }
     }
 }
@@ -848,6 +895,35 @@ void HostPpuLine(u32 y)
 #endif
         row[x] = out;
     }
+#ifdef HOST_WIDE_BG
+    if (HOST_WIDE) {
+        s32 room;
+
+        if (gHostVram[HOST_WIDE_MIRROR]) {
+            /* the "continue?" screen: its art mirrored into the bars */
+            for (x = 0; x < ART_X0; x++) {
+                row[x] = row[2 * ART_X0 - 1 - x];
+                row[WIDTH - 1 - x] = row[WIDTH - 2 * ART_X0 + x];
+            }
+        } else if ((room = NarrowRoom(bgOn, mode)) != 0) {
+            /* a narrower room centred, the gaps its BGs mirrored */
+            s32 s = ((s32)WIDTH - room) / 2;
+            s32 r = (s32)WIDTH - room - s;
+            s32 j;
+
+            for (j = room - 1; j >= 0; j--) {
+                row[j + s] = row[j];
+            }
+            for (j = 0; j < s; j++) {
+                row[j] = BgOnly((u32)(s - 1 - j), bgOn, bgPrio, backdrop, bldcnt, effect, evy);
+            }
+            for (j = 0; j < r; j++) {
+                row[room + s + j] =
+                    BgOnly((u32)(room - 1 - j), bgOn, bgPrio, backdrop, bldcnt, effect, evy);
+            }
+        }
+    }
+#endif
 
     if (gHostOptions.ppuStats) {
         u32 bits = 1u << mode;

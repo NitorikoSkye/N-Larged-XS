@@ -297,6 +297,8 @@ HOST_WRAPS += _ZN4Game5Level6Camera6UpdateEv
 HOST_WRAPS += _ZN4Game2Ui8SaveMenu8DrawMainEv
 # The mouse in the game's menus (src/mouse_hooks.cpp): the pause menu's this.
 HOST_WRAPS += _ZN4Game2Ui9PauseMenu4DrawEv
+# Widescreen's "continue?" screen (src/mouse_hooks.cpp): mirrored into the bars.
+HOST_WRAPS += _ZN4Game2Ui14ContinuePrompt3RunEv
 # Button prompts (src/prompt_hook.cpp) follow the font's glyphs.
 # ... and the warp room's "start:  load-save" names the player's Start.
 HOST_WRAPS += GetUiText

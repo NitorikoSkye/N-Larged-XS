@@ -283,12 +283,15 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
         s32 base = (s32)(Io16(f, REG_OFFSET_BG0HOFS + 4 * bg) & 0x1FF);
         s32 X;
 
-        for (X = 0; X < outW; X++) {
-            int dim;
-            u32 col = (u32)HostWideArtColumn(X / S, &dim);
-            u16 c = TextTexel(f, bg, cnt, (col + base) & widthMask, ty);
+        s32 ys = FloorDiv(Y, S); /* the screen's row */
 
-            out[X] = dim && c != TRANSPARENT ? (c >> 1) & 0x3DEF : c;
+        for (X = 0; X < outW; X++) {
+            int ax;
+            int ay;
+
+            HostWideArtSource(X / S, ys, &ax, &ay);
+            out[X] = TextTexel(f, bg, cnt, ((u32)ax + base) & widthMask,
+                               (ty + (u32)(ay - ys)) & heightMask);
         }
         return;
     }
@@ -594,6 +597,50 @@ static inline s32 InSpan(u32 v, u32 reg, u32 limit)
     return v >= a || v < b;
 }
 
+#ifdef HOST_WIDE_BG
+/* ppu.c's BgOnly, at the view's scale. */
+static u32 BgOnlyHd(const struct HdFrame *f, u16 (*bgLine)[HOST_HD_MAX_WIDTH], s32 X, u32 bgOn,
+                    const u32 *bgPrio, u32 backdrop, u32 bldcnt, u32 effect, u32 evy)
+{
+    u32 top = LAYER_BD;
+    u32 out = backdrop;
+    u32 p;
+    u32 i;
+
+    (void)f;
+    for (p = 0; p < 4 && top == LAYER_BD; p++) {
+        for (i = 0; i < 4; i++) {
+            if ((bgOn & (1 << i)) && bgPrio[i] == p && bgLine[i][X] != TRANSPARENT) {
+                top = i;
+                out = Rgb8(bgLine[i][X]);
+                break;
+            }
+        }
+    }
+    if (bldcnt & (1 << top)) {
+        out = effect == 2 ? Brighten(out, evy) : effect == 3 ? Darken(out, evy) : out;
+    }
+    return out;
+}
+
+/* ppu.c's NarrowRoom, from the frame's VRAM and registers. */
+static s32 NarrowRoomHd(const struct HdFrame *f, u32 bgOn, u32 mode)
+{
+    u32 i;
+
+    for (i = 0; i < 4; i++) {
+        u16 cnt = Io16(f, REG_OFFSET_BG0CNT + 2 * i);
+        const s16 *edges = (const s16 *)(f->vram + HOST_WIDE_BG_EDGES) + 2 * i;
+
+        if ((mode == 0 || (mode == 1 && i < 2)) && (bgOn & (1 << i)) &&
+            (cnt & HOST_BGCNT_WIDE_MAP) && (cnt & BGCNT_256COLOR)) {
+            return edges[0] == 0 && edges[1] > 0 && edges[1] < (s32)WIDTH ? edges[1] : 0;
+        }
+    }
+    return 0;
+}
+#endif
+
 void HostPpuHdLine(const struct HdView *v, s32 Y, u32 *row)
 {
     const struct HdFrame *f = v->frame;
@@ -754,6 +801,37 @@ void HostPpuHdLine(const struct HdView *v, s32 Y, u32 *row)
 #endif
         row[X] = out;
     }
+#ifdef HOST_WIDE_BG
+    if (HOST_WIDE) {
+        s32 room;
+        s32 A = ART_X0 * S;
+
+        if (f->vram[HOST_WIDE_MIRROR]) {
+            /* the "continue?" screen mirrored into the bars (ppu.c) */
+            for (X = 0; X < A; X++) {
+                row[X] = row[2 * A - 1 - X];
+                row[outW - 1 - X] = row[outW - 2 * A + X];
+            }
+        } else if (HOST_WIDE && (room = NarrowRoomHd(f, bgOn, mode)) != 0) {
+            /* a narrower room centred, the gaps its BGs mirrored (ppu.c) */
+            s32 s = ((s32)WIDTH - room) / 2 * S;
+            s32 r = outW - room * S - s;
+            s32 j;
+
+            for (j = room * S - 1; j >= 0; j--) {
+                row[j + s] = row[j];
+            }
+            for (j = 0; j < s; j++) {
+                row[j] =
+                    BgOnlyHd(f, bgLine, s - 1 - j, bgOn, bgPrio, backdrop, bldcnt, effect, evy);
+            }
+            for (j = 0; j < r; j++) {
+                row[room * S + s + j] = BgOnlyHd(f, bgLine, room * S - 1 - j, bgOn, bgPrio,
+                                                 backdrop, bldcnt, effect, evy);
+            }
+        }
+    }
+#endif
 }
 
 void HostPpuHdStill(struct HdView *v, const struct HdFrame *f, s32 scale)

@@ -62,24 +62,35 @@ extern u32 gHostVBlanks;
 #ifdef HOST_WIDE_BG
 /* Widescreen (gba/host.h's HOST_WIDE): 240-pixel art centred on the
  * wider screen starts HOST_ART_X0 in. The pause screen's art (the game's
- * pause menu, ppu.c; the settings menu's first page, ui.c) stays centred,
- * and the bars beside it are its left edge strip (the riveted 9 columns;
- * mirrored on the right) repeated and darkened (*dim set), so the screen
- * is filled without stretching the art. The art column of screen column x. */
-#define HOST_ART_X0    ((HOST_SCREEN_WIDTH - 240) / 2)
-#define HOST_ART_STRIP 9
-static inline int HostWideArtColumn(int x, int *dim)
+ * pause menu, ppu.c and ppu_hd.c; the settings menu, ui.c) stays centred,
+ * and the bars beside it go on with its frame, from its own pixels: the
+ * riveted bars along the top, under the rails and along the bottom
+ * mirrored out from its edges, the rails behind the title (a 14-pixel
+ * repeat) tiled on, and below them a plain plate (a clean patch of the
+ * art's, under Crash's face) with a rivet near each bottom corner. The art
+ * pixel (*ax, *ay) screen pixel (x, y) shows; 0 when it is the art's own. */
+#define HOST_ART_X0 ((HOST_SCREEN_WIDTH - 240) / 2)
+static inline int HostWideArtSource(int x, int y, int *ax, int *ay)
 {
-    *dim = 1;
-    if (x < HOST_ART_X0) {
-        return (x + HOST_ART_STRIP - HOST_ART_X0 % HOST_ART_STRIP) % HOST_ART_STRIP;
+    int right = x >= HOST_ART_X0 + 240;
+    int k = right ? x - (HOST_ART_X0 + 239) : HOST_ART_X0 - x; /* 1.. out from the edge */
+
+    *ay = y;
+    if (x >= HOST_ART_X0 && !right) {
+        *ax = x - HOST_ART_X0;
+        return 0;
     }
-    if (x >= HOST_ART_X0 + 240) {
-        /* the left strip mirrored: the right one holds the monitor's bezel */
-        return HOST_ART_STRIP - 1 - (x - HOST_ART_X0 - 240) % HOST_ART_STRIP;
+    if (y >= 9 && y < 55) {
+        *ax = right ? (239 + k) % 14 : (14 - k % 14) % 14; /* the rails */
+    } else if (y < 9 || (y >= 55 && y < 64) || y >= 151) {
+        *ax = right ? 240 - k : k - 1; /* the bars, mirrored */
+    } else if (k >= 20 && y >= 143 && y <= 148) {
+        *ax = right ? 237 - (k - 20) : 2 + (k - 20); /* the corner rivet */
+    } else {
+        *ax = 96 + (right ? k - 1 : 24 - k) % 24; /* the plate */
+        *ay = 134 + (y - 64) % 16;
     }
-    *dim = 0;
-    return x - HOST_ART_X0;
+    return 1;
 }
 #endif
 
@@ -138,7 +149,7 @@ void HostFrontendInit(void);
  * and the Windows executable is CrashBandicootXS-<version>.exe
  * (platform.mk reads the version from here). */
 #define HOST_PORT_NAME    "Crash Bandicoot XS"
-#define HOST_PORT_VERSION "v0.52.12"
+#define HOST_PORT_VERSION "v0.52.13"
 /* At each VBlank: shows gHostScreen, reads the keyboard and gamepads,
  * waits for the frame's time. */
 void HostFrontendVBlank(void);

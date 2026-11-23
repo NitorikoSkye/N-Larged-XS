@@ -42,6 +42,7 @@ int HostPauseMenuUp(void);    /* mouse_hooks.cpp */
 extern int gHostInWarpRoom;   /* level_pick.c */
 extern int gHostInSaveMenu;   /* mouse_hooks.cpp */
 extern int gHostCategoryType; /* hud_hook.cpp: the vehicle stage running, or -1 */
+extern int gHostInContinue;   /* mouse_hooks.cpp: the "continue?" screen is up */
 
 static int UseFile(void)
 {
@@ -131,6 +132,7 @@ void HostWideFlags(void)
                                                     : gHostInSaveMenu ? 1
                                                                       : 0);
         gHostVram[HOST_WIDE_ACTOR] = (unsigned char)(gHostCategoryType >= 0); /* hud_hook.cpp */
+        gHostVram[HOST_WIDE_MIRROR] = (unsigned char)gHostInContinue;         /* mouse_hooks.cpp */
     }
 #endif
 }

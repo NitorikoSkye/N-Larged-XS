@@ -1516,9 +1516,8 @@ static void DrawConfirm(void)
 static void DrawPage(u32 *canvas);
 
 /* The menu on `canvas` (HOST_UI_WIDTH x HOST_UI_HEIGHT). Widescreen: the
- * 240-pixel page in the middle, and beside it the pause screen's left
- * edge strip (mirrored on the right), repeated and darkened, as the
- * game's pause menu has (HostWideArtColumn). */
+ * 240-pixel page in the middle, and beside it the pause screen's frame
+ * gone on, as the game's pause menu has (HostWideArtSource). */
 void HostUiDraw(u32 *canvas)
 {
     static u32 page[W * H];
@@ -1532,13 +1531,17 @@ void HostUiDraw(u32 *canvas)
     DrawPage(page);
     for (y = 0; y < H; y++) {
         for (x = 0; x < HOST_UI_WIDTH; x++) {
-            int dim;
-            int ax = HostWideArtColumn(x, &dim);
+            int ax;
+            int ay;
 
-            /* a question on top dims the page (DrawConfirm): the bars too */
-            u32 bar = sConfirm ? (Art(ax, y) >> 3) & 0x1F1F1F : (Art(ax, y) >> 1) & 0x7F7F7F;
+            if (HostWideArtSource(x, y, &ax, &ay)) {
+                /* a question on top dims the page (DrawConfirm's Dim): the bars too */
+                u32 bar = sConfirm ? (Art(ax, ay) >> 2) & 0x3F3F3F : Art(ax, ay) & 0xFFFFFF;
 
-            canvas[y * HOST_UI_WIDTH + x] = dim ? 0xFF000000 | bar : page[y * W + ax];
+                canvas[y * HOST_UI_WIDTH + x] = 0xFF000000 | bar;
+            } else {
+                canvas[y * HOST_UI_WIDTH + x] = page[y * W + ax];
+            }
         }
     }
 }

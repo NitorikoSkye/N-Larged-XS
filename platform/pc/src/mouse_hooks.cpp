@@ -295,6 +295,22 @@ static u32 sContinueFrame;
 static int sContinueSel;
 static int sContinueTarget = -1;
 
+/* The prompt is up (widescreen mirrors its art into the bars: stats.c's
+ * HostWideFlags, gba/host.h's HOST_WIDE_MIRROR). */
+int gHostInContinue;
+
+u8 __real__ZN4Game2Ui14ContinuePrompt3RunEv(void);
+
+u8 __wrap__ZN4Game2Ui14ContinuePrompt3RunEv(void)
+{
+    u8 result;
+
+    gHostInContinue = 1;
+    result = __real__ZN4Game2Ui14ContinuePrompt3RunEv();
+    gHostInContinue = 0;
+    return result;
+}
+
 void __real__ZN6Engine4Text4Font8DrawTextEPKh(Engine::Text::Font *self, const u8 *text);
 
 void __wrap__ZN6Engine4Text4Font8DrawTextEPKh(Engine::Text::Font *self, const u8 *text)

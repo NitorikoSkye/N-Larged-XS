@@ -44,6 +44,9 @@
  * art that ActorBg scrolls across for the screen's width (actor_bg.cpp's
  * maxX), so they fill the screen: neither moved to the centre nor cut. */
 #define HOST_WIDE_ACTOR (HOST_WIDE_BG_EDGES + 0x22)
+/* A byte: the game-over "continue?" screen is up (ContinuePrompt::Run):
+ * its 240-pixel art goes on into the bars, mirrored out from its edges. */
+#define HOST_WIDE_MIRROR (HOST_WIDE_BG_EDGES + 0x23)
 /* Layer 0's tile slots 0x200-0x3FF in widescreen (TileSlotPool,
  * bg_layer.hpp: the wider screen shows more of its tiles at once), 64 bytes
  * each: a wide-map 8bpp BG's tiles 0x200 on are read from here (ppu.c). */
