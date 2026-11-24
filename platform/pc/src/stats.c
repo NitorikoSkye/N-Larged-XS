@@ -127,7 +127,11 @@ void HostWideFlags(void)
 {
 #ifdef HOST_WIDE_BG
     if (HOST_WIDE) {
-        gHostVram[HOST_WIDE_PAUSE] = (unsigned char)HostPauseMenuUp(); /* ppu.c */
+        /* HostPauseMenuUp lasts 2 frames past the menu's last draw: leaving
+         * it for the warp room, the room's first frame would get the pause
+         * frame's edges (the warp room and the save menu have no pause menu) */
+        gHostVram[HOST_WIDE_PAUSE] =
+            (unsigned char)(HostPauseMenuUp() && !gHostInWarpRoom && !gHostInSaveMenu); /* ppu.c */
         gHostVram[HOST_WIDE_WARP] = (unsigned char)(gHostInWarpRoom   ? HOST_WIDE_WARP_ROOM
                                                     : gHostInSaveMenu ? 1
                                                                       : 0);

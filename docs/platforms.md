@@ -710,7 +710,9 @@ else is 240-pixel art: text BGs that aren't level layers are drawn in the
 centred window (DISPLAY_ART_X, as the game already places their sprites
 and the affine/bitmap BGs' reference points), cut to it, and the bars
 beside it are black; the pause screens (the game's and the settings
-menu) go on into them as one wider frame, their art in the middle
+menu) go on into them as one wider frame (HOST_WIDE_PAUSE: the menu
+drawn in the last 2 frames, and neither the warp room nor the save menu
+up, which leaving it for the warp room reaches first), their art in the middle
 untouched: the riveted bars, the rails behind the title and the bottom
 bar run to the screen's edges, and between them is the plain blue plate,
 a rivet near its bottom corner (host_platform.h's HostWideArtSource,
