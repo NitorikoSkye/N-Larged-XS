@@ -545,8 +545,6 @@ static const struct Option sGeneral[] = {
       &gHostSettings.pauseUnfocused, sOffOn, 2, 0 },
     { "skip intro", "from the next launch: straight to the title, no logos or intro.", OPT_CHOICE,
       &gHostSettings.skipIntro, sOffOn, 2, 0 },
-    { "update check", "checks github once a launch for a new release. off: never goes online.",
-      OPT_CHOICE, &gHostSettings.updateCheck, sOffOn, 2, 0 },
     { "quit game", "close the game. your progress is in its save, as the game saves it.",
       OPT_ACTION, NULL, NULL, 0, 0, NULL, NULL, AskQuit },
 };
@@ -687,8 +685,6 @@ static const char *const sTextSizes[] = { "normal", "large" };
 static const struct Option sPhoneGeneral[] = {
     { "skip intro", "from the next launch: straight to the title, no logos or intro.", OPT_CHOICE,
       &gHostSettings.skipIntro, sOffOn, 2, 0 },
-    { "update check", "checks github once a launch for a new release. off: never goes online.",
-      OPT_CHOICE, &gHostSettings.updateCheck, sOffOn, 2, 0 },
 };
 
 static const struct Option sPhoneDisplay[] = {
@@ -776,7 +772,7 @@ static const struct Option sPhoneGameplay[] = {
 };
 
 static const struct Category sCategories[] = {
-    { "general", "skipping the intro, and the update check", sPhoneGeneral, COUNT(sPhoneGeneral) },
+    { "general", "skipping the intro", sPhoneGeneral, COUNT(sPhoneGeneral) },
     { "display", "frame rate, scaling, filters, screen effects and borders", sPhoneDisplay,
       COUNT(sPhoneDisplay) },
     { "touch", "the on-screen buttons: size, d-pad, haptics, vibration, icons, layout", sPhoneTouch,
@@ -791,8 +787,7 @@ static const struct Category sCategories[] = {
 #else
 #define SETTINGS_TITLE "pc settings"
 static const struct Category sCategories[] = {
-    { "general", "portable mode, skip intro, update check and quitting", sGeneral,
-      COUNT(sGeneral) },
+    { "general", "portable mode, skip intro and quitting", sGeneral, COUNT(sGeneral) },
     { "display", "window, frame rate and scaling", sDisplay, COUNT(sDisplay) },
     { "graphics", "filters and screen effects", sGraphics, COUNT(sGraphics) },
     { "interface", "hud, fps counter, input display, timer and pause stats", sInterface,

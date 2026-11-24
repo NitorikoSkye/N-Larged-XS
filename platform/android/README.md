@@ -52,9 +52,7 @@ room's top corner; while open, the cross at the top middle closes them):
 the PC port's settings menu,
 drawn in the game's style, with the phone's own options:
 
-- **General:** skip intro, and the update check (off by default, never
-  online while off: once a launch, a newer release shows "update
-  available" on the title screen; tap it for the releases page).
+- **General:** skip intro.
 - **Display:** frame rate (60, or 120 on a 120 Hz screen: pictures between
   the game's own, the game at its own speed), scaling (fit, integer,
   stretch), filter (as on PC: pixels, smooth, sharp smooth, scale2x,

@@ -363,16 +363,6 @@ HOST_LINK_FLAGS += -mwindows
 endif
 endif
 
-# The update check (src/update_check.c): Windows's WinHTTP; on Linux,
-# libcurl opened at run time (dlopen, in libc since glibc 2.34; libdl
-# before it).
-ifeq ($(HOST_WINDOWS),1)
-HOST_SYS_LIBS := -lwinhttp
-else ifeq ($(HOST_ANDROID),1)
-HOST_SYS_LIBS :=
-else
-HOST_SYS_LIBS := -ldl
-endif
 
 ifeq ($(HOST_ANDROID),1)
 # The code in a segment of its own (ARM64's ld puts .rodata with .text
@@ -388,7 +378,7 @@ endif
 $(HOST_EXE): $(HOST_OBJS) $(HOST_LINK) $(HOST_LINK_EXTRA)
 	@mkdir -p $(dir $@)
 	$(HOST_CXX) $(HOST_SANITIZE_FLAGS) $(HOST_LINK_FLAGS) -o $@ $(HOST_OBJS) $(HOST_LINK) $(HOST_LINK_EXTRA) \
-		$(addprefix -Wl$(comma)--wrap=,$(HOST_WRAPS)) $(HOST_SDL_LIBS) $(HOST_SYS_LIBS) -lm
+		$(addprefix -Wl$(comma)--wrap=,$(HOST_WRAPS)) $(HOST_SDL_LIBS) -lm
 
 $(PLATFORM_UNIT_OBJS): $(C_BUILDDIR)/%.o: $(PLATFORM_DIR)/units/%.cpp $(HOST_RENAMES)
 	@mkdir -p $(dir $@)
@@ -446,7 +436,7 @@ $(PLATFORM_BUILDDIR)/src/%.o: $(PLATFORM_DIR)/src/%.S
 $(PLATFORM_BUILDDIR)/src/ppu_hd.o: HOST_CFLAGS += -O2
 
 # sdl.o is rebuilt when HOST_SDL changes (the flags file).
-HOST_SDL_OBJS := $(addprefix $(PLATFORM_BUILDDIR)/src/,sdl.o config.o borders.o discord.o timer.o rumble.o update_check.o wide_switch.o)
+HOST_SDL_OBJS := $(addprefix $(PLATFORM_BUILDDIR)/src/,sdl.o config.o borders.o discord.o timer.o rumble.o wide_switch.o)
 $(HOST_SDL_OBJS): HOST_CFLAGS += $(HOST_SDL_CFLAGS)
 $(HOST_SDL_OBJS): $(PLATFORM_BUILDDIR)/sdl_flags
 $(PLATFORM_BUILDDIR)/sdl_flags: FORCE

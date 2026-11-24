@@ -37,7 +37,6 @@ static struct HostPlayStats sCurrent;
 static int sSession; /* a game under way: the title left */
 static int sRead;
 
-void HostUpdateFrame(void);   /* update_check.c */
 int HostPauseMenuUp(void);    /* mouse_hooks.cpp */
 extern int gHostInWarpRoom;   /* level_pick.c */
 extern int gHostInSaveMenu;   /* mouse_hooks.cpp */
@@ -144,7 +143,6 @@ void HostWideFlags(void)
 /* Once a game frame (input.c's key read). */
 void HostStatsFrame(void)
 {
-    HostUpdateFrame();
     if (sSession && !HostPauseMenuUp()) {
         sCurrent.frames++;
     }

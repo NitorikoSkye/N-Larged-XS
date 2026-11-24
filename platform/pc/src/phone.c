@@ -70,7 +70,6 @@ static const struct {
     int max;
 } sInts[] = {
     { "skip_intro", &gHostSettings.skipIntro, 0, 1 },
-    { "update_check", &gHostSettings.updateCheck, 0, 1 },
     { "pause_stats", &gHostSettings.pauseStats, 0, 1 },
     { "language", &gHostSettings.language, 0, 5 },
     { "frame_rate", &gHostSettings.frameRate, 0, HOST_FPS_COUNT - 1 },

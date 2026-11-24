@@ -24,13 +24,8 @@ import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * The game's window on Android (platform/android/README.md).
@@ -380,10 +375,6 @@ public class MainActivity extends Activity {
                             view.startEditing();
                         }
                     });
-                } else if (type == 10) {
-                    if (n >= 1) {
-                        update(data[0]);
-                    }
                 } else if (type == 5) {
                     final String t = new String(data, "UTF-8");
                     runOnUiThread(new Runnable() {
@@ -639,72 +630,6 @@ public class MainActivity extends Activity {
     private volatile InputDevice lastPad;
 
     /** A buzz: the controller in use if it can, else the phone. */
-    /* The update check (update_check.c; only while its setting is on):
-     * 0 asks GitHub for the latest release and answers the core with
-     * message 11 (its three numbers, or 0xFFFF for none), 1 opens the
-     * releases page. */
-    private static final String RELEASES_API = "https://api.github.com/repos/NitorikoSkye/N-Larged-XS/releases/latest";
-    private static final String RELEASES_PAGE = "https://github.com/NitorikoSkye/N-Larged-XS/releases";
-
-    private void update(int op) {
-        if (op == 1) {
-            runOnUiThread(new Runnable() {
-                public void run() {
-                    try {
-                        startActivity(new Intent(Intent.ACTION_VIEW, android.net.Uri.parse(RELEASES_PAGE)));
-                    } catch (Exception e) {
-                        Toast.makeText(MainActivity.this, RELEASES_PAGE, Toast.LENGTH_LONG).show();
-                    }
-                }
-            });
-            return;
-        }
-        new Thread(new Runnable() {
-            public void run() {
-                int[] v = latestRelease();
-                if (v == null) {
-                    send(11, 0xFFFF, 0, 0);
-                } else {
-                    send(11, v[0], v[1], v[2]);
-                }
-            }
-        }, "update-check").start();
-    }
-
-    private static int[] latestRelease() {
-        HttpURLConnection c = null;
-        try {
-            c = (HttpURLConnection) new URL(RELEASES_API).openConnection();
-            c.setConnectTimeout(10000);
-            c.setReadTimeout(15000);
-            c.setRequestProperty("User-Agent", "N-Larged-XS-update-check");
-            c.setRequestProperty("Accept", "application/vnd.github+json");
-            if (c.getResponseCode() != 200) {
-                return null;
-            }
-            InputStream in = c.getInputStream();
-            StringBuilder b = new StringBuilder();
-            byte[] buf = new byte[8192];
-            int got;
-            while (b.length() < 256 * 1024 && (got = in.read(buf)) > 0) {
-                b.append(new String(buf, 0, got, "UTF-8"));
-            }
-            in.close();
-            Matcher m = Pattern.compile("\"tag_name\"\\s*:\\s*\"[vV]?(\\d+)\\.(\\d+)(?:\\.(\\d+))?").matcher(b);
-            if (!m.find()) {
-                return null;
-            }
-            return new int[] { Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)),
-                    m.group(3) != null ? Integer.parseInt(m.group(3)) : 0 };
-        } catch (Exception e) {
-            return null;
-        } finally {
-            if (c != null) {
-                c.disconnect();
-            }
-        }
-    }
-
     private void vibrate(int strength, int ms) {
         android.os.Vibrator v = null;
         InputDevice pad = lastPad;

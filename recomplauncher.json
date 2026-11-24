@@ -39,8 +39,7 @@
   ],
   "groups": [
     { "id": "picture" },
-    { "id": "game" },
-    { "id": "extras", "advanced": true }
+    { "id": "game" }
   ],
   "settings": [
     {
@@ -127,17 +126,6 @@
       "choices": [
         { "label": "Off", "set": { "pause_stats": "0" } },
         { "label": "On", "set": { "pause_stats": "1" } }
-      ]
-    },
-    {
-      "id": "update_check",
-      "label": "Update check",
-      "group": "extras",
-      "help": "Once a launch, asks GitHub for a newer release and says so on the title screen. Off: never goes online.",
-      "defaults": { "update_check": "0" },
-      "choices": [
-        { "label": "Off", "set": { "update_check": "0" } },
-        { "label": "On", "set": { "update_check": "1" } }
       ]
     }
   ],

@@ -28,7 +28,7 @@ N. Larged XS. Its schema: https://recomplauncher.com/schema/recomplauncher.json.
   its settings and saves in its own folder (where RecompLauncher looks)
   rather than in the user's application data. The settings shown: the
   window, widescreen, frame rate and filter; skip intro, auto save and the pause
-  menu's statistics; and (advanced) the update check. Each choice writes
+  menu's statistics. Each choice writes
   the same `key=value` the game's own menu does; the game reads `key =
   value` too.
 - **Saves** (`saves`, `folders`): `crashbandicootxs.sav` and the play

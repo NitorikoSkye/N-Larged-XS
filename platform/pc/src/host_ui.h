@@ -81,8 +81,7 @@ struct HostSettings {
     int skipIntro; /* boot straight to the title (intro_skip.c) */
     int language;  /* the language select's last pick, for skipped boots */
     int pauseUnfocused;
-    int updateCheck; /* once a launch, a newer release on GitHub (update_check.c) */
-    int widescreen;  /* the 288x160 build (wide_switch.c) */
+    int widescreen; /* the 288x160 build (wide_switch.c) */
     /* Display */
     int fullscreen;
     int windowScale; /* 1-8 */
@@ -154,12 +153,6 @@ int HostWideAvailable(void);
 void HostWideStart(void);
 void HostWideSwitch(void);
 void HostWideRelaunch(void);
-
-/* The update check (update_check.c). */
-void HostUpdateFrame(void);
-int HostUpdateAvailable(void);
-void HostUpdateOpenPage(void);
-int HostParseVersion(const char *s, int out[3]);
 
 /* Play statistics (stats.c): the game under way's, and each save slot's. */
 struct HostPlayStats {

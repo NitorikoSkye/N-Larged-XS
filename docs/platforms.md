@@ -630,21 +630,10 @@ v0.52.2 start from 0. Headless runs leave the page and the file out
 (HOST_PORT_MENUS=1 puts both in); HOST_STATS_LOG=1 logs each death and
 crate.
 
-**Update check** (v0.52.2; General, off by default; src/update_check.c).
-Nothing goes online while it is off. On, the first frame (at launch, or
-when it is turned on) starts one check a launch: GitHub's API for the
-latest release (repos/NitorikoSkye/N-Larged-XS/releases/latest, its
-tag_name), on a thread, against HOST_PORT_VERSION (major, minor, patch).
-Windows asks with WinHTTP (-lwinhttp); Linux with libcurl opened at run
-time (dlopen, so the game doesn't need it), else the curl command;
-Android's app (message 10's 0 asks, the app answers with message 11, the
-tag's three numbers or 0xFFFF; the INTERNET permission). A newer one puts
-"update available" in the title screen's top right while its menu is up,
-in the menu's small font (palette 13); a click or a tap on it opens the
-releases page (SDL_OpenURL, or message 10's 1: the app's browser). A
-failure shows nothing. Headless runs don't check: HOST_UPDATE_LATEST=vX.Y.Z
-stands in for the answer (with HOST_PORT_MENUS=1 to draw it). Tested on
-Linux against GitHub (v0.52: up to date).
+**Update check** (v0.52.2 to v0.52.15; removed): the game no longer
+goes online, and the Android app no longer asks for the INTERNET
+permission. An `update_check` line left in settings.ini is ignored;
+stream messages 10 (core to app) and 11 (app to core) are unused.
 
 **Discord** (v0.07; Extras, src/discord.c). Rich Presence over Discord's
 local IPC, with no SDK: the named pipe `\\.\pipe\discord-ipc-N` on

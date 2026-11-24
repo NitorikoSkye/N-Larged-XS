@@ -96,9 +96,6 @@ works with keyboard, controller or mouse.
 - **Extras:** Discord Rich Presence, and **Add to Steam**, which adds the
   game to Steam as a non-Steam game with full library artwork (see
   [platform/pc/STEAM.md](platform/pc/STEAM.md)).
-- **Update check** (off by default, never online while off): once a
-  launch, a newer release shows "update available" on the title screen;
-  click it for the releases page.
 - **Portable** by default: everything stays in the game's folder.
 
 **Default keyboard controls:** arrows = D-pad, X = A (jump), Z = B
