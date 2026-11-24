@@ -103,11 +103,15 @@ Starfield::Starfield()
          * screen block's 32 tiles wide, so BG0 takes the host's 64-column
          * map for layer 0, the whole screen its map's width. */
         s16 *edges = (s16 *)(VRAM + HOST_WIDE_BG_EDGES);
+        s32 *drawn = (s32 *)(VRAM + HOST_WIDE_BG_DRAWN);
 
         mapVramBase = VRAM + HOST_WIDE_BG_MAPS;
         REG_BG0CNT = bg0cnt.raw | HOST_BGCNT_WIDE_MAP;
         edges[0] = 0;
         edges[1] = DISPLAY_WIDTH;
+        /* not a level layer: no drawn part for ppu_hd.c to keep to */
+        drawn[0] = 1;
+        drawn[1] = 0;
     }
 #endif
 

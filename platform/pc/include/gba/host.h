@@ -47,6 +47,15 @@
 /* A byte: the game-over "continue?" screen is up (ContinuePrompt::Run):
  * its 240-pixel art goes on into the bars, mirrored out from its edges. */
 #define HOST_WIDE_MIRROR (HOST_WIDE_BG_EDGES + 0x23)
+/* Each level layer's drawn part, 6 s32s a layer (BgLayer::CommitScroll):
+ * the map columns and rows it has drawn (colLo, colHi, rowLo, rowHi) and
+ * its scroll (x, y). The game draws exactly what the screen covers, so
+ * the interpolation's in-between pictures, a layer moved part of a pixel
+ * on, would show a sliver of the next column or row it hasn't drawn yet
+ * (in widescreen nothing: the layers behind showed through): ppu_hd.c
+ * keeps them to these. colLo > colHi: none (a layer not yet scrolled, or
+ * the starfield's BG0, which isn't a level layer). */
+#define HOST_WIDE_BG_DRAWN (HOST_WIDE_BG_EDGES + 0x40)
 /* Layer 0's tile slots 0x200-0x3FF in widescreen (TileSlotPool,
  * bg_layer.hpp: the wider screen shows more of its tiles at once), 64 bytes
  * each: a wide-map 8bpp BG's tiles 0x200 on are read from here (ppu.c). */

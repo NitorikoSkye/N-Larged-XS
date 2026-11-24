@@ -275,7 +275,30 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
     }
 #endif
     s32 vofs = (s32)(Io16(f, REG_OFFSET_BG0VOFS + 4 * bg) & 0x1FF) * S + v->bgY[bg];
-    u32 ty = (u32)FloorDiv(Y + vofs, S) & heightMask;
+    s32 tyFull = FloorDiv(Y + vofs, S);
+#ifdef HOST_WIDE_BG
+    /* A level layer's drawn part (gba/host.h's HOST_WIDE_BG_DRAWN): an
+     * in-between picture's layer, moved part of a pixel on, takes the
+     * nearest drawn column and row where it reaches past them (the
+     * game's own pictures never do). In map pixels relative to the
+     * scroll registers: `base` turns them into the layer's own. */
+    const s32 *drawn = (const s32 *)(f->vram + HOST_WIDE_BG_DRAWN) + 6 * bg;
+    int keep = WIDE_MAP(cnt) && drawn[0] <= drawn[1] && drawn[2] <= drawn[3];
+    s32 colMin = 0;
+    s32 colMax = 0;
+
+    if (keep) {
+        s32 baseX = drawn[4] - (s32)(Io16(f, REG_OFFSET_BG0HOFS + 4 * bg) & 0x1FF);
+        s32 baseY = drawn[5] - (s32)(Io16(f, REG_OFFSET_BG0VOFS + 4 * bg) & 0x1FF);
+        s32 rowMin = drawn[2] * 8 - baseY;
+        s32 rowMax = drawn[3] * 8 + 7 - baseY;
+
+        colMin = drawn[0] * 8 - baseX;
+        colMax = drawn[1] * 8 + 7 - baseX;
+        tyFull = tyFull < rowMin ? rowMin : tyFull > rowMax ? rowMax : tyFull;
+    }
+#endif
+    u32 ty = (u32)tyFull & heightMask;
 #ifdef HOST_WIDE_BG
     if (HOST_WIDE && !WIDE_MAP(cnt) && f->vram[HOST_WIDE_PAUSE]) {
         /* the game's pause menu: its art widened (ppu.c), a column each
@@ -300,7 +323,13 @@ static void TextBgLine(const struct HdView *v, s32 bg, s32 Y, u16 *out, s32 outW
     s32 X = -(hofs - col * S); /* where column `col` starts */
 
     for (; X < outW; col++, X += S) {
-        u16 c = TextTexel(f, bg, cnt, (u32)col & widthMask, ty);
+        s32 tx = col;
+#ifdef HOST_WIDE_BG
+        if (keep) {
+            tx = tx < colMin ? colMin : tx > colMax ? colMax : tx;
+        }
+#endif
+        u16 c = TextTexel(f, bg, cnt, (u32)tx & widthMask, ty);
         s32 x0 = X < 0 ? 0 : X;
         s32 x1 = X + S > outW ? outW : X + S;
         s32 x;

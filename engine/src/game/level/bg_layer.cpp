@@ -51,8 +51,14 @@ BgLayer::BgLayer(s32 bgIndex) : BgLayerBase(bgIndex)
 #ifdef HOST_WIDE_BG
     if (HOST_WIDE) {
         /* the layer's 64x32 map past the GBA's VRAM (gba/host.h) */
+        s32 *drawn = (s32 *)(VRAM + HOST_WIDE_BG_DRAWN) + 6 * bgIndex;
+
         screen = (u16 *)(VRAM + HOST_WIDE_BG_MAPS + bgIndex * HOST_WIDE_BG_MAP);
         cnt.raw |= HOST_BGCNT_WIDE_MAP;
+        /* nothing drawn yet (CommitScroll fills it in): ppu_hd.c leaves
+         * the layer be */
+        drawn[0] = 1;
+        drawn[1] = 0;
     }
 #endif
 }
@@ -148,6 +154,14 @@ void BgLayer::CommitScroll()
          * goes on: Just Hangin's machinery at the exit), shown as the
          * GBA's screen block shows them */
         s16 *edges = (s16 *)(VRAM + HOST_WIDE_BG_EDGES) + 2 * (cnt.bits.screenBase - 0x1c);
+        s32 *drawn = (s32 *)(VRAM + HOST_WIDE_BG_DRAWN) + 6 * (cnt.bits.screenBase - 0x1c);
+
+        drawn[0] = colLo;
+        drawn[1] = colHi;
+        drawn[2] = rowLo;
+        drawn[3] = rowHi;
+        drawn[4] = x;
+        drawn[5] = y;
 
         if (cnt.bits.colors256) {
             edges[0] = (s16)-x;

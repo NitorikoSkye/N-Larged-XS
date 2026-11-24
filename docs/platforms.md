@@ -687,6 +687,12 @@ screen block shows those columns: Just Hangin's machinery at the exit),
 so they show there as on the GBA, and a room
 narrower than the screen (Neo Cortex's, 280 pixels) keeps the camera at
 0 (LevelLayers::LoadRoom), so the streamer never reads left of its map.
+The game draws exactly the columns and rows the screen covers, so the
+interpolation's in-between pictures, a layer moved part of a pixel on,
+reached a sliver of the next column or row (in widescreen empty map: a
+line of the layers behind, at the edge the camera moved towards); each
+level layer writes what it has drawn (HOST_WIDE_BG_DRAWN) and ppu_hd.c
+takes the nearest drawn column and row past it.
 Layer 0's
 tile slot pool (TileSlotPool) has 0x400 slots instead of 0x200, the
 second 0x200 after the maps (HOST_WIDE_BG_TILES, read for a wide 8bpp
