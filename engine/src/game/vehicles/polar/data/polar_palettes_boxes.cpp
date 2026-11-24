@@ -42,18 +42,20 @@ const struct anim_box gPolarElectricFenceWireBox __attribute__((aligned(4))) = {
  * between gPolarAkuAkuPalette3 and gPolarAkuAkuPalette2. With no mask
  * left (tier 0, Aku Aku losing the last one) it reads the 32 bytes before
  * gPolarAkuAkuPalette1, the boxes above, back to back as in the ROM:
- * aligned(4), so that no compiler leaves a gap there. */
+ * all aligned(4), so that no compiler leaves a gap there (GCC for x86-64
+ * puts a 32-byte array without it on a 32-byte boundary: 16 bytes of
+ * padding after gPolarAkuAkuPalette1, which two masks then showed). */
 const u16 gPolarAkuAkuPalette1[16] __attribute__((aligned(4))) = {
     0x35AC, 0x2192, 0x14EF, 0x04F6, 0x1179, 0x023F, 0x03FF, 0x03E9,
     0x1248, 0x42FA, 0x5D87, 0x7E60, 0x4414, 0x401F, 0x001C, 0x0000,
 };
 
-const u16 gPolarAkuAkuPalette2[16] = {
+const u16 gPolarAkuAkuPalette2[16] __attribute__((aligned(4))) = {
     0x35AC, 0x26B4, 0x14EF, 0x04F6, 0x1179, 0x023F, 0x03FF, 0x03BF,
     0x02B7, 0x333C, 0x1AF7, 0x03FE, 0x0293, 0x03DF, 0x035F, 0x0000,
 };
 
-const u16 gPolarAkuAkuPalette3[16] = {
+const u16 gPolarAkuAkuPalette3[16] __attribute__((aligned(4))) = {
     0x03E0, 0x56B5, 0x2529, 0x2D6B, 0x3DEF, 0x4E73, 0x739C, 0x6F7B,
     0x4E73, 0x6739, 0x56B5, 0x6F7B, 0x4631, 0x6F7B, 0x6739, 0x0000,
 };
