@@ -106,7 +106,6 @@ static void NextScanline(void)
         /* The picture is finished: shown (the window), and the time a
          * frame takes waited for, before the game's VBlank handler. */
         HostPpuFrame();
-        HostWideFlags(); /* stats.c: for the next picture */
         if (gHostHdCheck || gHostInterpDumpDir != NULL) {
             HostHdCheckFrame();
         }
@@ -115,6 +114,12 @@ static void NextScanline(void)
         if (!gHostOptions.headless) {
             HostFrontendVBlank();
         }
+        /* stats.c: for the next picture, after the interpolation has kept
+         * this one (HostFrontendVBlank, HostHdCheckFrame) with the flags
+         * it was drawn with: before, its in-between pictures took the
+         * next one's (leaving the "continue?" screen, a picture of black
+         * bars where its mirrored art was) */
+        HostWideFlags();
         if (gHostOptions.vblanks != 0 && gHostVBlanks > gHostOptions.vblanks) {
             HostExit(0, "vblanks");
         }

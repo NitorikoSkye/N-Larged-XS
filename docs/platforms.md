@@ -729,9 +729,15 @@ BG0 and BG1 from 304-pixel art that ActorBg scrolls across for the
 screen's width (actor_bg.cpp's maxX: 64 pixels of it at 240, 16 at 288),
 so there they fill the screen (HOST_WIDE_ACTOR, set from hud_hook.cpp's
 gHostCategoryType). Known: sprites aren't cut to the window; `--hd-check`
-finds 120 pixels in 200 frames of a cutscene fade differ at the right
-bar's first column, and a few frames of a sprite at the top edge in
-Rocket Racket.
+finds cutscene frames (bitmap mode, during fades) that differ: the
+interpolation's PPU draws a picture from the registers and memory at its
+VBlank, ppu.c each line as it goes, so where the game changes them
+mid-picture (a picture loading, a sprite moving) a few rows differ, at
+most a faint two rows of a sprite in the right bar; and a few frames of
+a sprite at the top edge in the jetpack stages. The flags HostWideFlags
+sets for the next picture (pause, warp room, vehicle stage, "continue?")
+are set after the interpolation has kept the picture (irq.c), so its
+in-between pictures are drawn the way the picture was.
 
 **Mouse** (v0.33; src/ui.c HostUiMouse, src/mouse_hooks.cpp, src/sdl.c).
 The settings menu: moving over a category, a row or a binding highlights
