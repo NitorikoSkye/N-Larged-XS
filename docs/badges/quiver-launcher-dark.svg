@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="172" height="48" viewBox="0 0 172 48" role="img" aria-label="Get it on Quiver Launcher">
+  <title>Get it on Quiver Launcher</title>
+  <rect x="0.75" y="0.75" width="170.5" height="46.5" rx="8" fill="#111111" stroke="#5a5a5a" stroke-width="1.5"/>
+  <text x="16" y="19" fill="#c8c8c8" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" letter-spacing="0.3">GET IT ON</text>
+  <text x="16" y="37" fill="#ffffff" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="19" font-weight="700" textLength="140" lengthAdjust="spacingAndGlyphs">Quiver Launcher</text>
+</svg>
