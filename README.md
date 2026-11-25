@@ -1,6 +1,6 @@
 # N. Larged XS
 
-<a href="[https://recomplauncher.com](https://recomplauncher.com/game/n-larged-xs)"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img alt="Get it on RecompLauncher" src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" height="48"></picture></a>
+<a href="https://recomplauncher.com/game/n-larged-xs"><picture><source media="(prefers-color-scheme: dark)" srcset="https://recomplauncher.com/assets/press/launcher/badge-light.svg"><img alt="Get it on RecompLauncher" src="https://recomplauncher.com/assets/press/launcher/badge-dark.svg" height="48"></picture></a>
 
 A native PC and Android port of **Crash Bandicoot XS** (*Crash Bandicoot: The Huge
 Adventure*, Game Boy Advance, 2002), built from the
