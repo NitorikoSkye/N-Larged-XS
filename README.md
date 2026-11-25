@@ -35,7 +35,7 @@ written. A `.zip` with the ROM in it works too.
 
 On Linux the launcher and the game need glibc 2.34 or newer and SDL2 from
 your system (Steam's systems have it). With
-[RecompLauncher](https://recomplauncher.com), pick the release and your
+[RecompLauncher](https://recomplauncher.com/game/n-larged-xs), pick the release and your
 ROM, and it does the rest (platform/pc/RECOMPLAUNCHER.md).
 
 Windows may show a SmartScreen warning the first time because the launcher
